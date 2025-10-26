@@ -1,4 +1,6 @@
 ## Dissolve animation - pixelated transition effect using shader
+## LEGACY: Kept for reference, not actively maintained
+## Consider using ShaderAnimation for new shader effects
 class_name DissolveAnimation
 extends VNAnimationNode
 
@@ -8,19 +10,42 @@ var _original_material: Material = null
 ## Dissolve shader material
 var _dissolve_material: ShaderMaterial = null
 
+## Target reference (stored during apply_to)
+var _target: Variant = null
 
-func _init(p_target: ResourceNode = null, p_duration: float = 0.0) -> void:
-	super._init(p_target, p_duration)
+
+func _init(p_duration: float = 0.0) -> void:
+	super._init(p_duration)
 
 
-## Setup dissolve shader
-func _setup_animation() -> void:
-	if not target_node or not "material" in target_node:
-		push_warning("DissolveAnimation: target node does not have material property")
+## Applies the dissolve animation to target
+func apply_to(target: Variant, progress: float, _delta: float) -> void:
+	if not target or not target.scene_node:
+		return
+	
+	# Store target reference
+	if _target != target:
+		_target = target
+		_setup_shader_on_target()
+	
+	# Update dissolve progress
+	if _dissolve_material:
+		var dissolve_progress = lerp(0.0, 1.0, progress)
+		_dissolve_material.set_shader_parameter("dissolve_value", dissolve_progress)
+
+
+## Setup dissolve shader on target
+func _setup_shader_on_target() -> void:
+	if not _target or not _target.scene_node:
+		return
+	
+	var scene_node = _target.scene_node
+	if not "material" in scene_node:
+		push_warning("DissolveAnimation: target scene node does not have material property")
 		return
 	
 	# Store original material
-	_original_material = target_node.material
+	_original_material = scene_node.material
 	
 	# Create dissolve shader material
 	_dissolve_material = ShaderMaterial.new()
@@ -53,36 +78,17 @@ void fragment() {
 	_dissolve_material.set_shader_parameter("dissolve_value", 0.0)
 	_dissolve_material.set_shader_parameter("pixel_size", 4.0)
 	
-	target_node.material = _dissolve_material
+	scene_node.material = _dissolve_material
+
+
+## Finishes the animation and restores original material
+func _finish_animation() -> void:
+	super._finish_animation()
 	
-	# Setup default values
-	from_value = target_node.scene_node.modulate.a
-	to_value = 1.0 - from_value
-
-
-## Process dissolve animation
-func _process_animation(progress: float, _delta: float) -> void:
-	if not target_node or not _dissolve_material:
-		return
-	
-	var dissolve_progress = lerp(float(from_value), float(to_value), progress)
-	_dissolve_material.set_shader_parameter("dissolve_value", dissolve_progress)
-
-
-## Restore original material
-func _apply_final_value() -> void:
-	if not target_node:
-		return
-	
-	# Restore original material if we have one
-	if _original_material:
-		target_node.material = _original_material
-	else:
-		target_node.material = null
-
-
-## Restore material on loop
-func _on_loop() -> void:
-	if _dissolve_material:
-		_dissolve_material.set_shader_parameter("dissolve_value", float(from_value))
+	# Restore original material
+	if _target and _target.scene_node and "material" in _target.scene_node:
+		if _original_material:
+			_target.scene_node.material = _original_material
+		else:
+			_target.scene_node.material = null
 

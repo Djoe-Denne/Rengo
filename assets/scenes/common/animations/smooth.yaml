@@ -1,0 +1,8 @@
+## Smooth animation - smooth ease in/out for transforms
+type: transform
+duration: 0.5
+easing: ease_in_out
+parameters:
+  shake_intensity: 0.0
+  shake_frequency: 0.0
+

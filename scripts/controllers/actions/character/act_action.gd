@@ -74,12 +74,14 @@ func _setup_animation() -> void:
 	if not target or not target.scene_node:
 		return
 	
-	# Create animation node using factory
-	animation_node = AnimationFactory.create(transition_type, target, transition_duration)
+	# Create animation node using factory (legacy support)
+	animation_node = AnimationFactory.create(transition_type, transition_duration)
 	
-	animation_node.play()
-	# Change state at halfway point (will be handled in process)
-	target.add_animation(animation_node)
+	if animation_node:
+		animation_node.play()
+		# Note: Legacy code - this may need updating
+		if target.has_method("add_animation"):
+			target.add_animation(animation_node)
 		
 ## Called when action completes
 func on_complete() -> void:

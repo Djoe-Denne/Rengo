@@ -1,0 +1,8 @@
+## Shake animation - adds shake effect during transform
+type: transform
+duration: 1.0
+easing: ease_out
+parameters:
+  shake_intensity: 15.0
+  shake_frequency: 30.0
+

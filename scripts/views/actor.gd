@@ -110,6 +110,30 @@ func move_to(x: float, y: float, duration: float = 0.0):
 	return null
 
 
+## Creates a MoveAction for position transformation
+## Auto-registers the action and returns it for chaining
+func move():
+	var MoveAction = load("res://scripts/controllers/actions/transform/move_action.gd")
+	var action = MoveAction.new(self)
+	return register_action(action)
+
+
+## Creates a RotateAction for rotation transformation
+## Auto-registers the action and returns it for chaining
+func rotate():
+	var RotateAction = load("res://scripts/controllers/actions/transform/rotate_action.gd")
+	var action = RotateAction.new(self)
+	return register_action(action)
+
+
+## Creates a ScaleAction for scale transformation
+## Auto-registers the action and returns it for chaining
+func scale():
+	var ScaleAction = load("res://scripts/controllers/actions/transform/scale_action.gd")
+	var action = ScaleAction.new(self)
+	return register_action(action)
+
+
 ## Updates the visibility of the actor
 func update_visibility() -> void:
 	if sprite_container:

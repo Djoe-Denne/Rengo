@@ -1,14 +1,12 @@
 ## Base class for animation system
 ## Abstract class that provides common animation functionality
-## Subclasses implement specific animation types
+## Subclasses implement specific animation types (easing, effects, shaders, etc.)
+## AnimationNodes are composed by AnimatedActions, not directly tied to targets
 class_name VNAnimationNode
 extends RefCounted
 
 ## Emitted when the animation completes
 signal animation_complete()
-
-## The scene node to animate
-var target_node: ResourceNode = null
 
 ## Duration of the animation in seconds
 var duration: float = 0.0
@@ -29,9 +27,9 @@ var to_value: Variant = null
 var _elapsed_time: float = 0.0
 
 
-func _init(p_target: ResourceNode = null, p_duration: float = 0.0) -> void:
-	target_node = p_target
+func _init(p_duration: float = 0.0) -> void:
 	duration = p_duration
+
 
 ## Starts the animation
 func play() -> void:
@@ -49,23 +47,18 @@ func stop() -> void:
 ## Processes the animation for one frame
 ## Returns true when the animation is complete
 func process(delta: float) -> bool:
-	print("VNAnimationNode process")
-	if not is_playing or not target_node:
+	if not is_playing:
 		return true
 	
 	_elapsed_time += delta
 	
 	# Handle instant animations
 	if duration <= 0.0:
-		_apply_final_value()
 		_finish_animation()
 		return true
 	
 	# Calculate progress
 	var progress = clamp(_elapsed_time / duration, 0.0, 1.0)
-	
-	# Let subclass handle the animation
-	_process_animation(progress, delta)
 	
 	# Check if complete
 	if _elapsed_time >= duration:
@@ -74,27 +67,30 @@ func process(delta: float) -> bool:
 			_on_loop()
 			return false
 		else:
-			_apply_final_value()
 			_finish_animation()
 			return true
 	
 	return false
 
 
-## Setup animation - override in subclasses if needed
-func _setup_animation() -> void:
-	pass
+## Gets the current progress of the animation (0.0 to 1.0)
+func get_progress() -> float:
+	if duration <= 0.0:
+		return 1.0
+	return clamp(_elapsed_time / duration, 0.0, 1.0)
 
 
-## Abstract method - subclasses must implement
+## Applies animation to a target for the current frame
+## Override this in subclasses to implement specific animation behavior
+## target: The object to animate (ResourceNode, Node, etc.)
 ## progress: 0.0 to 1.0 normalized time
 ## delta: time elapsed since last frame
-func _process_animation(_progress: float, _delta: float) -> void:
-	push_error("VNAnimationNode: _process_animation() must be implemented by subclass")
+func apply_to(target: Variant, progress: float, delta: float) -> void:
+	push_error("VNAnimationNode: apply_to() must be implemented by subclass")
 
 
-## Applies the final value - override in subclasses
-func _apply_final_value() -> void:
+## Setup animation - override in subclasses if needed
+func _setup_animation() -> void:
 	pass
 
 
