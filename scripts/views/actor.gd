@@ -56,39 +56,51 @@ func create_scene_node(parent: Node) -> Node:
 
 ## Changes the actor's state (pose, expression, etc.)
 ## Updates the underlying Character model
+## Auto-registers the action and returns it for optional chaining
 func act(new_states: Dictionary):
-	var ActAction = load("res://scripts/core/action/character/act_action.gd")
-	return ActAction.new(self, new_states)
+	var ActAction = load("res://scripts/controllers/actions/character/act_action.gd")
+	var action = ActAction.new(self, new_states)
+	return register_action(action)
 
 
 ## Convenience method: Changes expression
+## Auto-registers the action and returns it for optional chaining
 func express(emotion: String):
-	var ExpressAction = load("res://scripts/core/action/character/express_action.gd")
-	return ExpressAction.new(self, emotion)
+	var ExpressAction = load("res://scripts/controllers/actions/character/express_action.gd")
+	var action = ExpressAction.new(self, emotion)
+	return register_action(action)
 
 
 ## Convenience method: Changes pose
+## Auto-registers the action and returns it for optional chaining
 func pose(pose_name: String):
-	var PoseAction = load("res://scripts/core/action/character/pose_action.gd")
-	return PoseAction.new(self, pose_name)
+	var PoseAction = load("res://scripts/controllers/actions/character/pose_action.gd")
+	var action = PoseAction.new(self, pose_name)
+	return register_action(action)
 
 
 ## Convenience method: Changes orientation
+## Auto-registers the action and returns it for optional chaining
 func look(orientation: String):
-	var LookAction = load("res://scripts/core/action/character/look_action.gd")
-	return LookAction.new(self, orientation)
+	var LookAction = load("res://scripts/controllers/actions/character/look_action.gd")
+	var action = LookAction.new(self, orientation)
+	return register_action(action)
 
 
 ## Convenience method: Changes outfit
+## Auto-registers the action and returns it for optional chaining
 func wear(clothing_id: String):
-	var WearAction = load("res://scripts/core/action/character/wear_action.gd")
-	return WearAction.new(self, clothing_id)
+	var WearAction = load("res://scripts/controllers/actions/character/wear_action.gd")
+	var action = WearAction.new(self, clothing_id)
+	return register_action(action)
 
 
 ## Makes the actor speak (placeholder for dialog system)
+## Auto-registers the action and returns it for optional chaining
 func say(text: String):
-	var SayAction = load("res://scripts/core/action/character/say_action.gd")
-	return SayAction.new(self).with_text(text)
+	var SayAction = load("res://scripts/controllers/actions/character/say_action.gd")
+	var action = SayAction.new(self).with_text(text)
+	return register_action(action)
 
 
 ## Moves the actor to a new position

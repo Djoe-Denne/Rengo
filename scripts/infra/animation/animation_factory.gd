@@ -2,11 +2,11 @@
 class_name AnimationFactory
 extends RefCounted
 
-const TransitionTypes = preload("res://scripts/core/animation/transition/transition_types.gd")
+const TransitionTypes = preload("res://scripts/infra/animation/transition/transition_types.gd")
 
 # Animation class preloads
-const FadeAnimation = preload("res://scripts/core/animation/implementations/alpha/fade_animation.gd")
-const InstantAnimation = preload("res://scripts/core/animation/implementations/effects/instant_animation.gd")
+const FadeAnimation = preload("res://scripts/infra/animation/implementations/alpha/fade_animation.gd")
+const InstantAnimation = preload("res://scripts/infra/animation/implementations/effects/instant_animation.gd")
 
 
 ## Creates an animation instance based on the transition type

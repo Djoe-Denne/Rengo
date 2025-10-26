@@ -17,7 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-ImageRepository="*res://scripts/core/theater/image_repository.gd"
+ImageRepository="*res://scripts/infra/image_repository.gd"
 
 [display]
 

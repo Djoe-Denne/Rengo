@@ -1,5 +1,5 @@
 ## SayAction displays dialog text in the dialog layer
-extends "res://scripts/core/action/action_node.gd"
+extends "res://scripts/controllers/actions/action_node.gd"
 class_name SayAction
 
 ## The text to display

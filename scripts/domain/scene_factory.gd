@@ -49,10 +49,10 @@ static func _create_director(scene_config: Dictionary, scene_path: String):
 	
 	var director
 	if scene_type == "theater":
-		var TheaterActorDirector = load("res://scripts/core/theater/theater_actor_director.gd")
+		var TheaterActorDirector = load("res://scripts/views/theater_actor_director.gd")
 		director = TheaterActorDirector.new()
 	elif scene_type == "movie":
-		var MovieActorDirector = load("res://scripts/core/theater/movie_actor_director.gd")
+		var MovieActorDirector = load("res://scripts/views/movie_actor_director.gd")
 		director = MovieActorDirector.new()
 	else:
 		push_error("Unknown scene type: %s" % scene_type)

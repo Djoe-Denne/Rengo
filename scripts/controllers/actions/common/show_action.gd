@@ -1,5 +1,5 @@
 ## ShowAction makes a resource visible with an optional fade-in effect
-extends "res://scripts/core/action/action_node.gd"
+extends "res://scripts/controllers/actions/action_node.gd"
 class_name ShowAction
 
 ## Fade-in duration (0 = instant)

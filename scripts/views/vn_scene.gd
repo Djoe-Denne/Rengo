@@ -3,8 +3,8 @@
 class_name VNScene
 extends Node2D
 
-var Actor = load("res://scripts/core/theater/actor.gd")
-var Character = load("res://scripts/core/theater/character.gd")
+var Actor = load("res://scripts/views/actor.gd")
+var Character = load("res://scripts/models/character.gd")
 
 ## The scene controller (FSM)
 var controller = null  # VNSceneController
@@ -27,7 +27,7 @@ var characters: Dictionary = {}
 
 func _ready() -> void:
 	# Initialize the controller
-	var VNSceneController = load("res://scripts/core/scene_controller.gd")
+	var VNSceneController = load("res://scripts/controllers/vn_scene_controller.gd")
 	controller = VNSceneController.new(self)
 	
 	# Setup viewport resizing

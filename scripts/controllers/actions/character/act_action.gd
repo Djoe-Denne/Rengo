@@ -1,9 +1,9 @@
 ## ActAction changes character/resource states with optional animation
-extends "res://scripts/core/action/action_node.gd"
+extends "res://scripts/controllers/actions/action_node.gd"
 class_name ActAction
 
-const TransitionTypes = preload("res://scripts/core/animation/transition/transition_types.gd")
-const AnimationFactory = preload("res://scripts/core/animation/animation_factory.gd")
+const TransitionTypes = preload("res://scripts/infra/animation/transition/transition_types.gd")
+const AnimationFactory = preload("res://scripts/infra/animation/animation_factory.gd")
 
 ## New states to apply
 var new_states: Dictionary = {}

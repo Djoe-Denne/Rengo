@@ -1,6 +1,6 @@
 ## Camera resource for visual novel scenes
 ## Controls the viewport camera position and zoom
-extends "res://scripts/core/resource_node.gd"
+extends "res://scripts/domain/resource_node.gd"
 class_name VNCamera
 
 ## Zoom level (1.0 = default, >1.0 = zoomed in, <1.0 = zoomed out)
@@ -12,7 +12,7 @@ var follow_target = null
 
 func _init(p_name: String = "camera") -> void:
 	super._init(p_name)
-	var NormalizedPosition = load("res://scripts/utilities/normalized_position.gd")
+	var NormalizedPosition = load("res://scripts/infra/normalized_position.gd")
 	position = NormalizedPosition.center()
 
 
@@ -51,7 +51,7 @@ func update_position() -> void:
 	if not scene_node or not vn_scene:
 		return
 	
-	var NormalizedPosition = load("res://scripts/utilities/normalized_position.gd")
+	var NormalizedPosition = load("res://scripts/infra/normalized_position.gd")
 	var target_pos: Vector3
 	var screen_size = vn_scene.get_viewport().get_visible_rect().size
 	

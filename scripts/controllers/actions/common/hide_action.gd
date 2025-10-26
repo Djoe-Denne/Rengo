@@ -1,5 +1,5 @@
 ## HideAction makes a resource invisible with an optional fade-out effect
-extends "res://scripts/core/action/action_node.gd"
+extends "res://scripts/controllers/actions/action_node.gd"
 class_name HideAction
 
 ## Fade-out duration (0 = instant)

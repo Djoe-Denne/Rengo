@@ -1,7 +1,7 @@
 ## Base class for all visual novel scene resources
 ## ResourceNodes represent objects in the scene (characters, backgrounds, etc.)
 class_name ResourceNode
-extends RefCounted
+extends SceneObject
 
 ## Unique identifier for this resource
 var resource_name: String = ""
@@ -15,24 +15,25 @@ var visible: bool = false
 ## Reference to the actual Godot node in the scene tree
 var scene_node: Node = null
 
-## Reference to the parent VNScene
-var vn_scene: Node = null
-
 
 func _init(p_name: String = "") -> void:
 	resource_name = p_name
 
 
-## Returns a ShowAction to make this resource visible
+## Creates and auto-registers a ShowAction to make this resource visible
+## Returns the ActionNode for optional chaining
 func show():
-	var ShowAction = load("res://scripts/core/action/common/show_action.gd")
-	return ShowAction.new(self)
+	var ShowAction = load("res://scripts/controllers/actions/common/show_action.gd")
+	var action = ShowAction.new(self)
+	return register_action(action)
 
 
-## Returns a HideAction to make this resource invisible
+## Creates and auto-registers a HideAction to make this resource invisible
+## Returns the ActionNode for optional chaining
 func hide():
-	var HideAction = load("res://scripts/core/action/common/hide_action.gd")
-	return HideAction.new(self)
+	var HideAction = load("res://scripts/controllers/actions/common/hide_action.gd")
+	var action = HideAction.new(self)
+	return register_action(action)
 
 
 ## Called when the resource is added to the scene

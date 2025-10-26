@@ -1,5 +1,5 @@
 ## WaitAction pauses scene execution for a specified duration
-extends "res://scripts/core/action/action_node.gd"
+extends "res://scripts/controllers/actions/action_node.gd"
 class_name WaitAction
 
 

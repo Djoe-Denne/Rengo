@@ -44,7 +44,7 @@ func action(p_action) -> VNSceneController:  # ActionNode
 
 ## Adds a wait action to the queue
 func wait(seconds: float) -> VNSceneController:
-	var WaitAction = load("res://scripts/core/action/common/wait_action.gd")
+	var WaitAction = load("res://scripts/controllers/actions/common/wait_action.gd")
 	action_queue.append(WaitAction.new(seconds))
 	return self
 

@@ -3,7 +3,7 @@
 class_name TheaterActorDirector
 extends ActorDirector
 
-const TheaterCostumier = preload("res://scripts/core/theater/theater_costumier.gd")
+const TheaterCostumier = preload("res://scripts/domain/theater_costumier.gd")
 
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
