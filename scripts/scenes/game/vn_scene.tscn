@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://bnr2nqo3ilfop"]
+
+[ext_resource type="Script" path="res://scripts/core/vn_scene.gd" id="1_5r5qw"]
+
+[node name="VNScene" type="Node2D"]
+script = ExtResource("1_5r5qw")
+
+[node name="ActingLayer" type="Node2D" parent="."]
+
+[node name="DialogLayer" type="CanvasLayer" parent="."]
+

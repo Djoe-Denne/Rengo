@@ -1,0 +1,14 @@
+scene:
+  name: "Demo Scene"
+  type: "theater"
+
+stage:
+  default_background: "default"
+
+backgrounds:
+  - id: "default"
+    color: [0.2, 0.2, 0.3]
+
+cast:
+  available: ["me", "other"]
+

@@ -1,0 +1,37 @@
+wardrobe:
+  - id: "casual"
+    layer: "outfit_top"
+    tags: ["casual", "top"]
+    excluding_tags: ["top"]
+    variants:
+      - image: "images/{orientation}/outfits/casual.png"
+        orientations: ["front"]
+        default: true
+      - image: "images/{orientation}/outfits/casual_wave.png"
+        orientations: ["front"]
+        tags: ["wave"]
+    anchor: {x: 0, y: 0}
+    z: 2
+  
+  - id: "chino"
+    layer: "outfit_bottom"
+    tags: ["casual", "pants", "bottom"]
+    excluding_tags: ["bottom"]
+    variants:
+      - image: "images/{orientation}/outfits/chino.png"
+        orientations: ["front"]
+        default: true
+    anchor: {x: 0, y: 0}
+    z: 1
+  
+  - id: "jeans"
+    layer: "outfit_bottom"
+    tags: ["casual", "pants", "bottom"]
+    excluding_tags: ["bottom"]
+    variants:
+      - image: "images/{orientation}/outfits/jeans.png"
+        orientations: ["front"]
+        default: true
+    anchor: {x: 0, y: 0}
+    z: 1
+

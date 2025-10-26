@@ -1,0 +1,16 @@
+variants:
+  front:
+    layers:
+      body:
+        images:
+          default: "images/front/body/idle.png"
+          bedhair: "images/front/body/idle_bedhair.png"
+        z: 0
+      face:
+        images:
+          neutral: "images/front/faces/neutral.png"
+          happy: "images/front/faces/happy.png"
+          sad: "images/front/faces/sad.png"
+        z: 4
+        anchor: {x: 0, y: -120}
+

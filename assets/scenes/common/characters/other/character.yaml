@@ -1,0 +1,12 @@
+character:
+  display_name: "Other"
+  dialog_color: "#FF6B8E"
+  inner_dialog_color: "#FF6B8E88"
+
+defaults:
+  orientation: "front"
+  pose: "idle"
+  expression: "neutral"
+  outfit: "default"
+  body: "default"
+
