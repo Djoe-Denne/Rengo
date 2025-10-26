@@ -207,17 +207,16 @@ func load_wardrobe(character_name: String) -> bool:
 	if character_name in costumiers:
 		return true
 	
-	# Build path to panoplie.yaml
-	var panoplie_path = "res://assets/scenes/common/characters/%s/panoplie.yaml" % character_name
+	# Get base directories for this character
+	var base_dirs = get_character_base_dirs(character_name)
 	
-	# Check if file exists
-	if not FileAccess.file_exists(panoplie_path):
-		push_warning("Panoplie file not found: %s" % panoplie_path)
+	if base_dirs.is_empty():
+		push_warning("No base directories found for character: %s" % character_name)
 		return false
 	
-	# Create TheaterCostumier and load wardrobe
+	# Create TheaterCostumier and load wardrobe with merging support
 	var costumier = TheaterCostumier.new(character_name)
-	if costumier.load_wardrobe(panoplie_path):
+	if costumier.load_wardrobe(base_dirs, true):
 		costumiers[character_name] = costumier
 		return true
 	

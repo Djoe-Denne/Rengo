@@ -20,26 +20,31 @@ func get_or_load(base_dirs: Array, resource_rel_path: String) -> Texture2D:
 	if resource_rel_path == "":
 		return null
 	
-	# Try each base directory
-	for base_dir in base_dirs:
-		var full_path = base_dir + resource_rel_path
-		
-		# Check cache first
-		if full_path in texture_cache:
-			cache_hits += 1
-			return texture_cache[full_path]
-		
-		# Try to load from disk
-		if ResourceLoader.exists(full_path):
-			var texture = load(full_path)
-			if texture:
-				texture_cache[full_path] = texture
-				cache_misses += 1
-				return texture
+	# Use ResourceRepository to find the actual path
+	var full_path = ResourceRepository.get_resource_path(base_dirs, resource_rel_path)
 	
-	# Not found in any base directory
+	if full_path == "":
+		# Not found in any base directory
+		failed_loads += 1
+		push_warning("Image not found in any base directory: %s (searched: %s)" % [resource_rel_path, str(base_dirs)])
+		return null
+	
+	# Check cache first
+	if full_path in texture_cache:
+		cache_hits += 1
+		return texture_cache[full_path]
+	
+	# Load from disk
+	if ResourceLoader.exists(full_path):
+		var texture = load(full_path)
+		if texture:
+			texture_cache[full_path] = texture
+			cache_misses += 1
+			return texture
+	
+	# Failed to load
 	failed_loads += 1
-	push_warning("Image not found in any base directory: %s (searched: %s)" % [resource_rel_path, str(base_dirs)])
+	push_warning("Failed to load texture: %s" % full_path)
 	return null
 
 

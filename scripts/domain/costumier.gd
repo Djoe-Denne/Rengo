@@ -25,22 +25,23 @@ func get_layers(panoplie: Array, state: Dictionary) -> Dictionary:
 	return {}
 
 
-## Loads wardrobe from panoplie.yaml
-func load_wardrobe(path: String) -> bool:
-	if not FileAccess.file_exists(path):
-		push_warning("Panoplie file not found: %s" % path)
+## Loads wardrobe from panoplie.yaml with optional scene-specific merging
+## @param base_dirs: List of base directories to search (scene-specific first, then common)
+## @param merge_scene: If true, merges panoplie.yaml from common with panoplie-scene.yaml from scene folder
+func load_wardrobe(base_dirs: Array, merge_scene: bool = true) -> bool:
+	if base_dirs.is_empty():
+		push_warning("No base directories provided for loading wardrobe")
 		return false
 	
-	# Parse YAML using the addon
-	var result = YAML.load_file(path)
+	# Use ResourceRepository to load and merge YAML files
+	var data = ResourceRepository.load_yaml(base_dirs, "panoplie", merge_scene)
 	
-	if result.has_error():
-		push_error("Failed to parse panoplie file: %s - Error: %s" % [path, result.get_error()])
+	if data.is_empty():
+		push_warning("Failed to load panoplie from directories: %s" % str(base_dirs))
 		return false
 	
-	var data = result.get_data()
-	if not data is Dictionary or not "wardrobe" in data:
-		push_warning("Panoplie file does not contain 'wardrobe' key: %s" % path)
+	if not "wardrobe" in data:
+		push_warning("Panoplie file does not contain 'wardrobe' key in directories: %s" % str(base_dirs))
 		return false
 	
 	wardrobe = data.wardrobe

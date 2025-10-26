@@ -24,16 +24,17 @@ func prepare(p_scene_path: String) -> void:
 
 ## Loads character metadata (display name, colors, defaults) into Character model
 func load_character_metadata(character: Character) -> bool:
-	var character_path = "res://assets/scenes/common/characters/%s/character.yaml" % character.character_name
+	# Get base directories for this character
+	var base_dirs = get_character_base_dirs(character.character_name)
 	
-	# Check if file exists
-	if not FileAccess.file_exists(character_path):
-		push_warning("Character metadata file not found: %s" % character_path)
+	if base_dirs.is_empty():
+		push_warning("No base directories found for character: %s" % character.character_name)
 		return false
 	
-	# Load YAML file
-	var metadata = _load_yaml_file(character_path)
+	# Load character.yaml using ResourceRepository (no merging for character metadata)
+	var metadata = ResourceRepository.load_yaml(base_dirs, "character", false)
 	if metadata.is_empty():
+		push_warning("Failed to load character metadata for: %s" % character.character_name)
 		return false
 	
 	# Apply metadata to character
@@ -59,43 +60,28 @@ func load_character(character_name: String) -> bool:
 	if character_name in character_acts:
 		return true
 	
-	# Build path to character's acts directory
-	var character_path = "res://assets/scenes/common/characters/%s/acts/" % character_name
+	# Get base directories for this character
+	var base_dirs = get_character_base_dirs(character_name)
 	
-	# Check if directory exists
-	if not DirAccess.dir_exists_absolute(character_path):
-		push_error("Character directory not found: %s" % character_path)
+	if base_dirs.is_empty():
+		push_error("No base directories found for character: %s" % character_name)
 		return false
 	
-	# Load all act files in the directory
-	var dir = DirAccess.open(character_path)
-	if not dir:
-		push_error("Failed to open character directory: %s" % character_path)
-		return false
+	# Load all act YAML files from the acts/ subdirectory
+	var acts_data = ResourceRepository.load_yaml_directory(base_dirs, "acts/")
 	
-	character_acts[character_name] = {}
-	
-	dir.list_dir_begin()
-	var file_name = dir.get_next()
-	
-	while file_name != "":
-		if not dir.current_is_dir() and file_name.ends_with(".yaml"):
-			var act_name = file_name.get_basename()
-			var act_path = character_path + file_name
-			
-			# Load the YAML file
-			var act_config = _load_yaml_file(act_path)
-			if not act_config.is_empty():
-				var act = Act.new(character_name, act_name, act_config)
-				character_acts[character_name][act_name] = act
-		
-		file_name = dir.get_next()
-	
-	dir.list_dir_end()
-	
-	if character_acts[character_name].is_empty():
+	if acts_data.is_empty():
 		push_warning("No acts found for character: %s" % character_name)
 		return false
+	
+	# Create Act objects from loaded data
+	character_acts[character_name] = {}
+	
+	for act_name in acts_data:
+		var act_config = acts_data[act_name]
+		if not act_config.is_empty():
+			var act = Act.new(character_name, act_name, act_config)
+			character_acts[character_name][act_name] = act
 	
 	return true
 
