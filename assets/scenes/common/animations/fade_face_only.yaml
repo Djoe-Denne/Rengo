@@ -1,0 +1,9 @@
+## Fade only face/expression layers - useful for subtle expression transitions
+## Body and clothing remain solid while face fades
+type: state_change
+duration: 0.4
+parameters:
+  fade_fraction: 0.3
+  target_mode: specific_layers
+  target_layers: ["face", "eyes", "mouth"]  # Customize based on your layer names
+

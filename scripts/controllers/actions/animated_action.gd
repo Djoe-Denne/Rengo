@@ -7,6 +7,9 @@ extends ActionNode
 ## The animation node that controls how the action is animated
 var animation_node: VNAnimationNode = null
 
+## The target layers to animate
+var parameters: Dictionary = {}
+
 ## The target value to reach (position, state, etc.)
 var target_value: Variant = null
 
@@ -48,6 +51,12 @@ func using(animation_or_name: Variant):
 		animation_node.set_duration(duration)
 	else:
 		push_warning("AnimatedAction.using(): Expected String or VNAnimationNode, got %s" % type_string(typeof(animation_or_name)))
+	return self
+
+
+## Builder method: Specifies which layers to animate
+func set_parameters(p_parameters: Dictionary):
+	parameters = p_parameters
 	return self
 
 
@@ -127,6 +136,9 @@ func _load_animation_from_repository(anim_name: String) -> VNAnimationNode:
 	
 	# Build context for animation loading
 	var context = {}
+	if not parameters.is_empty():
+		context["parameters"] = parameters
+
 	# TODO: Get scene_path and character_path from target if available
 	
 	# Load animation from repository

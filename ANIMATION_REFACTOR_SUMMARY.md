@@ -36,6 +36,8 @@ The animation and transformation system has been successfully refactored from a 
 8. **scripts/infra/animation/implementations/state_change_animation.gd** - Fade transitions
    - Fade out → change → fade in pattern
    - Configurable fade fraction
+   - Three target modes (WHOLE_NODE, INDIVIDUAL_LAYERS, SPECIFIC_LAYERS)
+   - WHOLE_NODE mode prevents body bleed-through on layered characters
    - Callback for state change at midpoint
 
 9. **scripts/infra/animation/implementations/shader_animation.gd** - Shader effects (placeholder)
@@ -195,6 +197,19 @@ None - the old animation system is deprecated but still functional. New code sho
 3. Use `.over()` and `.using()` for animation control
 4. Test thoroughly, especially state change transitions
 
+## Known Issues & Solutions
+
+### Layered Character Fade Bleed-Through
+
+**Problem**: When characters have multiple sprite layers (body + clothing), fading each layer independently causes the body to become visible through semi-transparent clothing during transitions.
+
+**Solution**: `StateChangeAnimation` now supports three target modes:
+- `WHOLE_NODE` (default): Fades the entire `sprite_container` as one unit - prevents bleed-through
+- `INDIVIDUAL_LAYERS`: Fades each layer independently - legacy behavior, causes bleed-through
+- `SPECIFIC_LAYERS`: Fades only specified layers by name
+
+The default `WHOLE_NODE` mode ensures layered characters fade correctly without revealing underlying layers.
+
 ## Notes
 
 - "in" is a GDScript reserved keyword, so we use `.over()` for duration
@@ -202,4 +217,5 @@ None - the old animation system is deprecated but still functional. New code sho
 - Animations are processed by actions, not by ResourceNodes
 - AnimationRepository must be registered as autoload singleton
 - Default animations are loaded lazily on first use
+- For layered characters, always use `target_mode: whole_node` in state change animations
 

@@ -60,7 +60,7 @@ func load_animation(name: String, context: Dictionary = {}) -> VNAnimationNode:
 	# Build cache key
 	var scene_path = context.get("scene_path", "")
 	var character_path = context.get("character_path", "")
-	var cache_key = "%s|%s|%s" % [scene_path, character_path, name]
+	var cache_key = "%s|%s|%s|%s" % [scene_path, character_path, name]
 	
 	# Check cache
 	if cache_key in _animation_cache:
@@ -73,7 +73,11 @@ func load_animation(name: String, context: Dictionary = {}) -> VNAnimationNode:
 	if anim_def.is_empty():
 		push_warning("AnimationRepository: Animation '%s' not found" % name)
 		return null
-	
+
+	if context.has("parameters"):
+		var params = context.get("parameters", {})
+		# Merge parameters with animation definition
+		anim_def.parameters = _merge_dicts(anim_def.parameters, params)
 	# Cache the definition
 	_animation_cache[cache_key] = anim_def
 	
@@ -225,7 +229,17 @@ func _create_transform_animation(duration: float, params: Dictionary) -> VNAnima
 func _create_state_change_animation(duration: float, params: Dictionary) -> VNAnimationNode:
 	var StateChangeAnimation = load("res://scripts/infra/animation/implementations/state_change_animation.gd")
 	var fade_fraction = params.get("fade_fraction", 0.3)
-	var anim = StateChangeAnimation.new(duration, fade_fraction)
+	
+	# Parse target mode
+	var target_mode_str = params.get("target_mode", "whole_node")
+	var target_mode = _parse_target_mode(target_mode_str)
+	
+	var anim = StateChangeAnimation.new(duration, fade_fraction, target_mode)
+	
+	# Set specific target layers if provided
+	if params.has("target_layers") and params.target_layers is Array:
+		anim.set_target_layers(params.target_layers)
+	
 	return anim
 
 
@@ -318,10 +332,24 @@ func _parse_video_type(video_type_str: String) -> int:
 			return VideoAnimation.VideoType.ANIMATED_TEXTURE
 
 
+## Parses target mode string to TargetMode enum
+func _parse_target_mode(target_mode_str: String) -> int:
+	var StateChangeAnimation = load("res://scripts/infra/animation/implementations/state_change_animation.gd")
+	
+	match target_mode_str.to_lower():
+		"whole_node":
+			return StateChangeAnimation.TargetMode.WHOLE_NODE
+		"individual_layers":
+			return StateChangeAnimation.TargetMode.INDIVIDUAL_LAYERS
+		"specific_layers":
+			return StateChangeAnimation.TargetMode.SPECIFIC_LAYERS
+		_:
+			return StateChangeAnimation.TargetMode.WHOLE_NODE
+
+
 ## Simple dictionary merge
 func _merge_dicts(base: Dictionary, override: Dictionary) -> Dictionary:
 	var result = base.duplicate(true)
 	for key in override:
 		result[key] = override[key]
 	return result
-

@@ -28,6 +28,10 @@ The VN engine uses a state-based architecture with a powerful animation system. 
 **StateChangeAnimation** - Fade out → change → fade in
 - Used for character state transitions
 - Configurable fade duration
+- Three target modes to prevent layer bleed-through:
+  - `WHOLE_NODE`: Fades entire sprite container (default, prevents body showing through clothes)
+  - `INDIVIDUAL_LAYERS`: Fades each layer independently
+  - `SPECIFIC_LAYERS`: Fades only specified layers
 - Ensures smooth visual transitions
 
 **ShaderAnimation** - Custom shader effects (placeholder)
@@ -145,15 +149,51 @@ defaults:
     duration: 0.3
     parameters:
       fade_fraction: 0.3
+      target_mode: whole_node  # Prevents body bleed-through
   
   pose:
     type: state_change
     duration: 0.4
+    parameters:
+      fade_fraction: 0.35
+      target_mode: whole_node
   
   wear:
     type: state_change
     duration: 0.5
+    parameters:
+      fade_fraction: 0.4
+      target_mode: whole_node
 ```
+
+### Layer Targeting Modes
+
+For layered characters (body + clothing sprites), control how fade animations apply:
+
+**Whole Node (Default)** - Recommended for state changes
+```yaml
+type: state_change
+parameters:
+  target_mode: whole_node  # Fades entire sprite_container as one unit
+```
+This prevents the body from becoming visible through semi-transparent clothing during fade transitions.
+
+**Individual Layers** - Each layer fades independently
+```yaml
+type: state_change
+parameters:
+  target_mode: individual_layers  # Each sprite layer fades separately
+```
+⚠️ Warning: This will cause body bleed-through if character has clothing layers.
+
+**Specific Layers** - Only fade certain layers
+```yaml
+type: state_change
+parameters:
+  target_mode: specific_layers
+  target_layers: ["body", "face"]  # Only fade these layers
+```
+Useful for effects like fading only the character's face expression while keeping the body solid.
 
 ### Priority Order
 

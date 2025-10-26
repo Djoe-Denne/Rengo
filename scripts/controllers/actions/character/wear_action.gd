@@ -10,7 +10,7 @@ func _init(p_actor: Actor, p_clothing_id: String) -> void:
 	super._init(p_actor)
 	actor = p_actor
 	clothing_id = p_clothing_id
-
+	parameters = {"target_layers": [p_clothing_id]}
 
 ## Get current outfit
 func _get_current_value() -> Variant:
@@ -49,6 +49,7 @@ func _create_default_animation() -> VNAnimationNode:
 	
 	# Set callback to change state at midpoint
 	anim.with_state_change(func(): _apply_value(target_value))
+	anim.set_target_layers(parameters.get("target_layers", []))
 	
 	return anim
 
