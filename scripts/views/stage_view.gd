@@ -57,6 +57,12 @@ func create_background_node(parent: Node) -> MeshInstance3D:
 	var fov = camera.get_fov()
 	var quad_size = Camera3DHelper.calculate_quad_size_at_distance(BACKGROUND_DISTANCE, fov, camera.ratio)
 	
+	# Apply overscan to account for camera movement (mouse control)
+	# Calculate separate overscan for width and height based on FOV coverage
+	var overscan_factors = _calculate_overscan_factors(quad_size, camera)
+	quad_size.x *= overscan_factors.x
+	quad_size.y *= overscan_factors.y
+	
 	# Create 3D quad mesh for background
 	background_sprite = MeshInstance3D.new()
 	background_sprite.name = "Background"
@@ -139,6 +145,11 @@ func _update_background_size() -> void:
 	var fov = camera.get_fov()
 	var quad_size = Camera3DHelper.calculate_quad_size_at_distance(BACKGROUND_DISTANCE, fov, camera.ratio)
 	
+	# Apply overscan to account for camera movement (mouse control)
+	var overscan_factors = _calculate_overscan_factors(quad_size, camera)
+	quad_size.x *= overscan_factors.x
+	quad_size.y *= overscan_factors.y
+	
 	# Update mesh size
 	if background_sprite.mesh is QuadMesh:
 		background_sprite.mesh.size = quad_size
@@ -147,3 +158,40 @@ func _update_background_size() -> void:
 	var camera_pos = camera.position
 	background_sprite.position = Vector3(camera_pos.x, camera_pos.y, camera_pos.z - BACKGROUND_DISTANCE)
 
+
+## Calculates the overscan factors for width and height based on VNCamera3D's maximum offset
+func _calculate_overscan_factors(quad_size: Vector2, camera: Camera) -> Vector2:
+	var default_overscan = Vector2(1.15, 1.15)
+	
+	if not vn_scene:
+		return default_overscan
+	
+	# Try to get the VNCamera3D from the scene
+	var camera_3d = vn_scene.get_node_or_null("ActingLayer/Camera3D")
+	if not camera_3d:
+		return default_overscan
+	
+	# Get the maximum camera offset (default is 30cm)
+	var max_offset = camera_3d.mouse_camera_max_offset if "mouse_camera_max_offset" in camera_3d else 30.0
+	
+	# Calculate how much extra background is needed based on camera movement
+	# When camera moves 30cm, the background at 1000cm appears to shift
+	# The shift amount relative to the visible frame size determines overscan needed
+	
+	# The visible frame size at the background distance is the quad_size
+	# Camera movement of max_offset means we need extra coverage of max_offset on each side
+	# But scaled by the perspective: movement at camera = movement * (distance_ratio) at background
+	
+	# Since both camera and background are considered, the actual shift at background plane
+	# relative to camera position is approximately: max_offset
+	var extra_coverage_needed = max_offset * 2.0  # Both directions
+	
+	# Calculate overscan as ratio of extra coverage to current coverage
+	var overscan_x = 1.0 + (extra_coverage_needed / quad_size.x)
+	var overscan_y = 1.0 + (extra_coverage_needed / quad_size.y)
+	
+	# Clamp to reasonable range (5% to 100% overscan)
+	overscan_x = clamp(overscan_x, 1.05, 2.0)
+	overscan_y = clamp(overscan_y, 1.05, 2.0)
+	
+	return Vector2(overscan_x, overscan_y)

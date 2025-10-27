@@ -24,8 +24,8 @@ var characters: Dictionary = {}
 ## Acting layer (where characters, backgrounds appear in 3D)
 @onready var acting_layer: Node3D = $ActingLayer
 
-## Camera3D for the 3D acting layer
-@onready var camera_3d: Camera3D = $ActingLayer/Camera3D
+## VNCamera3D for the 3D acting layer (handles camera model observation and mouse control)
+@onready var camera_3d: VNCamera3D = $ActingLayer/Camera3D
 
 ## Dialog layer (where dialog UI appears in 2D)
 @onready var dialog_layer: CanvasLayer = $DialogLayer
@@ -47,17 +47,14 @@ func _ready() -> void:
 	# Setup viewport resizing
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	
-	# Subscribe to scene model changes to update camera when plan changes
+	# Subscribe to scene model changes to handle plan changes
 	if scene_model:
 		scene_model.add_observer(_on_scene_changed)
 	
-	# Subscribe to camera model changes to update Camera3D
+	# Setup camera to observe the camera model
 	var camera = scene_model.get_current_camera() if scene_model else null
-	if camera:
-		camera.add_observer(_on_camera_changed)
-	
-	# Configure camera from scene model
-	_configure_camera()
+	if camera and camera_3d:
+		camera_3d.observe_camera(camera)
 	
 	# Create background sprite now that we're in the tree
 	if stage_view:
@@ -114,6 +111,12 @@ func is_finished() -> bool:
 	return controller.is_finished()
 
 
+## Enables or disables mouse camera control
+func set_mouse_camera_enabled(enabled: bool) -> void:
+	if camera_3d:
+		camera_3d.set_mouse_camera_enabled(enabled)
+
+
 ## Sets the scene model (called by SceneFactory)
 func set_scene_model(p_scene_model: Scene) -> void:
 	scene_model = p_scene_model
@@ -166,48 +169,12 @@ func cast(character_name: String) -> Actor:
 	return actor
 
 
-## Configures the 3D camera from the scene model
-func _configure_camera() -> void:
-	if not camera_3d or not scene_model:
-		return
-	
-	var camera = scene_model.get_current_camera()
-	if not camera:
-		push_warning("No camera found in scene model")
-		return
-	
-	# Set camera position (convert cm to Godot units - 1 unit = 1 cm)
-	camera_3d.position = camera.position
-	
-	# Set camera rotation (convert degrees to radians)
-	camera_3d.rotation = Camera3DHelper.rotation_to_radians(camera.rotation)
-	
-	# Set FOV from focal length
-	camera_3d.fov = camera.get_fov()
-	
-	# Set near and far clip planes (reasonable defaults for cm scale)
-	camera_3d.near = 1.0  # 1 cm
-	camera_3d.far = 1000000.0  # 100 meters
-	
-	# Make it the current camera
-	camera_3d.current = true
-
-
 ## Observer callback for scene model changes
 func _on_scene_changed(scene_state: Dictionary) -> void:
-	# Reconfigure camera when plan changes
-	_configure_camera()
-	
-	# Re-subscribe to the new camera if plan changed
-	if "current_plan_id" in scene_state:
+	# Update camera observation when plan changes
+	if "current_plan_id" in scene_state and camera_3d:
 		var camera = scene_model.get_current_camera() if scene_model else null
 		if camera:
-			camera.add_observer(_on_camera_changed)
-
-
-## Observer callback for camera model changes
-func _on_camera_changed(camera_state: Dictionary) -> void:
-	# Reconfigure Camera3D when camera model changes
-	_configure_camera()
+			camera_3d.observe_camera(camera)
 
 

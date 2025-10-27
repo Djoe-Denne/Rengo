@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bnr2nqo3ilfop"]
+[gd_scene load_steps=3 format=3 uid="uid://bnr2nqo3ilfop"]
 
 [ext_resource type="Script" path="res://scripts/views/vn_scene.gd" id="1_5r5qw"]
+[ext_resource type="Script" path="res://scripts/scenes/camera/vn_camera_3d.gd" id="2_camera"]
 
 [node name="VNScene" type="Node"]
 script = ExtResource("1_5r5qw")
@@ -8,6 +9,7 @@ script = ExtResource("1_5r5qw")
 [node name="ActingLayer" type="Node3D" parent="."]
 
 [node name="Camera3D" type="Camera3D" parent="ActingLayer"]
+script = ExtResource("2_camera")
 
 [node name="DialogLayer" type="CanvasLayer" parent="."]
 
