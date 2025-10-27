@@ -39,8 +39,14 @@ func _get_current_value() -> Variant:
 			return 0.0
 		TransformType.SCALE:
 			if target.scene_node and "scale" in target.scene_node:
-				return target.scene_node.scale
-			return Vector2.ONE
+				var scale_val = target.scene_node.scale
+				# Return appropriate type based on node type
+				if target.scene_node is Node3D:
+					return scale_val if scale_val is Vector3 else Vector3.ONE
+				else:
+					return scale_val if scale_val is Vector2 else Vector2.ONE
+			# Default based on likely node type
+			return Vector3.ONE if (target.scene_node and target.scene_node is Node3D) else Vector2.ONE
 	
 	return null
 
@@ -63,7 +69,14 @@ func _apply_value(value: Variant) -> void:
 		
 		TransformType.SCALE:
 			if target.scene_node and "scale" in target.scene_node:
-				target.scene_node.scale = value
+				# Convert Vector2 to Vector3 for Node3D
+				if target.scene_node is Node3D and value is Vector2:
+					target.scene_node.scale = Vector3(value.x, value.y, 1.0)
+				# Convert Vector3 to Vector2 for Node2D
+				elif target.scene_node is Node2D and value is Vector3:
+					target.scene_node.scale = Vector2(value.x, value.y)
+				else:
+					target.scene_node.scale = value
 
 
 ## Process action - override to get interpolated value from animation
@@ -95,4 +108,3 @@ func _process_action(delta: float) -> void:
 		_apply_value(target_value)
 		_is_complete = true
 		on_complete()
-

@@ -6,7 +6,7 @@ extends SceneObject
 ## Unique identifier for this resource
 var resource_name: String = ""
 
-## Normalized position (x, y in [0.0-1.0], z for depth)
+## Position in 3D space (x, y, z in centimeters)
 var position: Vector3 = Vector3.ZERO
 
 ## Whether this resource is currently visible
@@ -43,16 +43,11 @@ func create_scene_node(_parent: Node) -> Node:
 	return null
 
 
-## Updates the visual position based on normalized coordinates
+## Updates the visual position in 3D space
 func update_position() -> void:
-	if scene_node and vn_scene:
-		var screen_size = vn_scene.get_viewport().get_visible_rect().size
-		var pixel_pos = Vector2(position.x * screen_size.x, position.y * screen_size.y)
-		scene_node.position = pixel_pos
-		
-		# Handle z-depth for 3D nodes
-		if scene_node is Node3D:
-			scene_node.position.z = position.z
+	if scene_node and scene_node is Node3D:
+		# Position is already in centimeters, apply directly
+		scene_node.position = position
 
 
 ## Updates the visibility of the scene node

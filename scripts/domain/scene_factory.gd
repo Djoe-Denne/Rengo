@@ -14,6 +14,9 @@ static func create(scene_path: String) -> Node:
 		push_error("Failed to load scene config: %s" % scene_config_path)
 		return null
 	
+	# Process camera references - load camera definitions and merge with plan data
+	_process_camera_references(scene_config)
+	
 	# Process background image paths to be absolute
 	_process_background_paths(scene_config, scene_path)
 	
@@ -70,6 +73,42 @@ static func _create_director(scene_model: Scene, scene_path: String):
 	director.prepare(scene_path)
 	
 	return director
+
+
+## Processes camera references in plans - loads camera definitions and merges with plan-specific data
+static func _process_camera_references(scene_config: Dictionary) -> void:
+	if not "plans" in scene_config:
+		return
+	
+	for plan_config in scene_config.plans:
+		if not "camera" in plan_config:
+			continue
+		
+		var camera_config = plan_config.camera
+		
+		# Check if camera is a string reference
+		if camera_config is String:
+			var camera_name = camera_config
+			
+			# Load camera definition from common/cameras/
+			var camera_def = ResourceRepository.load_camera(camera_name)
+			if camera_def.is_empty():
+				push_error("Failed to load camera definition: %s" % camera_name)
+				continue
+			
+			# Replace the string with the loaded camera definition
+			plan_config.camera = camera_def.duplicate(true)
+		
+		# Now check for camera_position and camera_rotation at plan level
+		if "camera_position" in plan_config:
+			if not plan_config.camera is Dictionary:
+				plan_config.camera = {}
+			plan_config.camera.position = plan_config.camera_position
+		
+		if "camera_rotation" in plan_config:
+			if not plan_config.camera is Dictionary:
+				plan_config.camera = {}
+			plan_config.camera.rotation = plan_config.camera_rotation
 
 
 ## Processes background image paths to be absolute

@@ -1,10 +1,10 @@
 character:
-  display_name: "Other"
-  dialog_color: "#FF6B8E"
-  inner_dialog_color: "#FF6B8E88"
+  display_name: "Me"
+  dialog_color: "#6B8EFF"
+  inner_dialog_color: "#6B8EFF88"
   size_cm:
-    height: 165
-    width: 55
+    height: 170
+    width: 60
 
 defaults:
   orientation: "front"

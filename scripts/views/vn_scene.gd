@@ -1,7 +1,7 @@
 ## VNScene - Main container for visual novel scenes
 ## Pure view component - exposes models and manages rendering
 class_name VNScene
-extends Node2D
+extends Node
 
 var Actor = load("res://scripts/views/actor.gd")
 var Character = load("res://scripts/models/character.gd")
@@ -21,10 +21,13 @@ var stage_view: StageView = null
 ## Character models registry
 var characters: Dictionary = {}
 
-## Acting layer (where characters, backgrounds appear)
-@onready var acting_layer: Node2D = $ActingLayer
+## Acting layer (where characters, backgrounds appear in 3D)
+@onready var acting_layer: Node3D = $ActingLayer
 
-## Dialog layer (where dialog UI appears)
+## Camera3D for the 3D acting layer
+@onready var camera_3d: Camera3D = $ActingLayer/Camera3D
+
+## Dialog layer (where dialog UI appears in 2D)
 @onready var dialog_layer: CanvasLayer = $DialogLayer
 
 ## Expose scene model as 'scene' property for direct access
@@ -44,12 +47,19 @@ func _ready() -> void:
 	# Setup viewport resizing
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	
+	# Subscribe to scene model changes to update camera when plan changes
+	if scene_model:
+		scene_model.add_observer(_on_scene_changed)
+	
+	# Configure camera from scene model
+	_configure_camera()
+	
 	# Create background sprite now that we're in the tree
 	if stage_view:
 		stage_view.create_background_node(acting_layer)
 	
-	# Scale background to viewport
-	if stage_view:
+	# Scale background to viewport (for 2D, 3D doesn't need this)
+	if stage_view and scene_model and scene_model.scene_type != "theater":
 		stage_view.scale_to_viewport()
 
 
@@ -60,14 +70,9 @@ func _process(delta: float) -> void:
 
 ## Called when the viewport is resized
 func _on_viewport_resized() -> void:
-	# Update all resource positions
-	if controller:
-		for resource in controller.resources.values():
-			resource.update_position()
-	
-	# Re-scale background
-	if stage_view:
-		stage_view.scale_to_viewport()
+	# In 3D mode, we don't need to update positions on resize
+	# The camera handles the projection automatically
+	pass
 
 
 ## Adds a resource to the scene
@@ -154,5 +159,38 @@ func cast(character_name: String) -> Actor:
 	add_resource(actor)
 	
 	return actor
+
+
+## Configures the 3D camera from the scene model
+func _configure_camera() -> void:
+	if not camera_3d or not scene_model:
+		return
+	
+	var camera = scene_model.get_current_camera()
+	if not camera:
+		push_warning("No camera found in scene model")
+		return
+	
+	# Set camera position (convert cm to Godot units - 1 unit = 1 cm)
+	camera_3d.position = camera.position
+	
+	# Set camera rotation (convert degrees to radians)
+	camera_3d.rotation = Camera3DHelper.rotation_to_radians(camera.rotation)
+	
+	# Set FOV from focal length
+	camera_3d.fov = camera.get_fov()
+	
+	# Set near and far clip planes (reasonable defaults for cm scale)
+	camera_3d.near = 1.0  # 1 cm
+	camera_3d.far = 1000000.0  # 100 meters
+	
+	# Make it the current camera
+	camera_3d.current = true
+
+
+## Observer callback for scene model changes
+func _on_scene_changed(scene_state: Dictionary) -> void:
+	# Reconfigure camera when plan changes
+	_configure_camera()
 
 

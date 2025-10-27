@@ -2,10 +2,12 @@
 
 [ext_resource type="Script" path="res://scripts/views/vn_scene.gd" id="1_5r5qw"]
 
-[node name="VNScene" type="Node2D"]
+[node name="VNScene" type="Node"]
 script = ExtResource("1_5r5qw")
 
-[node name="ActingLayer" type="Node2D" parent="."]
+[node name="ActingLayer" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="ActingLayer"]
 
 [node name="DialogLayer" type="CanvasLayer" parent="."]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbk2cjcehcbvi"
-path="res://.godot/imported/sad.png-6ed3633e10c4602b20693cce75c6261a.ctex"
+uid="uid://ci0vbon3pwd05"
+path="res://.godot/imported/jeans.png-fc480524050dc9387ee983d93078c4c0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/faces/sad.png"
-dest_files=["res://.godot/imported/sad.png-6ed3633e10c4602b20693cce75c6261a.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/medium_shot/front/outfits/jeans.png"
+dest_files=["res://.godot/imported/jeans.png-fc480524050dc9387ee983d93078c4c0.ctex"]
 
 [params]
 

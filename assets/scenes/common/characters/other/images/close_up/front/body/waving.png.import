@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ctwuwreexpu44"
-path="res://.godot/imported/jeans.png-3edbcfc07b6da8dc4c02cba1017b0766.ctex"
+uid="uid://wu54c0drh08c"
+path="res://.godot/imported/waving.png-6e0def2becc654db4430a1910419ff94.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/outfits/jeans.png"
-dest_files=["res://.godot/imported/jeans.png-3edbcfc07b6da8dc4c02cba1017b0766.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/close_up/front/body/waving.png"
+dest_files=["res://.godot/imported/waving.png-6e0def2becc654db4430a1910419ff94.ctex"]
 
 [params]
 

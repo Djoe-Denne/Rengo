@@ -1,6 +1,5 @@
 wardrobe:
   - id: "casual"
-    layer: "outfit_top"
     tags: ["casual", "top"]
     excluding_tags: ["top"]
     variants:
@@ -9,12 +8,11 @@ wardrobe:
         default: true
       - image: "images/{plan}/{orientation}/outfits/casual_wave.png"
         orientations: ["front"]
-        tags: ["wave"]
+        tags: ["waving"]
     anchor: {x: 0, y: 0}
     z: 2
   
   - id: "chino"
-    layer: "outfit_bottom"
     tags: ["casual", "pants", "bottom"]
     excluding_tags: ["bottom"]
     variants:
@@ -25,7 +23,6 @@ wardrobe:
     z: 1
   
   - id: "jeans"
-    layer: "outfit_bottom"
     tags: ["casual", "pants", "bottom"]
     excluding_tags: ["bottom"]
     variants:

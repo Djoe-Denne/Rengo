@@ -1,5 +1,9 @@
 ## Helper class for normalized coordinate system
 ## Converts normalized [0.0-1.0] coordinates to screen pixels
+## 
+## DEPRECATED: This is no longer used for the 3D acting layer.
+## The acting layer now uses centimeter-based 3D coordinates.
+## This class is kept for potential 2D UI layer use.
 class_name NormalizedPosition
 extends RefCounted
 

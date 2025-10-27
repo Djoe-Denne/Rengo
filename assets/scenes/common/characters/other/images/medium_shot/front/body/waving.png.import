@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rh71v7pi80bu"
-path="res://.godot/imported/chino.png-6626ef3d2a7cf4501da8240508efd5bc.ctex"
+uid="uid://wu54c0drh08c"
+path="res://.godot/imported/waving.png-5cebabd57507048532a4f84ebee6031c.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/outfits/chino.png"
-dest_files=["res://.godot/imported/chino.png-6626ef3d2a7cf4501da8240508efd5bc.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/medium_shot/front/body/waving.png"
+dest_files=["res://.godot/imported/waving.png-5cebabd57507048532a4f84ebee6031c.ctex"]
 
 [params]
 

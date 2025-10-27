@@ -41,7 +41,7 @@ func instruct(actor, new_states: Dictionary = {}) -> void:
 
 ## Creates the sprite container with initial layer setup
 func _create_sprite_container(actor, current_states: Dictionary) -> void:
-	var container = Node2D.new()
+	var container = Node3D.new()
 	container.name = "Actor_" + actor.actor_name
 	actor.sprite_container = container
 	
@@ -54,28 +54,21 @@ func _create_sprite_container(actor, current_states: Dictionary) -> void:
 		push_warning("Default act not found for character: %s" % actor.actor_name)
 		return
 	
-	# Create sprite layers
+	# Get character size from metadata
+	var char_size = _get_character_size(actor)
+	
+	# Create mesh layers (3D quads)
 	var layer_names = act.get_layer_names(orientation)
 	for layer_name in layer_names:
 		var layer_data = act.get_layer_data(orientation, layer_name)
-		var sprite = Sprite2D.new()
-		sprite.name = layer_name
-		sprite.centered = true
+		var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_data)
 		
-		# Set z-index
-		sprite.z_index = layer_data.get("z", 0)
-		
-		# Set anchor offset
-		if "anchor" in layer_data:
-			var anchor = layer_data.anchor
-			sprite.offset = Vector2(anchor.get("x", 0), anchor.get("y", 0))
-		
-		container.add_child(sprite)
+		container.add_child(mesh_instance)
 		
 		# Store layer reference in actor
 		if not "layers" in actor:
 			actor.layers = {}
-		actor.layers[layer_name] = sprite
+		actor.layers[layer_name] = mesh_instance
 
 
 ## Updates all layers based on current states
@@ -135,11 +128,15 @@ func _update_layers(actor, act: Act, orientation: String, current_states: Dictio
 		if image_path != "":
 			var texture = _load_texture(actor, image_path)
 			if texture and layer_name in actor.layers:
-				actor.layers[layer_name].texture = texture
+				var mesh_instance = actor.layers[layer_name]
+				if mesh_instance is MeshInstance3D and mesh_instance.material_override:
+					mesh_instance.material_override.albedo_texture = texture
 		else:
-			# No texture found, hide this layer or use a placeholder
+			# No texture found, hide this layer
 			if layer_name in actor.layers:
-				actor.layers[layer_name].texture = null
+				var mesh_instance = actor.layers[layer_name]
+				if mesh_instance is MeshInstance3D and mesh_instance.material_override:
+					mesh_instance.material_override.albedo_texture = null
 
 
 ## Creates a new sprite layer dynamically (for clothing items)
@@ -147,24 +144,18 @@ func _create_layer_sprite(actor, layer_name: String, layer_data: Dictionary) -> 
 	if not actor.sprite_container:
 		return
 	
-	var sprite = Sprite2D.new()
-	sprite.name = layer_name
-	sprite.centered = true
+	# Get character size
+	var char_size = _get_character_size(actor)
 	
-	# Set z-index
-	sprite.z_index = layer_data.get("z", 1)
+	# Create 3D quad mesh
+	var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_data)
 	
-	# Set anchor offset
-	if "anchor" in layer_data:
-		var anchor = layer_data.anchor
-		sprite.offset = Vector2(anchor.get("x", 0), anchor.get("y", 0))
-	
-	actor.sprite_container.add_child(sprite)
+	actor.sprite_container.add_child(mesh_instance)
 	
 	# Store layer reference in actor
 	if not "layers" in actor:
 		actor.layers = {}
-	actor.layers[layer_name] = sprite
+	actor.layers[layer_name] = mesh_instance
 
 
 ## Determines which state key to use for a given layer
@@ -210,6 +201,54 @@ func _create_color_texture(color: Color, size: Vector2 = Vector2(150, 200)) -> T
 	var image = Image.create(int(size.x), int(size.y), false, Image.FORMAT_RGBA8)
 	image.fill(color)
 	return ImageTexture.create_from_image(image)
+
+
+## Gets the character size in centimeters from metadata
+func _get_character_size(actor) -> Vector2:
+	if not actor.character:
+		return Vector2(60, 170)  # Default size
+	
+	# Try to get size from character metadata
+	var metadata = actor.character.metadata
+	if metadata and "size_cm" in metadata:
+		var size_cm = metadata.size_cm
+		return Vector2(
+			size_cm.get("width", 60),
+			size_cm.get("height", 170)
+		)
+	
+	return Vector2(60, 170)  # Default size
+
+
+## Creates a 3D quad mesh for a character layer
+func _create_quad_mesh(layer_name: String, char_size: Vector2, layer_data: Dictionary) -> MeshInstance3D:
+	var mesh_instance = MeshInstance3D.new()
+	mesh_instance.name = layer_name
+	
+	# Create a quad mesh
+	var quad_mesh = QuadMesh.new()
+	quad_mesh.size = char_size  # Size in centimeters
+	mesh_instance.mesh = quad_mesh
+	
+	# Create material for the texture
+	var material = StandardMaterial3D.new()
+	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED  # Show both sides
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_FIXED_Y  # Always face camera
+	mesh_instance.material_override = material
+	
+	# Set z-offset for layering (convert z-index to position offset)
+	var z_index = layer_data.get("z", 0)
+	mesh_instance.position.z = z_index * 0.1  # Small offset to prevent z-fighting
+	
+	# Handle anchor offset
+	if "anchor" in layer_data:
+		var anchor = layer_data.anchor
+		mesh_instance.position.x += anchor.get("x", 0.0)
+		mesh_instance.position.y += anchor.get("y", 0.0)
+	
+	return mesh_instance
 
 
 ## Loads the wardrobe (panoplie.yaml) for a character

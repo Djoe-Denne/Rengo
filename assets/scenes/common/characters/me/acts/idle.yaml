@@ -11,6 +11,6 @@ variants:
           neutral: "images/{plan}/front/faces/neutral.png"
           happy: "images/{plan}/front/faces/happy.png"
           sad: "images/{plan}/front/faces/sad.png"
-        z: 4
+        z: 1
         anchor: {x: 0, y: -90}
 

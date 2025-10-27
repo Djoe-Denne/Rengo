@@ -8,29 +8,17 @@ stage:
 
 plans:
   - id: "medium_shot"
-    camera:
-      ratio: 1.777  # 16:9
-      focal:
-        min: 24
-        max: 200
-        default: 50
-      aperture: 2.8
-      shutter_speed: 50
-      sensor_size: "fullframe"  # or "micro43", "apsc", etc.
+    camera: "standard"  # Reference to common/cameras/standard.yaml
+    camera_position: [0, 85, 300]  # x, y, z in centimeters (eye level ~85cm from ground, 300cm from origin)
+    camera_rotation: [0, 0, 0]  # pitch, yaw, roll in degrees
     backgrounds:
       - id: "default"
         image: "backgrounds/middle_shot/bg.JPG"
   
   - id: "close_up"
-    camera:
-      ratio: 2.35  # Cinemascope
-      focal:
-        min: 85
-        max: 200
-        default: 135
-      aperture: 1.4
-      shutter_speed: 50
-      sensor_size: "fullframe"
+    camera: "cinemascope"  # Reference to common/cameras/cinemascope.yaml
+    camera_position: [-70, 55, 300]  # Closer and slightly higher
+    camera_rotation: [0, 0, 0]
     backgrounds:
       - id: "default"
         image: "backgrounds/close_up/bg.JPG"

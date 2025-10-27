@@ -15,6 +15,9 @@ var dialog_color: Color = Color.WHITE
 ## Color for inner thoughts/monologue
 var inner_dialog_color: Color = Color(1.0, 1.0, 1.0, 0.5)
 
+## Full metadata dictionary (includes size_cm, etc.)
+var metadata: Dictionary = {}
+
 ## Current visual states (pose, expression, orientation, etc.)
 var current_states: Dictionary = {}
 
@@ -106,15 +109,18 @@ func _notify_observers() -> void:
 
 
 ## Loads character metadata from YAML
-func load_metadata(metadata: Dictionary) -> void:
-	if "display_name" in metadata:
-		display_name = metadata.display_name
+func load_metadata(p_metadata: Dictionary) -> void:
+	# Store full metadata for access to all properties (like size_cm)
+	metadata = p_metadata
 	
-	if "dialog_color" in metadata:
-		dialog_color = Color(metadata.dialog_color)
+	if "display_name" in p_metadata:
+		display_name = p_metadata.display_name
 	
-	if "inner_dialog_color" in metadata:
-		inner_dialog_color = Color(metadata.inner_dialog_color)
+	if "dialog_color" in p_metadata:
+		dialog_color = Color(p_metadata.dialog_color)
+	
+	if "inner_dialog_color" in p_metadata:
+		inner_dialog_color = Color(p_metadata.inner_dialog_color)
 
 
 ## Applies default states from configuration

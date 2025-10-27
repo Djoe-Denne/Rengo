@@ -36,9 +36,9 @@ func execute() -> void:
 	if target.scene_node:
 		# Set initial alpha for fade-in
 		if fade_duration > 0:
-			target.scene_node.modulate.a = start_alpha
+			_set_alpha(target.scene_node, start_alpha)
 		else:
-			target.scene_node.modulate.a = 1.0
+			_set_alpha(target.scene_node, 1.0)
 			_is_complete = true
 		
 		target.update_visibility()
@@ -51,13 +51,26 @@ func _process_action(_delta: float) -> void:
 		return
 	
 	var progress = get_progress()
-	target.scene_node.modulate.a = lerp(start_alpha, 1.0, progress)
+	var alpha = lerp(start_alpha, 1.0, progress)
+	_set_alpha(target.scene_node, alpha)
 
 
 ## Ensure full opacity on completion
 func on_complete() -> void:
 	if target and target.scene_node:
-		target.scene_node.modulate.a = 1.0
+		_set_alpha(target.scene_node, 1.0)
+
+
+## Helper to set alpha on both 2D and 3D nodes
+func _set_alpha(node: Node, alpha: float) -> void:
+	if node is Node2D:
+		# 2D node - use modulate
+		node.modulate.a = alpha
+	elif node is Node3D:
+		# 3D node - set alpha on all MeshInstance3D children's materials
+		for child in node.get_children():
+			if child is MeshInstance3D and child.material_override:
+				child.material_override.albedo_color.a = alpha
 
 
 ## Builder method to set fade duration

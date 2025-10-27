@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://doqinujqmxpwi"
-path="res://.godot/imported/waving.png-b9fab25b1567dd2f1b59908610b56657.ctex"
+uid="uid://dd1vqrhma2dlc"
+path="res://.godot/imported/casual.png-3a695d02073f9e27826f106bd58c370e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/body/waving.png"
-dest_files=["res://.godot/imported/waving.png-b9fab25b1567dd2f1b59908610b56657.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/close_up/front/outfits/casual.png"
+dest_files=["res://.godot/imported/casual.png-3a695d02073f9e27826f106bd58c370e.ctex"]
 
 [params]
 

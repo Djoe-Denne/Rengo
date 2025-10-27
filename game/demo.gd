@@ -21,10 +21,10 @@ func _ready() -> void:
 	me_actor = vn_scene.cast("me")
 	other_actor = vn_scene.cast("other")
 	
-	# Position actors
-	var NormalizedPosition = load("res://scripts/infra/normalized_position.gd")
-	me_actor.position = NormalizedPosition.left_bottom(0.3, 0.2, 0.0)
-	other_actor.position = NormalizedPosition.right_bottom(0.2, 0.2, 0.0)
+	# Position actors in 3D space (x, y, z in centimeters)
+	# y=0 is ground level, x=0 is center, z=0 is at camera origin (positive z goes toward camera)
+	me_actor.position = Vector3(-80, 0, -500)   # 80cm to the left, on ground
+	other_actor.position = Vector3(80, 0, -500)  # 80cm to the right, on ground
 	
 	# Build the story action queue
 	_play_story()

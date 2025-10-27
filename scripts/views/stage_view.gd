@@ -3,14 +3,17 @@
 class_name StageView
 extends RefCounted
 
-## The actual background sprite in the scene
-var background_sprite: Sprite2D = null
+## The actual background mesh in the scene (3D)
+var background_sprite: MeshInstance3D = null
 
 ## Reference to the Scene model (for observing)
 var scene_model: Scene = null
 
 ## Reference to the parent VNScene node
 var vn_scene: Node = null
+
+## Distance of background from camera (in centimeters)
+const BACKGROUND_DISTANCE = 1000.0
 
 
 func _init() -> void:
@@ -27,8 +30,8 @@ func set_scene_model(p_scene_model: Scene, p_vn_scene: Node) -> void:
 		scene_model.add_observer(_on_scene_changed)
 
 
-## Creates the initial background sprite
-func create_background_node(parent: Node) -> Sprite2D:
+## Creates the initial background mesh (3D quad)
+func create_background_node(parent: Node) -> MeshInstance3D:
 	if not scene_model:
 		push_error("StageView: Scene model not set")
 		return null
@@ -44,101 +47,67 @@ func create_background_node(parent: Node) -> Sprite2D:
 		push_warning("StageView: No backgrounds in plan '%s'" % scene_model.current_plan_id)
 		return null
 	
-	# Create sprite
-	background_sprite = Sprite2D.new()
+	# Get camera for calculating background size
+	var camera = scene_model.get_current_camera()
+	if not camera:
+		push_error("StageView: No camera in scene model")
+		return null
+	
+	# Calculate the size needed to fill the frame at the background distance
+	var fov = camera.get_fov()
+	var quad_size = Camera3DHelper.calculate_quad_size_at_distance(BACKGROUND_DISTANCE, fov, camera.ratio)
+	
+	# Create 3D quad mesh for background
+	background_sprite = MeshInstance3D.new()
 	background_sprite.name = "Background"
-	background_sprite.centered = false
-	background_sprite.z_index = -100  # Backgrounds are behind everything
+	
+	var quad_mesh = QuadMesh.new()
+	quad_mesh.size = quad_size
+	background_sprite.mesh = quad_mesh
+	
+	# Create material
+	var material = StandardMaterial3D.new()
+	material.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
+	material.cull_mode = BaseMaterial3D.CULL_BACK
+	background_sprite.material_override = material
+	
+	# Position background behind the action (relative to camera position)
+	var camera_pos = camera.position
+	background_sprite.position = Vector3(camera_pos.x, camera_pos.y, camera_pos.z - BACKGROUND_DISTANCE)
 	
 	parent.add_child(background_sprite)
 	
-	# Set initial background
+	# Set initial background texture
 	update_background(bg_config)
-	
-	# Scale to viewport
-	if vn_scene and vn_scene.is_inside_tree():
-		scale_to_viewport()
 	
 	return background_sprite
 
 
 ## Updates the background texture based on configuration
 func update_background(bg_config: Dictionary) -> void:
-	if not background_sprite:
+	if not background_sprite or not background_sprite.material_override:
 		return
 	
 	# Set texture based on config
 	if "image" in bg_config:
 		var image_path = bg_config.image
 		if ResourceLoader.exists(image_path):
-			background_sprite.texture = load(image_path)
+			var texture = load(image_path)
+			background_sprite.material_override.albedo_texture = texture
 		else:
 			push_warning("StageView: Background image not found: %s" % image_path)
 	elif "color" in bg_config:
 		# Create colored background
 		var color_data = bg_config.color
 		var color = Color(color_data[0], color_data[1], color_data[2])
-		background_sprite.texture = _create_color_texture(color)
-	
-	# Re-scale after texture change
-	if vn_scene and vn_scene.is_inside_tree():
-		scale_to_viewport()
+		background_sprite.material_override.albedo_color = color
 
 
-## Scales the background to fill the viewport based on camera ratio and scaling mode
+## Scales the background (deprecated for 3D - camera handles projection)
 func scale_to_viewport() -> void:
-	if not background_sprite or not background_sprite.texture:
-		return
-	
-	if not vn_scene or not vn_scene.is_inside_tree():
-		return
-	
-	if not scene_model:
-		return
-	
-	var viewport_size = vn_scene.get_viewport().get_visible_rect().size
-	var texture_size = background_sprite.texture.get_size()
-	
-	# Get camera and scaling mode from scene model
-	var camera = scene_model.get_current_camera()
-	var scaling_mode = scene_model.stage.scaling_mode
-	
-	var target_ratio = camera.ratio if camera else (viewport_size.x / viewport_size.y)
-	
-	# Calculate scale based on scaling mode
-	var scale_x: float
-	var scale_y: float
-	
-	match scaling_mode:
-		"letterbox":
-			# Maintain aspect ratio, add letterboxing if needed
-			var viewport_ratio = viewport_size.x / viewport_size.y
-			if viewport_ratio > target_ratio:
-				# Viewport is wider, fit to height
-				scale_y = viewport_size.y / texture_size.y
-				scale_x = scale_y
-			else:
-				# Viewport is taller, fit to width
-				scale_x = viewport_size.x / texture_size.x
-				scale_y = scale_x
-		
-		"fit":
-			# Stretch to fill viewport while maintaining plan ratio
-			var target_height = viewport_size.x / target_ratio
-			scale_x = viewport_size.x / texture_size.x
-			scale_y = target_height / texture_size.y
-		
-		"stretch":
-			# Stretch to fill entire viewport (ignore ratio)
-			scale_x = viewport_size.x / texture_size.x
-			scale_y = viewport_size.y / texture_size.y
-		
-		_:
-			# Default to letterbox
-			scale_x = viewport_size.x / texture_size.x
-			scale_y = viewport_size.y / texture_size.y
-	
-	background_sprite.scale = Vector2(scale_x, scale_y)
+	# In 3D mode, the camera's perspective projection handles sizing
+	# No manual scaling needed
+	pass
 
 
 ## Observer callback - called when Scene model changes
@@ -146,17 +115,35 @@ func _on_scene_changed(scene_state: Dictionary) -> void:
 	if not scene_model:
 		return
 	
-	# Plan changed - update background
+	# Plan changed - update background and reposition/resize if needed
 	var plan = scene_model.get_current_plan()
 	if plan:
 		var bg_config = plan.get_default_background()
 		if not bg_config.is_empty():
 			update_background(bg_config)
+		
+		# Update background size for new camera FOV
+		_update_background_size()
 
 
-## Creates a simple colored texture
-func _create_color_texture(color: Color, size: Vector2 = Vector2(800, 600)) -> Texture2D:
-	var image = Image.create(int(size.x), int(size.y), false, Image.FORMAT_RGBA8)
-	image.fill(color)
-	return ImageTexture.create_from_image(image)
+## Updates background size based on current camera FOV
+func _update_background_size() -> void:
+	if not background_sprite or not scene_model:
+		return
+	
+	var camera = scene_model.get_current_camera()
+	if not camera:
+		return
+	
+	# Recalculate size for new FOV
+	var fov = camera.get_fov()
+	var quad_size = Camera3DHelper.calculate_quad_size_at_distance(BACKGROUND_DISTANCE, fov, camera.ratio)
+	
+	# Update mesh size
+	if background_sprite.mesh is QuadMesh:
+		background_sprite.mesh.size = quad_size
+	
+	# Update position relative to camera
+	var camera_pos = camera.position
+	background_sprite.position = Vector3(camera_pos.x, camera_pos.y, camera_pos.z - BACKGROUND_DISTANCE)
 

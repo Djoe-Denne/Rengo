@@ -86,9 +86,9 @@ func _store_original_alpha(target: Variant) -> void:
 		TargetMode.WHOLE_NODE:
 			# Store alpha of the entire sprite container
 			if "sprite_container" in target and target.sprite_container:
-				_original_alpha = target.sprite_container.modulate.a
+				_original_alpha = _get_alpha_from_node(target.sprite_container)
 			elif target.scene_node:
-				_original_alpha = target.scene_node.modulate.a
+				_original_alpha = _get_alpha_from_node(target.scene_node)
 			else:
 				_original_alpha = 1.0
 		
@@ -98,8 +98,8 @@ func _store_original_alpha(target: Variant) -> void:
 			if "layers" in target and target.layers is Dictionary:
 				for layer_name in target.layers:
 					var layer = target.layers[layer_name]
-					if layer and "modulate" in layer:
-						_original_alpha[layer_name] = layer.modulate.a
+					if layer:
+						_original_alpha[layer_name] = _get_alpha_from_node(layer)
 		
 		TargetMode.SPECIFIC_LAYERS:
 			# Store alpha of specified layers only
@@ -108,8 +108,8 @@ func _store_original_alpha(target: Variant) -> void:
 				for layer_name in target_layers:
 					if layer_name in target.layers:
 						var layer = target.layers[layer_name]
-						if layer and "modulate" in layer:
-							_original_alpha[layer_name] = layer.modulate.a
+						if layer:
+							_original_alpha[layer_name] = _get_alpha_from_node(layer)
 
 
 ## Apply alpha value based on target mode
@@ -118,17 +118,17 @@ func _apply_alpha(target: Variant, alpha: float) -> void:
 		TargetMode.WHOLE_NODE:
 			# Apply to entire sprite container (prevents layer bleed-through)
 			if "sprite_container" in target and target.sprite_container:
-				target.sprite_container.modulate.a = alpha
+				_set_alpha_on_node(target.sprite_container, alpha)
 			elif target.scene_node:
-				target.scene_node.modulate.a = alpha
+				_set_alpha_on_node(target.scene_node, alpha)
 		
 		TargetMode.INDIVIDUAL_LAYERS:
 			# Apply to each layer independently
 			if "layers" in target and target.layers is Dictionary:
 				for layer_name in target.layers:
 					var layer = target.layers[layer_name]
-					if layer and "modulate" in layer:
-						layer.modulate.a = alpha
+					if layer:
+						_set_alpha_on_node(layer, alpha)
 		
 		TargetMode.SPECIFIC_LAYERS:
 			# Apply only to specified layers
@@ -136,8 +136,8 @@ func _apply_alpha(target: Variant, alpha: float) -> void:
 				for layer_name in target_layers:
 					if layer_name in target.layers:
 						var layer = target.layers[layer_name]
-						if layer and "modulate" in layer:
-							layer.modulate.a = alpha
+						if layer:
+							_set_alpha_on_node(layer, alpha)
 
 
 ## Restore original alpha (called at end or when animation is interrupted)
@@ -146,9 +146,9 @@ func _restore_original_alpha(target: Variant) -> void:
 		TargetMode.WHOLE_NODE:
 			if _original_alpha is float:
 				if "sprite_container" in target and target.sprite_container:
-					target.sprite_container.modulate.a = _original_alpha
+					_set_alpha_on_node(target.sprite_container, _original_alpha)
 				elif target.scene_node:
-					target.scene_node.modulate.a = _original_alpha
+					_set_alpha_on_node(target.scene_node, _original_alpha)
 		
 		TargetMode.INDIVIDUAL_LAYERS, TargetMode.SPECIFIC_LAYERS:
 			if _original_alpha is Dictionary:
@@ -156,8 +156,8 @@ func _restore_original_alpha(target: Variant) -> void:
 					for layer_name in _original_alpha:
 						if layer_name in target.layers:
 							var layer = target.layers[layer_name]
-							if layer and "modulate" in layer:
-								layer.modulate.a = _original_alpha[layer_name]
+							if layer:
+								_set_alpha_on_node(layer, _original_alpha[layer_name])
 
 
 ## Builder method to set fade fraction
@@ -183,3 +183,37 @@ func set_target_layers(layers: Array) -> StateChangeAnimation:
 func with_state_change(callback: Callable) -> StateChangeAnimation:
 	state_change_callback = callback
 	return self
+
+
+## Helper to get alpha from both 2D and 3D nodes
+func _get_alpha_from_node(node: Node) -> float:
+	if node is Node2D:
+		return node.modulate.a if "modulate" in node else 1.0
+	elif node is MeshInstance3D:
+		if node.material_override:
+			return node.material_override.albedo_color.a
+		return 1.0
+	elif node is Node3D:
+		# For Node3D containers, check first child MeshInstance3D
+		for child in node.get_children():
+			if child is MeshInstance3D and child.material_override:
+				return child.material_override.albedo_color.a
+		return 1.0
+	return 1.0
+
+
+## Helper to set alpha on both 2D and 3D nodes
+func _set_alpha_on_node(node: Node, alpha: float) -> void:
+	if node is Node2D:
+		# 2D node - use modulate
+		if "modulate" in node:
+			node.modulate.a = alpha
+	elif node is MeshInstance3D:
+		# 3D mesh - set material alpha
+		if node.material_override:
+			node.material_override.albedo_color.a = alpha
+	elif node is Node3D:
+		# 3D container - set alpha on all MeshInstance3D children
+		for child in node.get_children():
+			if child is MeshInstance3D and child.material_override:
+				child.material_override.albedo_color.a = alpha

@@ -42,7 +42,8 @@ func _process_action(_delta: float) -> void:
 		return
 	
 	var progress = get_progress()
-	target.scene_node.modulate.a = lerp(1.0, end_alpha, progress)
+	var alpha = lerp(1.0, end_alpha, progress)
+	_set_alpha(target.scene_node, alpha)
 
 
 ## Hide the node on completion
@@ -50,8 +51,20 @@ func on_complete() -> void:
 	if target:
 		target.visible = false
 		if target.scene_node:
-			target.scene_node.modulate.a = end_alpha
+			_set_alpha(target.scene_node, end_alpha)
 		target.update_visibility()
+
+
+## Helper to set alpha on both 2D and 3D nodes
+func _set_alpha(node: Node, alpha: float) -> void:
+	if node is Node2D:
+		# 2D node - use modulate
+		node.modulate.a = alpha
+	elif node is Node3D:
+		# 3D node - set alpha on all MeshInstance3D children's materials
+		for child in node.get_children():
+			if child is MeshInstance3D and child.material_override:
+				child.material_override.albedo_color.a = alpha
 
 
 ## Builder method to set fade duration

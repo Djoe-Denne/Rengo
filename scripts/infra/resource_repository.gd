@@ -5,6 +5,7 @@ extends Node
 ## Base paths for resource resolution
 const COMMON_PATH = "res://assets/scenes/common/"
 const SCENES_PATH = "res://assets/scenes/"
+const CAMERAS_PATH = "res://assets/scenes/common/cameras/"
 
 
 ## Generates base directory array for a scene context
@@ -145,6 +146,25 @@ func _deep_merge(base: Dictionary, override: Dictionary) -> Dictionary:
 			result[key] = override[key]
 	
 	return result
+
+
+## Loads a camera definition from the common cameras directory
+## @param camera_name: Name of the camera (e.g., "standard", "cinemascope")
+## @return: Dictionary with camera data or empty dictionary on error
+func load_camera(camera_name: String) -> Dictionary:
+	var camera_path = CAMERAS_PATH + camera_name + ".yaml"
+	
+	if not FileAccess.file_exists(camera_path):
+		push_warning("Camera definition not found: %s" % camera_path)
+		return {}
+	
+	var data = _load_yaml_file(camera_path)
+	
+	# Return the camera data directly (should have a "camera" key)
+	if "camera" in data:
+		return data.camera
+	
+	return data
 
 
 ## Loads all YAML files from a directory

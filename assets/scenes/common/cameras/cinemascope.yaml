@@ -1,0 +1,10 @@
+camera:
+  ratio: 2.35  # Cinemascope
+  focal:
+    min: 85
+    max: 200
+    default: 135
+  aperture: 1.4
+  shutter_speed: 50
+  sensor_size: "fullframe"
+

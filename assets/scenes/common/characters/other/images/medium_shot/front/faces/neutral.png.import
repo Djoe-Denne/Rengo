@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fpgmmdttr6gh"
-path="res://.godot/imported/neutral.png-15b2ac9a9059e597c21f555a542b8f1f.ctex"
+uid="uid://qdaab45ap3pj"
+path="res://.godot/imported/neutral.png-715419f0df6ac22ddc529722436aee11.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/faces/neutral.png"
-dest_files=["res://.godot/imported/neutral.png-15b2ac9a9059e597c21f555a542b8f1f.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/medium_shot/front/faces/neutral.png"
+dest_files=["res://.godot/imported/neutral.png-715419f0df6ac22ddc529722436aee11.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfxdd4i18avp7"
-path="res://.godot/imported/waving_bedhair.png-18787608144d03f5da006882881ce868.ctex"
+uid="uid://qdaab45ap3pj"
+path="res://.godot/imported/neutral.png-80e8f7831cb8107fbdbd91c0394f3641.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/other/images/front/body/waving_bedhair.png"
-dest_files=["res://.godot/imported/waving_bedhair.png-18787608144d03f5da006882881ce868.ctex"]
+source_file="res://assets/scenes/common/characters/other/images/close_up/front/faces/neutral.png"
+dest_files=["res://.godot/imported/neutral.png-80e8f7831cb8107fbdbd91c0394f3641.ctex"]
 
 [params]
 

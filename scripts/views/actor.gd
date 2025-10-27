@@ -8,10 +8,10 @@ var actor_name: String = ""
 ## Reference to the Character model (data/state holder)
 var character: Character = null
 
-## The container node that holds all sprite layers
-var sprite_container: Node2D = null
+## The container node that holds all mesh layers (3D)
+var sprite_container: Node3D = null
 
-## Dictionary of sprite layers { layer_name: Sprite2D }
+## Dictionary of mesh layers { layer_name: MeshInstance3D }
 var layers: Dictionary = {}
 
 ## Reference to the director managing this actor

@@ -20,6 +20,12 @@ var shutter_speed: float = 50.0
 ## Sensor size identifier (e.g., "fullframe", "micro43", "apsc")
 var sensor_size: String = "fullframe"
 
+## Camera position in centimeters (3D world space)
+var position: Vector3 = Vector3.ZERO
+
+## Camera rotation in degrees (pitch, yaw, roll)
+var rotation: Vector3 = Vector3.ZERO
+
 
 func _init(p_ratio: float = 1.777) -> void:
 	ratio = p_ratio
@@ -40,6 +46,30 @@ static func from_dict(config: Dictionary) -> Camera:
 	camera.shutter_speed = config.get("shutter_speed", 50.0)
 	camera.sensor_size = config.get("sensor_size", "fullframe")
 	
+	# Parse position (in centimeters)
+	if "position" in config:
+		var pos = config.position
+		if pos is Array and pos.size() >= 3:
+			camera.position = Vector3(pos[0], pos[1], pos[2])
+		elif pos is Dictionary:
+			camera.position = Vector3(
+				pos.get("x", 0.0),
+				pos.get("y", 0.0),
+				pos.get("z", 0.0)
+			)
+	
+	# Parse rotation (in degrees)
+	if "rotation" in config:
+		var rot = config.rotation
+		if rot is Array and rot.size() >= 3:
+			camera.rotation = Vector3(rot[0], rot[1], rot[2])
+		elif rot is Dictionary:
+			camera.rotation = Vector3(
+				rot.get("pitch", 0.0),
+				rot.get("yaw", 0.0),
+				rot.get("roll", 0.0)
+			)
+	
 	return camera
 
 
@@ -54,6 +84,26 @@ func to_dict() -> Dictionary:
 		},
 		"aperture": aperture,
 		"shutter_speed": shutter_speed,
-		"sensor_size": sensor_size
+		"sensor_size": sensor_size,
+		"position": {
+			"x": position.x,
+			"y": position.y,
+			"z": position.z
+		},
+		"rotation": {
+			"pitch": rotation.x,
+			"yaw": rotation.y,
+			"roll": rotation.z
+		}
 	}
+
+
+## Calculates the current FOV based on focal length and sensor size
+func get_fov() -> float:
+	return Camera3DHelper.calculate_fov(focal_default, sensor_size, ratio)
+
+
+## Gets the FOV range based on min/max focal lengths
+func get_fov_range() -> Dictionary:
+	return Camera3DHelper.focal_range_to_fov_range(focal_min, focal_max, sensor_size, ratio)
 
