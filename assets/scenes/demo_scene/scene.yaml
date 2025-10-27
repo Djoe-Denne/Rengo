@@ -19,7 +19,7 @@ plans:
       sensor_size: "fullframe"  # or "micro43", "apsc", etc.
     backgrounds:
       - id: "default"
-        color: [0.2, 0.2, 0.3]
+        image: "backgrounds/middle_shot/bg.JPG"
   
   - id: "close_up"
     camera:
@@ -33,7 +33,7 @@ plans:
       sensor_size: "fullframe"
     backgrounds:
       - id: "default"
-        color: [0.2, 0.2, 0.3]
+        image: "backgrounds/close_up/bg.JPG"
 
 cast:
   available: ["me", "other"]
