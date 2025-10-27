@@ -1,5 +1,6 @@
 ## Camera - Pure data model for camera configuration
 ## Holds camera parameters for cinematic rendering
+## Notifies observers when camera properties change
 class_name Camera
 extends RefCounted
 
@@ -25,6 +26,9 @@ var position: Vector3 = Vector3.ZERO
 
 ## Camera rotation in degrees (pitch, yaw, roll)
 var rotation: Vector3 = Vector3.ZERO
+
+## List of observers (Callables) watching this camera
+var _observers: Array = []
 
 
 func _init(p_ratio: float = 1.777) -> void:
@@ -106,4 +110,59 @@ func get_fov() -> float:
 ## Gets the FOV range based on min/max focal lengths
 func get_fov_range() -> Dictionary:
 	return Camera3DHelper.focal_range_to_fov_range(focal_min, focal_max, sensor_size, ratio)
+
+
+## Adds an observer to be notified of camera changes
+func add_observer(observer: Callable) -> void:
+	if not _observers.has(observer):
+		_observers.append(observer)
+
+
+## Removes an observer
+func remove_observer(observer: Callable) -> void:
+	var idx = _observers.find(observer)
+	if idx >= 0:
+		_observers.remove_at(idx)
+
+
+## Notifies all observers of camera changes
+func _notify_observers() -> void:
+	var camera_state = {
+		"position": position,
+		"rotation": rotation,
+		"focal_default": focal_default,
+		"ratio": ratio
+	}
+	
+	for observer in _observers:
+		if observer.is_valid():
+			observer.call(camera_state)
+
+
+## Sets camera position and notifies observers
+func set_position(new_position: Vector3) -> void:
+	if position != new_position:
+		position = new_position
+		_notify_observers()
+
+
+## Sets camera rotation and notifies observers
+func set_rotation(new_rotation: Vector3) -> void:
+	if rotation != new_rotation:
+		rotation = new_rotation
+		_notify_observers()
+
+
+## Sets focal length and notifies observers
+func set_focal_default(new_focal: float) -> void:
+	if focal_default != new_focal:
+		focal_default = new_focal
+		_notify_observers()
+
+
+## Sets aspect ratio and notifies observers
+func set_ratio(new_ratio: float) -> void:
+	if ratio != new_ratio:
+		ratio = new_ratio
+		_notify_observers()
 

@@ -51,6 +51,11 @@ func _ready() -> void:
 	if scene_model:
 		scene_model.add_observer(_on_scene_changed)
 	
+	# Subscribe to camera model changes to update Camera3D
+	var camera = scene_model.get_current_camera() if scene_model else null
+	if camera:
+		camera.add_observer(_on_camera_changed)
+	
 	# Configure camera from scene model
 	_configure_camera()
 	
@@ -191,6 +196,18 @@ func _configure_camera() -> void:
 ## Observer callback for scene model changes
 func _on_scene_changed(scene_state: Dictionary) -> void:
 	# Reconfigure camera when plan changes
+	_configure_camera()
+	
+	# Re-subscribe to the new camera if plan changed
+	if "current_plan_id" in scene_state:
+		var camera = scene_model.get_current_camera() if scene_model else null
+		if camera:
+			camera.add_observer(_on_camera_changed)
+
+
+## Observer callback for camera model changes
+func _on_camera_changed(camera_state: Dictionary) -> void:
+	# Reconfigure Camera3D when camera model changes
 	_configure_camera()
 
 

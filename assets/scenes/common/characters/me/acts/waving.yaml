@@ -12,5 +12,5 @@ variants:
           happy: "images/{plan}/front/faces/happy.png"
           sad: "images/{plan}/front/faces/sad.png"
         z: 1
-        anchor: {x: 0, y: -90}
+        anchor: {x: 0, y: 90}
 

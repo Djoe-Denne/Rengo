@@ -131,6 +131,19 @@ func _update_layers(actor, act: Act, orientation: String, current_states: Dictio
 				var mesh_instance = actor.layers[layer_name]
 				if mesh_instance is MeshInstance3D and mesh_instance.material_override:
 					mesh_instance.material_override.albedo_texture = texture
+					
+					# Calculate quad size based on texture dimensions
+					var char_size = _get_character_size(actor)
+					var layer_size = _calculate_layer_size(texture, char_size, layer_name, actor)
+					if mesh_instance.mesh is QuadMesh:
+						mesh_instance.mesh.size = layer_size
+					
+					# Apply scaled anchor offset
+					if mesh_instance.has_meta("anchor_offset"):
+						var anchor = mesh_instance.get_meta("anchor_offset")
+						var pixels_per_cm = texture.get_size().y / layer_size.y
+						mesh_instance.position.x = anchor.get("x", 0.0) / pixels_per_cm
+						mesh_instance.position.y = anchor.get("y", 0.0) / pixels_per_cm
 		else:
 			# No texture found, hide this layer
 			if layer_name in actor.layers:
@@ -225,9 +238,9 @@ func _create_quad_mesh(layer_name: String, char_size: Vector2, layer_data: Dicti
 	var mesh_instance = MeshInstance3D.new()
 	mesh_instance.name = layer_name
 	
-	# Create a quad mesh
+	# Create a quad mesh with default size (will be updated when texture loads)
 	var quad_mesh = QuadMesh.new()
-	quad_mesh.size = char_size  # Size in centimeters
+	quad_mesh.size = char_size  # Initial size, will be recalculated based on texture
 	mesh_instance.mesh = quad_mesh
 	
 	# Create material for the texture
@@ -242,13 +255,46 @@ func _create_quad_mesh(layer_name: String, char_size: Vector2, layer_data: Dicti
 	var z_index = layer_data.get("z", 0)
 	mesh_instance.position.z = z_index * 0.1  # Small offset to prevent z-fighting
 	
-	# Handle anchor offset
+	# Store anchor data for later scaling (will be applied after texture loads)
 	if "anchor" in layer_data:
-		var anchor = layer_data.anchor
-		mesh_instance.position.x += anchor.get("x", 0.0)
-		mesh_instance.position.y += anchor.get("y", 0.0)
+		mesh_instance.set_meta("anchor_offset", layer_data.anchor)
 	
 	return mesh_instance
+
+
+## Calculates the appropriate quad size for a layer based on its texture dimensions
+## Uses the character size as reference for the body layer, and maintains pixel-to-cm ratio
+func _calculate_layer_size(texture: Texture2D, char_size: Vector2, layer_name: String, actor) -> Vector2:
+	if not texture:
+		return char_size
+	
+	var texture_size = texture.get_size()
+	
+	# Establish pixel-to-cm ratio from body texture
+	var pixels_per_cm: float
+	
+	if layer_name == "body":
+		# Body layer defines the reference ratio
+		# Assume body texture height matches character height
+		pixels_per_cm = texture_size.y / char_size.y
+		# Store for use by other layers
+		if actor and actor.sprite_container:
+			actor.sprite_container.set_meta("pixels_per_cm", pixels_per_cm)
+		return char_size
+	else:
+		# Other layers use the stored ratio from body
+		if actor and actor.sprite_container and actor.sprite_container.has_meta("pixels_per_cm"):
+			pixels_per_cm = actor.sprite_container.get_meta("pixels_per_cm")
+		else:
+			# Fallback: estimate from texture size / char size
+			# This shouldn't normally happen if body is loaded first
+			pixels_per_cm = texture_size.y / char_size.y
+	
+	# Calculate layer size maintaining texture aspect ratio
+	var layer_width = texture_size.x / pixels_per_cm
+	var layer_height = texture_size.y / pixels_per_cm
+	
+	return Vector2(layer_width, layer_height)
 
 
 ## Loads the wardrobe (panoplie.yaml) for a character
