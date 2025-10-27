@@ -26,8 +26,10 @@ func _ready() -> void:
 	me_actor.position = NormalizedPosition.left_bottom(0.3, 0.2, 0.0)
 	other_actor.position = NormalizedPosition.right_bottom(0.2, 0.2, 0.0)
 	
-	# Play the story
+	# Build the story action queue
 	_play_story()
+	
+	# Start playing the scene
 	vn_scene.play()
 
 
@@ -79,16 +81,23 @@ func _play_story() -> void:
 	other_actor.scale().down(1.2).over(0.3)  # Scale back down
 	other_actor.say("Looking good!")
 	
-	# Scene 10: Both wave happily
+	# Scene 10: Switch to close-up plan (cinematic ratio)
+	vn_scene.change_plan("close_up")
+	me_actor.say("Wait, let me show you something...")
+	
+	# Scene 11: Both wave happily
 	me_actor.pose("waving").over(0.3)
 	me_actor.express("happy")
 	me_actor.say("Thanks for stopping by!")
 	
 	other_actor.say("See you later!")
 	
-	# Scene 11: Other leaves with smooth animation
+	# Scene 12: Switch back to medium shot
+	vn_scene.change_plan("medium_shot")
+	
+	# Scene 13: Other leaves with smooth animation
 	other_actor.move().right(0.3).over(1.0).using("smooth")
 	
-	# Scene 12: Return to idle
+	# Scene 14: Return to idle
 	me_actor.pose("idle")
 	me_actor.express("neutral")

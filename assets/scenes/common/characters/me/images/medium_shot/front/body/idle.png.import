@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dd1vqrhma2dlc"
-path="res://.godot/imported/casual.png-d08baf5616d302bb32de43d7542466aa.ctex"
+uid="uid://bfsbic52r8ae1"
+path="res://.godot/imported/idle.png-8c5fda55d3af7bb1e74b2050c8621bc4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/front/outfits/casual.png"
-dest_files=["res://.godot/imported/casual.png-d08baf5616d302bb32de43d7542466aa.ctex"]
+source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/body/idle.png"
+dest_files=["res://.godot/imported/idle.png-8c5fda55d3af7bb1e74b2050c8621bc4.ctex"]
 
 [params]
 

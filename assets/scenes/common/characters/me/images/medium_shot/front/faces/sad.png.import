@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwwy8fjpgl3uj"
-path="res://.godot/imported/casual_wave.png-8e79789db5591a74ebcbf49655761ce4.ctex"
+uid="uid://cpn10lpa2vnh3"
+path="res://.godot/imported/sad.png-95d3d6fc08b353b0c45ef1e499f80486.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/front/outfits/casual_wave.png"
-dest_files=["res://.godot/imported/casual_wave.png-8e79789db5591a74ebcbf49655761ce4.ctex"]
+source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/faces/sad.png"
+dest_files=["res://.godot/imported/sad.png-95d3d6fc08b353b0c45ef1e499f80486.ctex"]
 
 [params]
 

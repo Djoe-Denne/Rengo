@@ -183,4 +183,3 @@ func set_target_layers(layers: Array) -> StateChangeAnimation:
 func with_state_change(callback: Callable) -> StateChangeAnimation:
 	state_change_callback = callback
 	return self
-

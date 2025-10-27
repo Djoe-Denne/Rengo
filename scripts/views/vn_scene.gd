@@ -1,5 +1,5 @@
 ## VNScene - Main container for visual novel scenes
-## Manages the two-layer rendering system (Acting + Dialog)
+## Pure view component - exposes models and manages rendering
 class_name VNScene
 extends Node2D
 
@@ -12,8 +12,11 @@ var controller = null  # VNSceneController
 ## The actor director (Theater or Movie mode)
 var director = null  # ActorDirector
 
-## The stage (manages backgrounds)
-var stage = null  # Stage
+## The scene model (contains all scene state)
+var scene_model: Scene = null
+
+## The stage view (renders backgrounds)
+var stage_view: StageView = null
 
 ## Character models registry
 var characters: Dictionary = {}
@@ -24,18 +27,30 @@ var characters: Dictionary = {}
 ## Dialog layer (where dialog UI appears)
 @onready var dialog_layer: CanvasLayer = $DialogLayer
 
+## Expose scene model as 'scene' property for direct access
+var scene: Scene:
+	get: return scene_model
+
 
 func _ready() -> void:
 	# Initialize the controller
 	var VNSceneController = load("res://scripts/controllers/vn_scene_controller.gd")
 	controller = VNSceneController.new(self)
 	
+	# Pass scene model to controller
+	if scene_model:
+		controller.set_scene_model(scene_model)
+	
 	# Setup viewport resizing
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	
-	# Scale background now that we're in the tree
-	if stage:
-		stage.scale_background_to_viewport()
+	# Create background sprite now that we're in the tree
+	if stage_view:
+		stage_view.create_background_node(acting_layer)
+	
+	# Scale background to viewport
+	if stage_view:
+		stage_view.scale_to_viewport()
 
 
 func _process(delta: float) -> void:
@@ -49,6 +64,10 @@ func _on_viewport_resized() -> void:
 	if controller:
 		for resource in controller.resources.values():
 			resource.update_position()
+	
+	# Re-scale background
+	if stage_view:
+		stage_view.scale_to_viewport()
 
 
 ## Adds a resource to the scene
@@ -59,6 +78,15 @@ func add_resource(resource) -> void:  # ResourceNode
 ## Gets a resource by name
 func get_resource(res_name: String):  # -> ResourceNode
 	return controller.get_resource(res_name)
+
+
+## Changes the cinematic plan (queues as action)
+## Returns the action for optional chaining
+func change_plan(plan_id: String):
+	var ChangePlanAction = load("res://scripts/controllers/actions/common/change_plan_action.gd")
+	var action = ChangePlanAction.new(scene_model, plan_id)
+	controller.action(action)
+	return action
 
 
 ## Starts playing the scene
@@ -76,16 +104,19 @@ func is_finished() -> bool:
 	return controller.is_finished()
 
 
+## Sets the scene model (called by SceneFactory)
+func set_scene_model(p_scene_model: Scene) -> void:
+	scene_model = p_scene_model
+
+
 ## Sets the director for this scene (called by SceneFactory)
 func set_director(p_director) -> void:
 	director = p_director
 
 
-## Sets the stage for this scene (called by SceneFactory)
-func set_stage(p_stage) -> void:
-	stage = p_stage
-	if stage:
-		stage.vn_scene = self
+## Sets the stage view for this scene (called by SceneFactory)
+func set_stage_view(p_stage_view: StageView) -> void:
+	stage_view = p_stage_view
 
 
 ## Casts a character as an actor in this scene
@@ -125,7 +156,3 @@ func cast(character_name: String) -> Actor:
 	return actor
 
 
-## Changes the background
-func set_background(bg_id: String) -> void:
-	if stage:
-		stage.set_background(bg_id)

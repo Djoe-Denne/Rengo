@@ -90,8 +90,13 @@ func _update_layers(actor, act: Act, orientation: String, current_states: Dictio
 	# Get clothing layers from Costumier and merge them
 	var costumier = get_costumier(actor.actor_name)
 	if costumier and actor.character:
+		# Add plan to states for template substitution
+		var states_with_plan = current_states.duplicate()
+		if scene_model:
+			states_with_plan["plan"] = scene_model.current_plan_id
+		
 		# Pass character's panoplie (current outfit items) and states
-		var clothing_layers = costumier.get_layers(actor.character.panoplie, current_states)
+		var clothing_layers = costumier.get_layers(actor.character.panoplie, states_with_plan)
 		# Merge clothing layers into layers_data
 		for layer_name in clothing_layers.keys():
 			layers_data[layer_name] = clothing_layers[layer_name]
@@ -180,6 +185,11 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 	if image_path.begins_with("#"):
 		return _create_color_texture(Color(image_path))
 	
+	# Replace {plan} placeholder with current plan from scene model
+	if "{plan}" in image_path:
+		var plan_id = scene_model.current_plan_id if scene_model else ""
+		image_path = image_path.replace("{plan}", plan_id)
+	
 	# Get base directories for this character
 	var base_dirs = get_character_base_dirs(actor.actor_name)
 	
@@ -188,7 +198,8 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 	
 	if not texture:
 		# Create colored placeholder if image not found
-		push_warning("Texture not found: %s (character: %s)" % [image_path, actor.actor_name])
+		var plan_id = scene_model.current_plan_id if scene_model else "unknown"
+		push_warning("Texture not found: %s (character: %s, plan: %s)" % [image_path, actor.actor_name, plan_id])
 		return _create_color_texture(Color(1.0, 0.0, 1.0))  # Magenta placeholder
 	
 	return texture

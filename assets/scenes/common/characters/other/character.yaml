@@ -2,6 +2,9 @@ character:
   display_name: "Other"
   dialog_color: "#FF6B8E"
   inner_dialog_color: "#FF6B8E88"
+  size_cm:
+    height: 165
+    width: 55
 
 defaults:
   orientation: "front"

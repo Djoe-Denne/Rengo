@@ -3,11 +3,37 @@ scene:
   type: "theater"
 
 stage:
-  default_background: "default"
+  default_plan: "medium_shot"
+  scaling_mode: "letterbox"  # or "fit", "stretch"
 
-backgrounds:
-  - id: "default"
-    color: [0.2, 0.2, 0.3]
+plans:
+  - id: "medium_shot"
+    camera:
+      ratio: 1.777  # 16:9
+      focal:
+        min: 24
+        max: 200
+        default: 50
+      aperture: 2.8
+      shutter_speed: 50
+      sensor_size: "fullframe"  # or "micro43", "apsc", etc.
+    backgrounds:
+      - id: "default"
+        color: [0.2, 0.2, 0.3]
+  
+  - id: "close_up"
+    camera:
+      ratio: 2.35  # Cinemascope
+      focal:
+        min: 85
+        max: 200
+        default: 135
+      aperture: 1.4
+      shutter_speed: 50
+      sensor_size: "fullframe"
+    backgrounds:
+      - id: "default"
+        color: [0.2, 0.2, 0.3]
 
 cast:
   available: ["me", "other"]

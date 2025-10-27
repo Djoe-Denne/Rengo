@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cpn10lpa2vnh3"
-path="res://.godot/imported/sad.png-8a3faf1b0a3214f9e3e14d4de3941c48.ctex"
+uid="uid://dd1vqrhma2dlc"
+path="res://.godot/imported/casual.png-b5d15d8aea69af8283d3dabbcddcf9c5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/front/faces/sad.png"
-dest_files=["res://.godot/imported/sad.png-8a3faf1b0a3214f9e3e14d4de3941c48.ctex"]
+source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/outfits/casual.png"
+dest_files=["res://.godot/imported/casual.png-b5d15d8aea69af8283d3dabbcddcf9c5.ctex"]
 
 [params]
 

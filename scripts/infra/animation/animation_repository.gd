@@ -69,7 +69,7 @@ func load_animation(name: String, context: Dictionary = {}) -> VNAnimationNode:
 	# Build cache key
 	var scene_path = context.get("scene_path", "")
 	var character_path = context.get("character_path", "")
-	var cache_key = "%s|%s|%s|%s" % [scene_path, character_path, name]
+	var cache_key = "%s|%s|%s" % [scene_path, character_path, name]
 	
 	# Check cache
 	if cache_key in _animation_cache:

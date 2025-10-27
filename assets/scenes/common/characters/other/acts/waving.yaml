@@ -3,14 +3,14 @@ variants:
     layers:
       body:
         images:
-          default: "images/front/body/waving.png"
-          bedhair: "images/front/body/waving_bedhair.png"
+          default: "images/{plan}/front/body/waving.png"
+          bedhair: "images/{plan}/front/body/waving_bedhair.png"
         z: 0
       face:
         images:
-          neutral: "images/front/faces/neutral.png"
-          happy: "images/front/faces/happy.png"
-          sad: "images/front/faces/sad.png"
+          neutral: "images/{plan}/front/faces/neutral.png"
+          happy: "images/{plan}/front/faces/happy.png"
+          sad: "images/{plan}/front/faces/sad.png"
         z: 4
         anchor: {x: 0, y: -90}
 

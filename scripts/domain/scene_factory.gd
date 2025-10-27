@@ -14,38 +14,46 @@ static func create(scene_path: String) -> Node:
 		push_error("Failed to load scene config: %s" % scene_config_path)
 		return null
 	
+	# Process background image paths to be absolute
+	_process_background_paths(scene_config, scene_path)
+	
+	# Create Scene model from configuration
+	var scene_model = Scene.from_dict(scene_path, scene_config)
+	
 	# Create director based on scene type
-	var director = _create_director(scene_config, scene_path)
+	var director = _create_director(scene_model, scene_path)
 	if not director:
 		push_error("Failed to create director for scene: %s" % scene_path)
 		return null
 	
-	# Create stage
-	var stage = _create_stage(scene_config, scene_path)
+	# Create StageView
+	var stage_view = StageView.new()
 	
 	# Load and instantiate VNScene
 	var vn_scene_packed = load("res://scripts/scenes/game/vn_scene.tscn")
 	var vn_scene = vn_scene_packed.instantiate()
 	
-	# Set director and stage
+	# Set scene model and director
+	vn_scene.set_scene_model(scene_model)
 	vn_scene.set_director(director)
-	vn_scene.set_stage(stage)
+	vn_scene.set_stage_view(stage_view)
 	
-	# Setup default background
-	if stage and "stage" in scene_config and "default_background" in scene_config.stage:
-		var default_bg = scene_config.stage.default_background
-		# Access ActingLayer directly since @onready vars aren't initialized yet
-		var acting_layer = vn_scene.get_node("ActingLayer")
-		stage.create_background_node(acting_layer, default_bg)
+	# Wire up observers
+	# Director observes scene model for plan changes
+	director.set_scene_model(scene_model)
+	
+	# StageView observes scene model for plan changes
+	stage_view.set_scene_model(scene_model, vn_scene)
+	
+	# Setup controller with scene model
+	# (Will be done in VNScene._ready via controller)
 	
 	return vn_scene
 
 
-## Creates the appropriate director based on scene configuration
-static func _create_director(scene_config: Dictionary, scene_path: String):
-	var scene_type = "theater"  # Default
-	if "scene" in scene_config and "type" in scene_config.scene:
-		scene_type = scene_config.scene.type
+## Creates the appropriate director based on scene model
+static func _create_director(scene_model: Scene, scene_path: String):
+	var scene_type = scene_model.scene_type
 	
 	var director
 	if scene_type == "theater":
@@ -64,28 +72,14 @@ static func _create_director(scene_config: Dictionary, scene_path: String):
 	return director
 
 
-## Creates the stage with background configurations
-static func _create_stage(scene_config: Dictionary, scene_path: String) -> Stage:
-	var stage = Stage.new()
-	
-	# Load background configurations
-	if "backgrounds" in scene_config:
-		for bg_config in scene_config.backgrounds:
-			var bg_id = bg_config.get("id", "")
-			if bg_id == "":
-				continue
-			
-			# Process image path to be absolute if present
-			if "image" in bg_config:
-				bg_config.image = "res://assets/scenes/" + scene_path + "/" + bg_config.image
-			
-			stage.add_background(bg_id, bg_config)
-	
-	# Set default background
-	if "stage" in scene_config and "default_background" in scene_config.stage:
-		stage.current_background_id = scene_config.stage.default_background
-	
-	return stage
+## Processes background image paths to be absolute
+static func _process_background_paths(scene_config: Dictionary, scene_path: String) -> void:
+	if "plans" in scene_config:
+		for plan_config in scene_config.plans:
+			if "backgrounds" in plan_config:
+				for bg_config in plan_config.backgrounds:
+					if "image" in bg_config:
+						bg_config.image = "res://assets/scenes/" + scene_path + "/" + bg_config.image
 
 
 ## Loads and parses a YAML file

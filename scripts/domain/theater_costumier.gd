@@ -121,6 +121,10 @@ func _find_best_variant(variants: Array, state: Dictionary) -> Dictionary:
 func _substitute_templates(path: String, state: Dictionary) -> String:
 	var result = path
 	
+	# Substitute {plan}
+	if "{plan}" in result:
+		result = result.replace("{plan}", state.get("plan", "medium_shot"))
+	
 	# Substitute {orientation}
 	if "{orientation}" in result:
 		result = result.replace("{orientation}", state.get("orientation", "front"))
