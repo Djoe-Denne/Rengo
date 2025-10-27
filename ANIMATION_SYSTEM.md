@@ -231,6 +231,15 @@ Centralized animation management:
 - Supports programmatic registration
 - Handles animation caching
 - Resolves animations by priority (scene → character → common)
+- Delegates instance creation to AnimationFactoryRegistry
+
+### AnimationFactoryRegistry
+
+Factory pattern for creating animation instances:
+- Scans and registers animation factories
+- Each factory handles a specific animation type
+- Extensible: custom factories can be registered at runtime
+- Clean separation: Repository loads definitions, Factories create instances
 
 ### Animation Processing Flow
 
@@ -255,6 +264,48 @@ actor.show().over(0.5).using("fade")
 
 Legacy animations (FadeAnimation, DissolveAnimation) are still available but marked as deprecated. Use the new system for all new code.
 
+## Creating Custom Animation Factories
+
+You can extend the system with custom animation types:
+
+### 1. Create Your Factory
+
+```gdscript
+# scripts/infra/animation/factory/my_custom_animation_factory.gd
+class_name MyCustomAnimationFactory
+extends AnimationFactoryBase
+
+func can_create(anim_type: String) -> bool:
+    return anim_type == "my_custom"
+
+func create(definition: Dictionary) -> VNAnimationNode:
+    var duration = _get_duration(definition)
+    var params = _get_parameters(definition)
+    
+    # Create your custom animation node
+    var anim = MyCustomAnimation.new(duration)
+    # Configure from params...
+    return anim
+```
+
+### 2. Register Your Factory
+
+```gdscript
+# In your initialization code
+var my_factory = MyCustomAnimationFactory.new()
+AnimationRepository.register_factory("my_custom", my_factory)
+```
+
+### 3. Use in YAML
+
+```yaml
+# animations/my_effect.yaml
+type: my_custom
+duration: 1.0
+parameters:
+  custom_param: value
+```
+
 ## Best Practices
 
 1. **Use `.over()` for duration**: More readable than `.in_duration()`
@@ -263,6 +314,7 @@ Legacy animations (FadeAnimation, DissolveAnimation) are still available but mar
 4. **Chain actions thoughtfully**: Remember they execute sequentially
 5. **Test easing functions**: Different easings create very different feels
 6. **Keep animations short**: VN pacing is important; 0.3-1.0s for most animations
+7. **Use factories for custom animations**: Don't pollute repository with create methods
 
 ## Future Enhancements
 

@@ -1,6 +1,7 @@
 ## AnimationRepository - Singleton for centralized animation loading
 ## Similar to ResourceRepository but for animations
 ## Supports YAML-based animation definitions and programmatic registration
+## Delegates instance creation to AnimationFactoryRegistry
 extends Node
 
 ## Base paths for animation resolution
@@ -8,11 +9,19 @@ const COMMON_PATH = "res://assets/scenes/common/"
 const SCENES_PATH = "res://assets/scenes/"
 const ANIMATIONS_PATH = "animations/"
 
+## Factory registry for creating animation instances
+var _factory_registry: AnimationFactoryRegistry = null
+
 ## Programmatically registered animations
 var _registered_animations: Dictionary = {}
 
 ## Cached animation definitions
 var _animation_cache: Dictionary = {}
+
+
+func _init() -> void:
+	# Initialize factory registry
+	_factory_registry = AnimationFactoryRegistry.new()
 
 
 ## Generates base directory array for animation context
@@ -183,168 +192,33 @@ func _load_yaml_file(path: String) -> Dictionary:
 
 
 ## Creates a VNAnimationNode from a definition dictionary
+## Delegates to the factory registry
 func _create_from_definition(definition: Dictionary) -> VNAnimationNode:
-	var anim_type = definition.get("type", "instant")
-	var duration = definition.get("duration", 0.0)
-	var params = definition.get("parameters", {})
+	if not _factory_registry:
+		push_error("AnimationRepository: Factory registry not initialized")
+		return null
 	
-	match anim_type:
-		"transform":
-			return _create_transform_animation(duration, params)
-		
-		"state_change":
-			return _create_state_change_animation(duration, params)
-		
-		"shader":
-			return _create_shader_animation(duration, params)
-		
-		"video":
-			return _create_video_animation(duration, params)
-		
-		"instant", _:
-			var InstantAnimation = load("res://scripts/infra/animation/implementations/effects/instant_animation.gd")
-			return InstantAnimation.new()
+	return _factory_registry.create_animation(definition)
 
 
-## Creates a TransformAnimation from parameters
-func _create_transform_animation(duration: float, params: Dictionary) -> VNAnimationNode:
-	var TransformAnimation = load("res://scripts/infra/animation/implementations/transform/transform_animation.gd")
+## Register a custom animation factory
+## @param anim_type: The animation type this factory handles
+## @param factory: AnimationFactoryBase instance
+func register_factory(anim_type: String, factory) -> void:
+	if not _factory_registry:
+		push_error("AnimationRepository: Factory registry not initialized")
+		return
 	
-	# Parse easing
-	var easing_str = params.get("easing", "linear")
-	var easing = _parse_easing(easing_str)
-	
-	var anim = TransformAnimation.new(duration, easing)
-	
-	# Set shake parameters if present
-	if params.has("shake_intensity"):
-		var intensity = params.shake_intensity
-		var frequency = params.get("shake_frequency", 20.0)
-		anim.set_shake(intensity, frequency)
-	
-	return anim
+	_factory_registry.register_factory(anim_type, factory)
 
 
-## Creates a StateChangeAnimation from parameters
-func _create_state_change_animation(duration: float, params: Dictionary) -> VNAnimationNode:
-	var StateChangeAnimation = load("res://scripts/infra/animation/implementations/state_change_animation.gd")
-	var fade_fraction = params.get("fade_fraction", 0.3)
+## Get all registered animation types
+## @return: Array of animation type strings
+func get_registered_animation_types() -> Array:
+	if not _factory_registry:
+		return []
 	
-	# Parse target mode
-	var target_mode_str = params.get("target_mode", "whole_node")
-	var target_mode = _parse_target_mode(target_mode_str)
-	
-	var anim = StateChangeAnimation.new(duration, fade_fraction, target_mode)
-	
-	# Set specific target layers if provided
-	if params.has("target_layers") and params.target_layers is Array:
-		anim.set_target_layers(params.target_layers)
-	
-	return anim
-
-
-## Creates a ShaderAnimation from parameters
-func _create_shader_animation(duration: float, params: Dictionary) -> VNAnimationNode:
-	var ShaderAnimation = load("res://scripts/infra/animation/implementations/shader_animation.gd")
-	var anim = ShaderAnimation.new(duration)
-	
-	# Set shader path if provided
-	if params.has("shader_path"):
-		anim.with_shader(params.shader_path)
-	
-	# Set shader parameters if provided
-	if params.has("shader_params"):
-		anim.set_shader_params(params.shader_params)
-	
-	return anim
-
-
-## Creates a VideoAnimation from parameters
-func _create_video_animation(duration: float, params: Dictionary) -> VNAnimationNode:
-	var VideoAnimation = load("res://scripts/infra/animation/implementations/video_animation.gd")
-	
-	# Parse video type
-	var video_type_str = params.get("video_type", "animated_texture")
-	var video_type = _parse_video_type(video_type_str)
-	
-	var anim = VideoAnimation.new(duration, video_type)
-	
-	# Set resource path if provided
-	if params.has("resource_path"):
-		anim.with_resource(params.resource_path)
-	
-	# Set loop if provided
-	if params.has("loop"):
-		anim.with_loop(params.loop)
-	
-	return anim
-
-
-## Parses easing string to EasingType enum
-func _parse_easing(easing_str: String) -> int:
-	var TransformAnimation = load("res://scripts/infra/animation/implementations/transform/transform_animation.gd")
-	
-	match easing_str.to_lower():
-		"linear":
-			return TransformAnimation.EasingType.LINEAR
-		"ease_in":
-			return TransformAnimation.EasingType.EASE_IN
-		"ease_out":
-			return TransformAnimation.EasingType.EASE_OUT
-		"ease_in_out":
-			return TransformAnimation.EasingType.EASE_IN_OUT
-		"elastic_in":
-			return TransformAnimation.EasingType.ELASTIC_IN
-		"elastic_out":
-			return TransformAnimation.EasingType.ELASTIC_OUT
-		"elastic_in_out":
-			return TransformAnimation.EasingType.ELASTIC_IN_OUT
-		"bounce_in":
-			return TransformAnimation.EasingType.BOUNCE_IN
-		"bounce_out":
-			return TransformAnimation.EasingType.BOUNCE_OUT
-		"bounce_in_out":
-			return TransformAnimation.EasingType.BOUNCE_IN_OUT
-		"back_in":
-			return TransformAnimation.EasingType.BACK_IN
-		"back_out":
-			return TransformAnimation.EasingType.BACK_OUT
-		"back_in_out":
-			return TransformAnimation.EasingType.BACK_IN_OUT
-		_:
-			return TransformAnimation.EasingType.LINEAR
-
-
-## Parses video type string to VideoType enum
-func _parse_video_type(video_type_str: String) -> int:
-	var VideoAnimation = load("res://scripts/infra/animation/implementations/video_animation.gd")
-	
-	match video_type_str.to_lower():
-		"video_stream":
-			return VideoAnimation.VideoType.VIDEO_STREAM
-		"animated_texture":
-			return VideoAnimation.VideoType.ANIMATED_TEXTURE
-		"sprite_frames":
-			return VideoAnimation.VideoType.SPRITE_FRAMES
-		"image_sequence":
-			return VideoAnimation.VideoType.IMAGE_SEQUENCE
-		_:
-			return VideoAnimation.VideoType.ANIMATED_TEXTURE
-
-
-## Parses target mode string to TargetMode enum
-func _parse_target_mode(target_mode_str: String) -> int:
-	var StateChangeAnimation = load("res://scripts/infra/animation/implementations/state_change_animation.gd")
-	
-	match target_mode_str.to_lower():
-		"whole_node":
-			return StateChangeAnimation.TargetMode.WHOLE_NODE
-		"individual_layers":
-			return StateChangeAnimation.TargetMode.INDIVIDUAL_LAYERS
-		"specific_layers":
-			return StateChangeAnimation.TargetMode.SPECIFIC_LAYERS
-		_:
-			return StateChangeAnimation.TargetMode.WHOLE_NODE
+	return _factory_registry.get_registered_types()
 
 
 ## Simple dictionary merge

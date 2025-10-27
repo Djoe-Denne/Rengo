@@ -16,7 +16,22 @@ The animation and transformation system has been successfully refactored from a 
    - YAML-based animation loading
    - Programmatic registration
    - Priority-based resolution (code > character > scene > common)
+   - Delegates instance creation to AnimationFactoryRegistry
    - Registered as autoload in project.godot
+
+2b. **scripts/infra/animation/animation_factory_registry.gd** - Factory pattern registry
+   - Manages all animation factories
+   - Delegates creation to appropriate factory
+   - Supports runtime factory registration
+   - Clean separation of concerns
+
+2c. **scripts/infra/animation/factory/** - Individual animation factories
+   - `animation_factory_base.gd` - Base class for all factories
+   - `transform_animation_factory.gd` - Creates TransformAnimation instances
+   - `state_change_animation_factory.gd` - Creates StateChangeAnimation instances
+   - `shader_animation_factory.gd` - Creates ShaderAnimation instances
+   - `video_animation_factory.gd` - Creates VideoAnimation instances
+   - `instant_animation_factory.gd` - Creates InstantAnimation instances
 
 ### Transform System
 3. **scripts/controllers/actions/transform/transform_action.gd** - Base for transformation actions
@@ -151,12 +166,29 @@ actor.move().right(0.2).using("elastic")
 
 ## Benefits
 
-1. **Separation of Concerns**: Animations don't need to know about targets
+1. **Separation of Concerns**: 
+   - Animations don't need to know about targets
+   - Repository loads definitions, Factories create instances
+   - Each factory responsible for one animation type
+   
 2. **Reusability**: Same animation can be applied to different actions
+
 3. **Configurability**: YAML-based defaults per scene/character
-4. **Extensibility**: Easy to add new animation types
+
+4. **Extensibility**: 
+   - Easy to add new animation types via custom factories
+   - Factory pattern makes the system highly modular
+   - Runtime factory registration supported
+   
 5. **Fluent API**: Readable, chainable action building
+
 6. **Type Safety**: Specific action classes for different transform types
+
+7. **Clean Architecture**:
+   - Repository: Loading, caching, definition management
+   - Registry: Factory management and delegation
+   - Factories: Instance creation with type-specific logic
+   - Actions: Animation composition and execution
 
 ## Testing Recommendations
 
