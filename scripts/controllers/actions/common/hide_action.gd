@@ -26,13 +26,13 @@ func execute() -> void:
 	
 	if not target.scene_node:
 		# Already hidden or never shown
+		_set_model_visible(false)
 		_is_complete = true
 		return
 	
 	# Start fade-out
 	if fade_duration <= 0:
-		target.visible = false
-		target.update_visibility()
+		_set_model_visible(false)
 		_is_complete = true
 
 
@@ -49,10 +49,9 @@ func _process_action(_delta: float) -> void:
 ## Hide the node on completion
 func on_complete() -> void:
 	if target:
-		target.visible = false
+		_set_model_visible(false)
 		if target.scene_node:
 			_set_alpha(target.scene_node, end_alpha)
-		target.update_visibility()
 
 
 ## Helper to set alpha on both 2D and 3D nodes
@@ -79,4 +78,16 @@ func instant() -> HideAction:
 	fade_duration = 0.0
 	duration = 0.0
 	return self
+
+
+## Helper to set model visible state (works with Transformable models)
+func _set_model_visible(is_visible: bool) -> void:
+	# For Actor: update character.visible
+	if "character" in target and target.character and target.character is Transformable:
+		target.character.set_visible(is_visible)
+	# For other Transformable resources
+	elif target is Transformable:
+		target.set_visible(is_visible)
+	else:
+		push_warning("HideAction: target does not have a Transformable model")
 

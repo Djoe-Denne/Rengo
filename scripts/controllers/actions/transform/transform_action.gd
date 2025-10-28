@@ -25,58 +25,55 @@ func _create_default_animation() -> VNAnimationNode:
 	return TransformAnimation.new(duration)
 
 
-## Get current value based on transform type
+## Get current value based on transform type from MODEL
 func _get_current_value() -> Variant:
 	if not target:
 		return null
 	
+	# Get the model (for Actor it's character, could be other Transformable)
+	var model = _get_model()
+	if not model:
+		return null
+	
 	match transform_type:
 		TransformType.POSITION:
-			return target.position if "position" in target else Vector3.ZERO
+			return model.position if "position" in model else Vector3.ZERO
 		TransformType.ROTATION:
-			if target.scene_node and "rotation" in target.scene_node:
-				return target.scene_node.rotation
-			return 0.0
+			return model.rotation if "rotation" in model else Vector3.ZERO
 		TransformType.SCALE:
-			if target.scene_node and "scale" in target.scene_node:
-				var scale_val = target.scene_node.scale
-				# Return appropriate type based on node type
-				if target.scene_node is Node3D:
-					return scale_val if scale_val is Vector3 else Vector3.ONE
-				else:
-					return scale_val if scale_val is Vector2 else Vector2.ONE
-			# Default based on likely node type
-			return Vector3.ONE if (target.scene_node and target.scene_node is Node3D) else Vector2.ONE
+			return model.scale if "scale" in model else Vector3.ONE
 	
 	return null
 
 
-## Apply value based on transform type
+## Apply value based on transform type to MODEL
 func _apply_value(value: Variant) -> void:
 	if not target:
 		return
 	
+	# Get the model (for Actor it's character, could be other Transformable)
+	var model = _get_model()
+	if not model:
+		return
+	
 	match transform_type:
 		TransformType.POSITION:
-			if "position" in target:
-				target.position = value
-				if target.has_method("update_position"):
-					target.update_position()
+			if model.has_method("set_position"):
+				model.set_position(value)
+			elif "position" in model:
+				model.position = value
 		
 		TransformType.ROTATION:
-			if target.scene_node and "rotation" in target.scene_node:
-				target.scene_node.rotation = value
+			if model.has_method("set_rotation"):
+				model.set_rotation(value)
+			elif "rotation" in model:
+				model.rotation = value
 		
 		TransformType.SCALE:
-			if target.scene_node and "scale" in target.scene_node:
-				# Convert Vector2 to Vector3 for Node3D
-				if target.scene_node is Node3D and value is Vector2:
-					target.scene_node.scale = Vector3(value.x, value.y, 1.0)
-				# Convert Vector3 to Vector2 for Node2D
-				elif target.scene_node is Node2D and value is Vector3:
-					target.scene_node.scale = Vector2(value.x, value.y)
-				else:
-					target.scene_node.scale = value
+			if model.has_method("set_scale"):
+				model.set_scale(value)
+			elif "scale" in model:
+				model.scale = value
 
 
 ## Process action - override to get interpolated value from animation
@@ -108,3 +105,24 @@ func _process_action(delta: float) -> void:
 		_apply_value(target_value)
 		_is_complete = true
 		on_complete()
+
+
+## Helper to get the model from the target
+func _get_model():
+	if not target:
+		return null
+	
+	# For Actor: get the character model
+	if "character" in target and target.character:
+		return target.character
+	
+	# For other views that might have a model property
+	if "model" in target and target.model:
+		return target.model
+	
+	# If target itself is a Transformable (direct model access)
+	if target is Transformable:
+		return target
+	
+	push_warning("TransformAction: target does not have a Transformable model")
+	return null

@@ -15,8 +15,17 @@ var director = null  # ActorDirector
 ## The scene model (contains all scene state)
 var scene_model: Scene = null
 
+## The dialog model (holds dialog state)
+var dialog_model: DialogModel = null
+
 ## The stage view (renders backgrounds)
 var stage_view: StageView = null
+
+## The acting layer view (manages 3D actors and objects)
+var acting_layer_view: ActingLayerView = null
+
+## The dialog layer view (manages 2D dialog UI)
+var dialog_layer_view: DialogLayerView = null
 
 ## Character models registry
 var characters: Dictionary = {}
@@ -36,13 +45,31 @@ var scene: Scene:
 
 
 func _ready() -> void:
+	# Initialize the dialog model
+	var DialogModel = load("res://scripts/models/dialog_model.gd")
+	dialog_model = DialogModel.new()
+	
 	# Initialize the controller
 	var VNSceneController = load("res://scripts/controllers/vn_scene_controller.gd")
 	controller = VNSceneController.new(self)
+	controller.dialog_model = dialog_model  # Pass dialog model to controller
 	
 	# Pass scene model to controller
 	if scene_model:
 		controller.set_scene_model(scene_model)
+	
+	# Initialize ActingLayerView
+	var ActingLayerView = load("res://scripts/views/acting_layer_view.gd")
+	acting_layer_view = ActingLayerView.new()
+	acting_layer_view.setup_layer(acting_layer, self)
+	
+	# Initialize DialogLayerView
+	var DialogLayerView = load("res://scripts/views/dialog_layer_view.gd")
+	dialog_layer_view = DialogLayerView.new()
+	dialog_layer_view.setup_layer(dialog_layer)
+	
+	# Wire DialogLayerView to observe DialogModel
+	dialog_layer_view.observe(dialog_model)
 	
 	# Setup viewport resizing
 	get_viewport().size_changed.connect(_on_viewport_resized)

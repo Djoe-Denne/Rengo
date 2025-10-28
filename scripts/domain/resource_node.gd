@@ -1,16 +1,12 @@
 ## Base class for all visual novel scene resources
-## ResourceNodes represent objects in the scene (characters, backgrounds, etc.)
+## ResourceNodes represent VIEW objects in the scene (characters, backgrounds, etc.)
+## State properties (position, visible, etc.) now live in MODEL classes
+## This class provides view coordination and scene node management
 class_name ResourceNode
 extends SceneObject
 
 ## Unique identifier for this resource
 var resource_name: String = ""
-
-## Position in 3D space (x, y, z in centimeters)
-var position: Vector3 = Vector3.ZERO
-
-## Whether this resource is currently visible
-var visible: bool = false
 
 ## Reference to the actual Godot node in the scene tree
 var scene_node: Node = null
@@ -44,14 +40,13 @@ func create_scene_node(_parent: Node) -> Node:
 
 
 ## Updates the visual position in 3D space
+## Subclasses should override this to read from their model
 func update_position() -> void:
-	if scene_node and scene_node is Node3D:
-		# Position is already in centimeters, apply directly
-		scene_node.position = position
+	push_warning("ResourceNode.update_position should be overridden by subclass")
 
 
 ## Updates the visibility of the scene node
+## Subclasses should override this to read from their model
 func update_visibility() -> void:
-	if scene_node:
-		scene_node.visible = visible
+	push_warning("ResourceNode.update_visibility should be overridden by subclass")
 

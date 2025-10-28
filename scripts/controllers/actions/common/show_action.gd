@@ -30,8 +30,8 @@ func execute() -> void:
 		if acting_layer:
 			target.create_scene_node(acting_layer)
 	
-	# Make visible
-	target.visible = true
+	# Update MODEL visible state (for Actor, this is character.visible)
+	_set_model_visible(true)
 	
 	if target.scene_node:
 		# Set initial alpha for fade-in
@@ -40,9 +40,6 @@ func execute() -> void:
 		else:
 			_set_alpha(target.scene_node, 1.0)
 			_is_complete = true
-		
-		target.update_visibility()
-		target.update_position()
 
 
 ## Process fade-in animation
@@ -85,3 +82,15 @@ func instant() -> ShowAction:
 	fade_duration = 0.0
 	duration = 0.0
 	return self
+
+
+## Helper to set model visible state (works with Transformable models)
+func _set_model_visible(is_visible: bool) -> void:
+	# For Actor: update character.visible
+	if "character" in target and target.character and target.character is Transformable:
+		target.character.set_visible(is_visible)
+	# For other Transformable resources
+	elif target is Transformable:
+		target.set_visible(is_visible)
+	else:
+		push_warning("ShowAction: target does not have a Transformable model")

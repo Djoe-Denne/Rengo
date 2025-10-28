@@ -23,8 +23,9 @@ func _ready() -> void:
 	
 	# Position actors in 3D space (x, y, z in centimeters)
 	# y=0 is ground level, x=0 is center, z=0 is at camera origin (positive z goes toward camera)
-	me_actor.position = Vector3(-80, 0, -500)   # 80cm to the left, on ground
-	other_actor.position = Vector3(80, 0, -500)  # 80cm to the right, on ground
+	# Now we set position on the Character model, not the Actor view
+	me_actor.character.set_position(Vector3(-80, 0, -500))   # 80cm to the left, on ground
+	other_actor.character.set_position(Vector3(80, 0, -500))  # 80cm to the right, on ground
 	
 	# Build the story action queue
 	_play_story()

@@ -1,7 +1,8 @@
 ## Character class - Pure data model for character state
 ## Holds all character data independently of visual representation
 ## Notifies observers (Actors) when state changes
-class_name Character extends RefCounted
+## Extends Transformable to include position, rotation, scale, visible properties
+class_name Character extends Transformable
 
 ## Character identifier (e.g., "alice", "bob")
 var character_name: String = ""
@@ -27,11 +28,9 @@ var panoplie: Array = []
 ## Game stats and RPG attributes (health, stats, inventory, etc.)
 var stats: Dictionary = {}
 
-## List of observers (Actors) watching this character
-var _observers: Array = []
-
 
 func _init(p_character_name: String = "") -> void:
+	super._init(Vector3.ZERO, false)  # Initialize Transformable
 	character_name = p_character_name
 	
 	# Initialize default states
@@ -88,24 +87,17 @@ func wear(outfit_items: Array) -> void:
 	_notify_observers()
 
 
-## Adds an observer to be notified of state changes
-func add_observer(observer: Callable) -> void:
-	if not _observers.has(observer):
-		_observers.append(observer)
-
-
-## Removes an observer
-func remove_observer(observer: Callable) -> void:
-	var idx = _observers.find(observer)
-	if idx >= 0:
-		_observers.remove_at(idx)
-
-
-## Notifies all observers of state changes
-func _notify_observers() -> void:
-	for observer in _observers:
-		if observer.is_valid():
-			observer.call(current_states)
+## Override _get_transform_state to include character-specific state
+func _get_transform_state() -> Dictionary:
+	# Get base transform state from Transformable
+	var state = super._get_transform_state()
+	
+	# Add character-specific state
+	state["current_states"] = current_states
+	state["panoplie"] = panoplie
+	state["character_name"] = character_name
+	
+	return state
 
 
 ## Loads character metadata from YAML

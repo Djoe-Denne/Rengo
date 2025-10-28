@@ -1,15 +1,16 @@
-## SayAction displays dialog text in the dialog layer
+## SayAction displays dialog text using DialogModel
+## Updates the model, DialogLayerView observes and updates UI
 extends "res://scripts/controllers/actions/action_node.gd"
 class_name SayAction
 
 ## The text to display
 var text: String = ""
 
-## The character speaking (optional)
-var speaker = null  # Character
+## The character speaking (Actor with Character model)
+var speaker = null  # Actor
 
-## Reference to the dialog UI node
-var dialog_box: Control = null
+## Reference to the DialogModel
+var dialog_model: DialogModel = null
 
 ## Whether to auto-advance after display
 var auto_advance: bool = false
@@ -36,25 +37,32 @@ func execute() -> void:
 		_is_complete = true
 		return
 	
-	# Get or create the dialog box
-	var dialog_layer = target.vn_scene.get_node_or_null("DialogLayer")
-	if not dialog_layer:
-		push_error("SayAction: DialogLayer not found")
+	# Get the DialogModel from VNScene
+	if "dialog_model" not in target.vn_scene:
+		push_error("SayAction: VNScene does not have dialog_model")
 		_is_complete = true
 		return
 	
-	dialog_box = dialog_layer.get_node_or_null("DialogBox")
-	if not dialog_box:
-		# Create a simple dialog box
-		dialog_box = create_dialog_box()
-		dialog_layer.add_child(dialog_box)
+	dialog_model = target.vn_scene.dialog_model
+	if not dialog_model:
+		push_error("SayAction: dialog_model is null")
+		_is_complete = true
+		return
 	
-	# Display the text
+	# Prepare speaker info
 	var speaker_name = ""
-	if speaker:
-		speaker_name = speaker.resource_name
+	var speaker_color = Color.WHITE
 	
-	update_dialog_box(speaker_name, text)
+	if speaker:
+		# Speaker is an Actor with a Character model
+		if "character" in speaker and speaker.character:
+			speaker_name = speaker.character.display_name if speaker.character.display_name != "" else speaker.character.character_name
+			speaker_color = speaker.character.dialog_color
+		else:
+			speaker_name = speaker.resource_name if "resource_name" in speaker else ""
+	
+	# Update the DialogModel - this will notify DialogLayerView
+	dialog_model.show_dialog(speaker_name, text, speaker_color)
 	
 	# Setup completion behavior
 	if auto_advance:
@@ -63,66 +71,6 @@ func execute() -> void:
 		_waiting_for_input = true
 
 
-## Creates a simple dialog box UI
-func create_dialog_box() -> Control:
-	var panel = Panel.new()
-	panel.name = "DialogBox"
-	
-	# Position at bottom of screen
-	panel.anchor_left = 0.1
-	panel.anchor_right = 0.9
-	panel.anchor_top = 0.75
-	panel.anchor_bottom = 0.95
-	
-	# Add a VBox for layout
-	var vbox = VBoxContainer.new()
-	vbox.name = "VBox"
-	vbox.anchor_right = 1.0
-	vbox.anchor_bottom = 1.0
-	vbox.offset_left = 10
-	vbox.offset_right = -10
-	vbox.offset_top = 10
-	vbox.offset_bottom = -10
-	panel.add_child(vbox)
-	
-	# Speaker name label
-	var name_label = Label.new()
-	name_label.name = "SpeakerName"
-	name_label.add_theme_font_size_override("font_size", 24)
-	vbox.add_child(name_label)
-	
-	# Dialog text label
-	var text_label = Label.new()
-	text_label.name = "DialogText"
-	text_label.add_theme_font_size_override("font_size", 20)
-	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(text_label)
-	
-	# Continue indicator
-	var continue_label = Label.new()
-	continue_label.name = "ContinueIndicator"
-	continue_label.text = "▼"
-	continue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	vbox.add_child(continue_label)
-	
-	return panel
-
-
-## Updates the dialog box with new text
-func update_dialog_box(speaker_name: String, dialog_text: String) -> void:
-	if not dialog_box:
-		return
-	
-	var name_label = dialog_box.get_node_or_null("VBox/SpeakerName")
-	if name_label:
-		name_label.text = speaker_name
-		name_label.visible = speaker_name != ""
-	
-	var text_label = dialog_box.get_node_or_null("VBox/DialogText")
-	if text_label:
-		text_label.text = dialog_text
-	
-	dialog_box.visible = true
 
 
 ## Process the action (check for input)
@@ -146,4 +94,3 @@ func with_auto_advance(delay: float = 2.0) -> SayAction:
 func with_text(p_text: String) -> SayAction:
 	text = p_text
 	return self
-

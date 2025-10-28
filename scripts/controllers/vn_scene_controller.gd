@@ -21,6 +21,9 @@ var scene_node: Node = null
 ## Reference to the Scene model (owns the model)
 var scene_model: Scene = null
 
+## Reference to the DialogModel (for SayAction and other dialog actions)
+var dialog_model: DialogModel = null
+
 
 func _init(p_scene_node: Node = null) -> void:
 	scene_node = p_scene_node

@@ -22,13 +22,18 @@ func to_degrees(degrees: float) -> RotateAction:
 
 ## Rotate by relative amount (radians)
 func by(amount: float) -> RotateAction:
-	if not target or not target.scene_node or not "rotation" in target.scene_node:
-		push_warning("RotateAction.by(): target has no rotation")
-		target_value = 0.0
+	var model = _get_model()
+	if not model or not "rotation" in model:
+		push_warning("RotateAction.by(): target has no rotation model")
+		target_value = Vector3.ZERO
 		return self
 	
-	var current_rotation = target.scene_node.rotation
-	target_value = current_rotation + amount
+	var current_rotation = model.rotation
+	# For Vector3 rotation, add to the appropriate axis (assume z-axis for 2D-style rotation)
+	if current_rotation is Vector3:
+		target_value = Vector3(current_rotation.x, current_rotation.y, current_rotation.z + amount)
+	else:
+		target_value = current_rotation + amount
 	return self
 
 

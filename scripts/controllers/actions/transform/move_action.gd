@@ -16,72 +16,78 @@ func to(x: float, y: float, z: float = 0.0) -> MoveAction:
 
 ## Move left by amount (normalized)
 func left(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.left(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.left(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x - amount, current_pos.y, current_pos.z)
 	return self
 
 
 ## Move right by amount (normalized)
 func right(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.right(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.right(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x + amount, current_pos.y, current_pos.z)
 	return self
 
 
 ## Move up by amount (normalized)
 func up(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.up(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.up(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x, current_pos.y - amount, current_pos.z)
 	return self
 
 
 ## Move down by amount (normalized)
 func down(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.down(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.down(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x, current_pos.y + amount, current_pos.z)
 	return self
 
 
 ## Move forward (increase z-depth)
 func forward(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.forward(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.forward(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x, current_pos.y, current_pos.z + amount)
 	return self
 
 
 ## Move backward (decrease z-depth)
 func backward(amount: float) -> MoveAction:
-	if not target or not "position" in target:
-		push_warning("MoveAction.backward(): target has no position")
+	var model = _get_model()
+	if not model or not "position" in model:
+		push_warning("MoveAction.backward(): target has no position model")
 		target_value = Vector3.ZERO
 		return self
 	
-	var current_pos = target.position
+	var current_pos = model.position
 	target_value = Vector3(current_pos.x, current_pos.y, current_pos.z - amount)
 	return self
 
