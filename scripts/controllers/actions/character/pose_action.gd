@@ -2,28 +2,28 @@
 class_name PoseAction
 extends AnimatedAction
 
-var actor: Actor
+var controller: ActorController
 var pose_name: String
 
 
-func _init(p_actor: Actor, p_pose_name: String) -> void:
-	super._init(p_actor)
-	actor = p_actor
+func _init(p_controller: ActorController, p_pose_name: String) -> void:
+	super._init(p_controller)
+	controller = p_controller
 	pose_name = p_pose_name
 	target_value = pose_name
 
 
-## Get current pose
+## Get current pose from model via controller
 func _get_current_value() -> Variant:
-	if actor and actor.character:
-		return actor.character.get_state("pose", "idle")
+	if controller and controller.model:
+		return controller.model.get_state("pose", "idle")
 	return "idle"
 
 
-## Apply pose to character
+## Apply pose to model via controller
 func _apply_value(value: Variant) -> void:
-	if actor and actor.character:
-		actor.character.pose(value)
+	if controller:
+		controller.update_model_state("pose", value)
 
 
 ## Create default animation for pose changes

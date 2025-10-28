@@ -37,7 +37,9 @@ func _init(p_duration: float = 0.0, p_easing: EasingType = EasingType.LINEAR) ->
 	easing = p_easing
 
 
-## Applies the animation to a target
+## Applies the animation to a controller
+## Note: TransformAnimation calculates the interpolated value
+## The calling TransformAction retrieves it and updates the controller
 func apply_to(target: Variant, progress: float, delta: float) -> void:
 	# Apply easing to progress
 	var eased_progress = _apply_easing(progress, easing)
@@ -49,8 +51,9 @@ func apply_to(target: Variant, progress: float, delta: float) -> void:
 	if shake_intensity > 0.0:
 		current_value = _apply_shake(current_value, progress, delta)
 	
-	# The calling AnimatedAction will use this value
-	# We don't directly modify the target here
+	# Note: The interpolated value is stored in current_value
+	# TransformAction will retrieve it via get_current_value() and
+	# apply it to the controller using update_model_* methods
 
 
 ## Gets the current interpolated value (with shake if applicable)

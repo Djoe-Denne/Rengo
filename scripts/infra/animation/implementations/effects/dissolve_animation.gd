@@ -18,28 +18,41 @@ func _init(p_duration: float = 0.0) -> void:
 	super._init(p_duration)
 
 
-## Applies the dissolve animation to target
+## Applies the dissolve animation to controller
+## Uses controller.apply_view_effect() for shader manipulation
 func apply_to(target: Variant, progress: float, _delta: float) -> void:
-	if not target or not target.scene_node:
+	if not target:
 		return
 	
-	# Store target reference
+	# Target should be a controller
+	if not ("view" in target and "apply_view_effect" in target):
+		push_warning("DissolveAnimation: target is not a controller with view")
+		return
+	
+	# Store target reference and setup shader on first frame
 	if _target != target:
 		_target = target
-		_setup_shader_on_target()
+		_setup_shader_via_controller()
 	
-	# Update dissolve progress
+	# Update dissolve progress via controller
 	if _dissolve_material:
 		var dissolve_progress = lerp(0.0, 1.0, progress)
-		_dissolve_material.set_shader_parameter("dissolve_value", dissolve_progress)
+		target.apply_view_effect(func(_view):
+			if _dissolve_material:
+				_dissolve_material.set_shader_parameter("dissolve_value", dissolve_progress)
+		)
 
 
-## Setup dissolve shader on target
-func _setup_shader_on_target() -> void:
-	if not _target or not _target.scene_node:
+## Setup dissolve shader via controller
+func _setup_shader_via_controller() -> void:
+	if not _target or not ("view" in _target):
 		return
 	
-	var scene_node = _target.scene_node
+	var view = _target.view
+	if not view or not ("scene_node" in view) or not view.scene_node:
+		return
+	
+	var scene_node = view.scene_node
 	if not "material" in scene_node:
 		push_warning("DissolveAnimation: target scene node does not have material property")
 		return
@@ -78,17 +91,32 @@ void fragment() {
 	_dissolve_material.set_shader_parameter("dissolve_value", 0.0)
 	_dissolve_material.set_shader_parameter("pixel_size", 4.0)
 	
-	scene_node.material = _dissolve_material
+	# Apply shader via controller
+	_target.apply_view_effect(func(v):
+		if "scene_node" in v and v.scene_node and "material" in v.scene_node:
+			v.scene_node.material = _dissolve_material
+	)
 
 
-## Finishes the animation and restores original material
+## Setup dissolve shader on target (legacy - kept for compatibility)
+func _setup_shader_on_target() -> void:
+	if not _target or not ("view" in _target):
+		return
+	_setup_shader_via_controller()
+
+
+## Finishes the animation and restores original material via controller
 func _finish_animation() -> void:
 	super._finish_animation()
 	
-	# Restore original material
-	if _target and _target.scene_node and "material" in _target.scene_node:
-		if _original_material:
-			_target.scene_node.material = _original_material
-		else:
-			_target.scene_node.material = null
+	# Restore original material via controller
+	if _target and "apply_view_effect" in _target:
+		var original = _original_material  # Capture for lambda
+		_target.apply_view_effect(func(view):
+			if "scene_node" in view and view.scene_node and "material" in view.scene_node:
+				if original:
+					view.scene_node.material = original
+				else:
+					view.scene_node.material = null
+		)
 

@@ -32,21 +32,51 @@ func _init(p_duration: float = 0.0, p_type: VideoType = VideoType.ANIMATED_TEXTU
 	video_type = p_type
 
 
-## Applies the video animation to target
+## Applies the video animation to controller
+## Uses controller.apply_view_effect() for video player manipulation
 func apply_to(target: Variant, progress: float, delta: float) -> void:
-	if not target or not target.scene_node:
+	if not target:
 		return
 	
-	# Ensure video is loaded and playing
+	# Target should be a controller
+	if not ("view" in target and "apply_view_effect" in target):
+		push_warning("VideoAnimation: target is not a controller with view")
+		return
+	
+	var view = target.view
+	if not view:
+		return
+	
+	# Ensure video is loaded and playing (use controller for setup)
 	if not video_player and resource_path != "":
-		_setup_video_player(target)
+		_setup_video_player_via_controller(target)
 	
 	# Update video player if it exists
 	if video_player:
 		_update_video_playback(progress, delta)
 
 
-## Setup video player based on type
+## Setup video player via controller
+func _setup_video_player_via_controller(controller: Variant) -> void:
+	var view = controller.view if "view" in controller else null
+	if not view:
+		return
+	
+	match video_type:
+		VideoType.VIDEO_STREAM:
+			_setup_video_stream_player(view)
+		
+		VideoType.ANIMATED_TEXTURE:
+			_setup_animated_texture(view)
+		
+		VideoType.SPRITE_FRAMES:
+			_setup_sprite_frames(view)
+		
+		VideoType.IMAGE_SEQUENCE:
+			_setup_image_sequence(view)
+
+
+## Setup video player based on type (legacy - kept for internal use)
 func _setup_video_player(target: Variant) -> void:
 	match video_type:
 		VideoType.VIDEO_STREAM:

@@ -25,13 +25,17 @@ func _create_default_animation() -> VNAnimationNode:
 	return TransformAnimation.new(duration)
 
 
-## Get current value based on transform type from MODEL
+## Get current value based on transform type from MODEL via controller
 func _get_current_value() -> Variant:
 	if not target:
 		return null
 	
-	# Get the model (for Actor it's character, could be other Transformable)
-	var model = _get_model()
+	# Target should be a controller with a model
+	if not ("model" in target):
+		push_warning("TransformAction: target is not a controller with model")
+		return null
+	
+	var model = target.model
 	if not model:
 		return null
 	
@@ -46,34 +50,35 @@ func _get_current_value() -> Variant:
 	return null
 
 
-## Apply value based on transform type to MODEL
+## Apply value based on transform type via controller
 func _apply_value(value: Variant) -> void:
 	if not target:
 		return
 	
-	# Get the model (for Actor it's character, could be other Transformable)
-	var model = _get_model()
-	if not model:
+	# Target should be a controller with update methods
+	if not ("model" in target):
+		push_warning("TransformAction: target is not a controller")
 		return
 	
+	# Use controller's update_model_* methods
 	match transform_type:
 		TransformType.POSITION:
-			if model.has_method("set_position"):
-				model.set_position(value)
-			elif "position" in model:
-				model.position = value
+			if target.has_method("update_model_position"):
+				target.update_model_position(value)
+			elif target.model and target.model.has_method("set_position"):
+				target.model.set_position(value)
 		
 		TransformType.ROTATION:
-			if model.has_method("set_rotation"):
-				model.set_rotation(value)
-			elif "rotation" in model:
-				model.rotation = value
+			if target.has_method("update_model_rotation"):
+				target.update_model_rotation(value)
+			elif target.model and target.model.has_method("set_rotation"):
+				target.model.set_rotation(value)
 		
 		TransformType.SCALE:
-			if model.has_method("set_scale"):
-				model.set_scale(value)
-			elif "scale" in model:
-				model.scale = value
+			if target.has_method("update_model_scale"):
+				target.update_model_scale(value)
+			elif target.model and target.model.has_method("set_scale"):
+				target.model.set_scale(value)
 
 
 ## Process action - override to get interpolated value from animation
@@ -105,24 +110,3 @@ func _process_action(delta: float) -> void:
 		_apply_value(target_value)
 		_is_complete = true
 		on_complete()
-
-
-## Helper to get the model from the target
-func _get_model():
-	if not target:
-		return null
-	
-	# For Actor: get the character model
-	if "character" in target and target.character:
-		return target.character
-	
-	# For other views that might have a model property
-	if "model" in target and target.model:
-		return target.model
-	
-	# If target itself is a Transformable (direct model access)
-	if target is Transformable:
-		return target
-	
-	push_warning("TransformAction: target does not have a Transformable model")
-	return null

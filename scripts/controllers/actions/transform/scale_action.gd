@@ -24,7 +24,7 @@ func uniform(factor: float) -> ScaleAction:
 
 ## Scale up by multiplying current scale
 func up(factor: float) -> ScaleAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "scale" in model:
 		push_warning("ScaleAction.up(): target has no scale model")
 		target_value = Vector3.ONE
@@ -46,7 +46,7 @@ func down(factor: float) -> ScaleAction:
 
 ## Scale only X axis
 func x(value: float) -> ScaleAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "scale" in model:
 		push_warning("ScaleAction.x(): target has no scale model")
 		target_value = Vector3.ONE
@@ -59,7 +59,7 @@ func x(value: float) -> ScaleAction:
 
 ## Scale only Y axis
 func y(value: float) -> ScaleAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "scale" in model:
 		push_warning("ScaleAction.y(): target has no scale model")
 		target_value = Vector3.ONE
@@ -72,7 +72,7 @@ func y(value: float) -> ScaleAction:
 
 ## Scale only Z axis (3D only)
 func z(value: float) -> ScaleAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "scale" in model:
 		push_warning("ScaleAction.z(): target has no scale model")
 		return self

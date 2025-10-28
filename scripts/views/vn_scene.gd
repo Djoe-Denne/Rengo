@@ -6,6 +6,9 @@ extends Node
 var Actor = load("res://scripts/views/actor.gd")
 var Character = load("res://scripts/models/character.gd")
 
+## Create ActorController (the public API)
+var ActorController = load("res://scripts/controllers/actor_controller.gd")
+
 ## The scene controller (FSM)
 var controller = null  # VNSceneController
 
@@ -160,8 +163,9 @@ func set_stage_view(p_stage_view: StageView) -> void:
 
 
 ## Casts a character as an actor in this scene
-## Creates/retrieves Character model and links it to a new Actor view
-func cast(character_name: String) -> Actor:
+## Creates Character model, Actor view, and ActorController
+## Returns ActorController for public API
+func cast(character_name: String) -> ActorController:
 	# Create or retrieve Character model
 	var character = null
 	if character_name in characters:
@@ -190,10 +194,18 @@ func cast(character_name: String) -> Actor:
 	# Link Actor to Character model (observer pattern)
 	actor.observe(character)
 	
-	# Add to controller as a resource
+	# Create the actor's scene node immediately (eager creation)
+	# Actors are visual elements, so they should always have their scene representation ready
+	if acting_layer:
+		actor.create_scene_node(acting_layer)
+	
+	# Add actor to controller as a resource (still needed for legacy scene tracking)
 	add_resource(actor)
 	
-	return actor
+	var actor_ctrl = ActorController.new(character_name, character, actor)
+	actor_ctrl.vn_scene = self  # For action registration
+	
+	return actor_ctrl
 
 
 ## Observer callback for scene model changes
@@ -203,5 +215,3 @@ func _on_scene_changed(scene_state: Dictionary) -> void:
 		var camera = scene_model.get_current_camera() if scene_model else null
 		if camera:
 			camera_3d.observe_camera(camera)
-
-

@@ -1,5 +1,6 @@
-## Actor class - represents a character in the scene (VIEW layer)
+## Actor class - Pure VIEW for character display
 ## Actors observe Character models and display visuals via ActorDirectors
+## DO NOT use Actor directly - use ActorController for public API
 class_name Actor extends ResourceNode
 
 ## The character name this actor represents
@@ -70,86 +71,6 @@ func create_scene_node(parent: Node) -> Node:
 		scene_node = sprite_container
 	
 	return sprite_container
-
-
-## Changes the actor's state (pose, expression, etc.)
-## Updates the underlying Character model
-## Auto-registers the action and returns it for optional chaining
-func act(new_states: Dictionary):
-	var ActAction = load("res://scripts/controllers/actions/character/act_action.gd")
-	var action = ActAction.new(self, new_states)
-	return register_action(action)
-
-
-## Convenience method: Changes expression
-## Auto-registers the action and returns it for optional chaining
-func express(emotion: String):
-	var ExpressAction = load("res://scripts/controllers/actions/character/express_action.gd")
-	var action = ExpressAction.new(self, emotion)
-	return register_action(action)
-
-
-## Convenience method: Changes pose
-## Auto-registers the action and returns it for optional chaining
-func pose(pose_name: String):
-	var PoseAction = load("res://scripts/controllers/actions/character/pose_action.gd")
-	var action = PoseAction.new(self, pose_name)
-	return register_action(action)
-
-
-## Convenience method: Changes orientation
-## Auto-registers the action and returns it for optional chaining
-func look(orientation: String):
-	var LookAction = load("res://scripts/controllers/actions/character/look_action.gd")
-	var action = LookAction.new(self, orientation)
-	return register_action(action)
-
-
-## Convenience method: Changes outfit
-## Auto-registers the action and returns it for optional chaining
-func wear(clothing_id: String):
-	var WearAction = load("res://scripts/controllers/actions/character/wear_action.gd")
-	var action = WearAction.new(self, clothing_id)
-	return register_action(action)
-
-
-## Makes the actor speak (placeholder for dialog system)
-## Auto-registers the action and returns it for optional chaining
-func say(text: String):
-	var SayAction = load("res://scripts/controllers/actions/character/say_action.gd")
-	var action = SayAction.new(self).with_text(text)
-	return register_action(action)
-
-
-## Moves the actor to a new position
-func move_to(x: float, y: float, duration: float = 0.0):
-	# TODO: Implement move action
-	push_warning("Actor.move_to not yet implemented")
-	return null
-
-
-## Creates a MoveAction for position transformation
-## Auto-registers the action and returns it for chaining
-func move():
-	var MoveAction = load("res://scripts/controllers/actions/transform/move_action.gd")
-	var action = MoveAction.new(self)
-	return register_action(action)
-
-
-## Creates a RotateAction for rotation transformation
-## Auto-registers the action and returns it for chaining
-func rotate():
-	var RotateAction = load("res://scripts/controllers/actions/transform/rotate_action.gd")
-	var action = RotateAction.new(self)
-	return register_action(action)
-
-
-## Creates a ScaleAction for scale transformation
-## Auto-registers the action and returns it for chaining
-func scale():
-	var ScaleAction = load("res://scripts/controllers/actions/transform/scale_action.gd")
-	var action = ScaleAction.new(self)
-	return register_action(action)
 
 
 ## Updates the visibility of the actor from Character model

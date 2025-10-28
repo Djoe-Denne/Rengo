@@ -16,7 +16,7 @@ func to(x: float, y: float, z: float = 0.0) -> MoveAction:
 
 ## Move left by amount (normalized)
 func left(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.left(): target has no position model")
 		target_value = Vector3.ZERO
@@ -29,7 +29,7 @@ func left(amount: float) -> MoveAction:
 
 ## Move right by amount (normalized)
 func right(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.right(): target has no position model")
 		target_value = Vector3.ZERO
@@ -42,7 +42,7 @@ func right(amount: float) -> MoveAction:
 
 ## Move up by amount (normalized)
 func up(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.up(): target has no position model")
 		target_value = Vector3.ZERO
@@ -55,7 +55,7 @@ func up(amount: float) -> MoveAction:
 
 ## Move down by amount (normalized)
 func down(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.down(): target has no position model")
 		target_value = Vector3.ZERO
@@ -68,7 +68,7 @@ func down(amount: float) -> MoveAction:
 
 ## Move forward (increase z-depth)
 func forward(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.forward(): target has no position model")
 		target_value = Vector3.ZERO
@@ -81,7 +81,7 @@ func forward(amount: float) -> MoveAction:
 
 ## Move backward (decrease z-depth)
 func backward(amount: float) -> MoveAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "position" in model:
 		push_warning("MoveAction.backward(): target has no position model")
 		target_value = Vector3.ZERO

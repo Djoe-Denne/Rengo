@@ -5,6 +5,9 @@ class_name ActAction
 const TransitionTypes = preload("res://scripts/infra/animation/transition/transition_types.gd")
 const AnimationFactory = preload("res://scripts/infra/animation/animation_factory.gd")
 
+## Controller reference
+var controller: ActorController = null
+
 ## New states to apply
 var new_states: Dictionary = {}
 
@@ -18,8 +21,9 @@ var transition_type: String = TransitionTypes.INSTANT
 var transition_duration: float = 0.0
 
 
-func _init(p_target = null, states: Dictionary = {}) -> void:
-	super._init(p_target, 0.0)
+func _init(p_controller: ActorController, states: Dictionary = {}) -> void:
+	super._init(p_controller, 0.0)
+	controller = p_controller
 	
 	# Parse states parameter
 	if states:
@@ -43,52 +47,40 @@ func over(duration_sec: float) -> ActAction:
 func execute() -> void:
 	super.execute()
 	
-	if not target:
-		push_error("ActAction: no target resource")
+	if not controller:
+		push_error("ActAction: no controller")
 		_is_complete = true
 		return
 	
-	# For Actors, update the Character model
-	if "character" in target and target.character:
+	# Use controller to update model states
+	if controller.has_method("update_model_states"):
 		# If we have a transition, create and setup animation
 		if transition_type != TransitionTypes.INSTANT and transition_duration > 0.0:
 			_setup_animation()
 		else:
-			# Instant state change via Character model
-			target.character.update_states(new_states)
-			_is_complete = true
-	# Fallback for legacy resources
-	elif target.has_method("set_states"):
-		if transition_type != TransitionTypes.INSTANT and transition_duration > 0.0:
-			_setup_animation()
-		else:
-			target.set_states(new_states)
+			# Instant state change via controller
+			controller.update_model_states(new_states)
 			_is_complete = true
 	else:
-		push_warning("ActAction: target does not support states")
+		push_error("ActAction: controller does not have update_model_states method")
 		_is_complete = true
 
 
 ## Sets up the animation for the transition
 func _setup_animation() -> void:
-	if not target or not target.scene_node:
+	if not controller:
 		return
 	
-	# Create animation node using factory (legacy support)
+	# Create animation node using factory
 	animation_node = AnimationFactory.create(transition_type, transition_duration)
 	
 	if animation_node:
 		animation_node.play()
-		# Note: Legacy code - this may need updating
-		if target.has_method("add_animation"):
-			target.add_animation(animation_node)
+		# Animation now receives controller and uses apply_view_effect for visual changes
 		
 ## Called when action completes
 func on_complete() -> void:
-	# Ensure state is set
-	if target:
-		if "character" in target and target.character:
-			target.character.update_states(new_states)
-		elif target.has_method("set_states"):
-			target.set_states(new_states)
+	# Ensure state is set on the model via controller
+	if controller and controller.has_method("update_model_states"):
+		controller.update_model_states(new_states)
 		

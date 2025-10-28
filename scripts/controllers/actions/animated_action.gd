@@ -1,6 +1,8 @@
 ## Base class for actions that can be animated
 ## Composes an AnimationNode to provide smooth transitions
 ## Supports fluent API: action.in(duration).using(animation)
+## Target should be a Controller (e.g., ActorController) which provides
+## access to both Model (for data) and View (for visual effects)
 class_name AnimatedAction
 extends ActionNode
 

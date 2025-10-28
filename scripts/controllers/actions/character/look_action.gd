@@ -2,28 +2,28 @@
 class_name LookAction
 extends AnimatedAction
 
-var actor: Actor
+var controller: ActorController
 var orientation: String
 
 
-func _init(p_actor: Actor, p_orientation: String) -> void:
-	super._init(p_actor)
-	actor = p_actor
+func _init(p_controller: ActorController, p_orientation: String) -> void:
+	super._init(p_controller)
+	controller = p_controller
 	orientation = p_orientation
 	target_value = orientation
 
 
-## Get current orientation
+## Get current orientation from model via controller
 func _get_current_value() -> Variant:
-	if actor and actor.character:
-		return actor.character.get_state("orientation", "front")
+	if controller and controller.model:
+		return controller.model.get_state("orientation", "front")
 	return "front"
 
 
-## Apply orientation to character
+## Apply orientation to model via controller
 func _apply_value(value: Variant) -> void:
-	if actor and actor.character:
-		actor.character.look(value)
+	if controller:
+		controller.update_model_state("orientation", value)
 
 
 ## Create default animation for orientation changes

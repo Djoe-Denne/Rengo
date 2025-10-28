@@ -2,6 +2,9 @@
 extends "res://scripts/controllers/actions/action_node.gd"
 class_name ShowAction
 
+## Controller reference
+var controller: ActorController = null
+
 ## Fade-in duration (0 = instant)
 var fade_duration: float = 0.3
 
@@ -9,8 +12,9 @@ var fade_duration: float = 0.3
 var start_alpha: float = 0.0
 
 
-func _init(p_target = null, p_fade_duration: float = 0.3) -> void:
-	super._init(p_target, p_fade_duration)
+func _init(p_controller: ActorController, p_fade_duration: float = 0.3) -> void:
+	super._init(p_controller, p_fade_duration)
+	controller = p_controller
 	fade_duration = p_fade_duration
 	duration = fade_duration
 
@@ -19,78 +23,37 @@ func _init(p_target = null, p_fade_duration: float = 0.3) -> void:
 func execute() -> void:
 	super.execute()
 	
-	if not target:
-		push_error("ShowAction: no target resource")
+	if not controller:
+		push_error("ShowAction: no controller")
 		_is_complete = true
 		return
 	
-	# Create the scene node if it doesn't exist
-	if not target.scene_node and target.vn_scene:
-		var acting_layer = target.vn_scene.get_node_or_null("ActingLayer")
-		if acting_layer:
-			target.create_scene_node(acting_layer)
+	# Use controller to update model visibility
+	if controller.has_method("update_model_visible"):
+		controller.update_model_visible(true)
+	elif controller.model and controller.model.has_method("set_visible"):
+		controller.model.set_visible(true)
+	else:
+		push_error("ShowAction: controller cannot update visibility")
+		_is_complete = true
+		return
 	
-	# Update MODEL visible state (for Actor, this is character.visible)
-	_set_model_visible(true)
-	
-	if target.scene_node:
-		# Set initial alpha for fade-in
-		if fade_duration > 0:
-			_set_alpha(target.scene_node, start_alpha)
-		else:
-			_set_alpha(target.scene_node, 1.0)
-			_is_complete = true
+	# For fade animations, we need to manipulate view alpha
+	# The model visibility is already set, view will update through observer
+	# For now, instant show
+	if fade_duration <= 0:
+		_is_complete = true
 
 
 ## Process fade-in animation
+## TODO: Implement fade animations via controller.apply_view_effect()
 func _process_action(_delta: float) -> void:
-	if not target or not target.scene_node:
-		return
-	
-	var progress = get_progress()
-	var alpha = lerp(start_alpha, 1.0, progress)
-	_set_alpha(target.scene_node, alpha)
+	# Fade animations would use controller.apply_view_effect() to manipulate alpha
+	# For now, instant show
+	pass
 
 
-## Ensure full opacity on completion
+## Ensure visibility is set on completion
 func on_complete() -> void:
-	if target and target.scene_node:
-		_set_alpha(target.scene_node, 1.0)
-
-
-## Helper to set alpha on both 2D and 3D nodes
-func _set_alpha(node: Node, alpha: float) -> void:
-	if node is Node2D:
-		# 2D node - use modulate
-		node.modulate.a = alpha
-	elif node is Node3D:
-		# 3D node - set alpha on all MeshInstance3D children's materials
-		for child in node.get_children():
-			if child is MeshInstance3D and child.material_override:
-				child.material_override.albedo_color.a = alpha
-
-
-## Builder method to set fade duration
-func with_fade(p_duration: float) -> ShowAction:
-	fade_duration = p_duration
-	duration = p_duration
-	return self
-
-
-## Builder method to show instantly
-func instant() -> ShowAction:
-	fade_duration = 0.0
-	duration = 0.0
-	return self
-
-
-## Helper to set model visible state (works with Transformable models)
-func _set_model_visible(is_visible: bool) -> void:
-	# For Actor: update character.visible
-	if "character" in target and target.character and target.character is Transformable:
-		target.character.set_visible(is_visible)
-	# For other Transformable resources
-	elif target is Transformable:
-		target.set_visible(is_visible)
-	else:
-		push_warning("ShowAction: target does not have a Transformable model")
+	if controller and controller.has_method("update_model_visible"):
+		controller.update_model_visible(true)

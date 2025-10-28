@@ -2,6 +2,9 @@
 extends "res://scripts/controllers/actions/action_node.gd"
 class_name HideAction
 
+## Controller reference
+var controller: ActorController = null
+
 ## Fade-out duration (0 = instant)
 var fade_duration: float = 0.3
 
@@ -9,8 +12,9 @@ var fade_duration: float = 0.3
 var end_alpha: float = 0.0
 
 
-func _init(p_target = null, p_fade_duration: float = 0.3) -> void:
-	super._init(p_target, p_fade_duration)
+func _init(p_controller: ActorController, p_fade_duration: float = 0.3) -> void:
+	super._init(p_controller, p_fade_duration)
+	controller = p_controller
 	fade_duration = p_fade_duration
 	duration = fade_duration
 
@@ -19,75 +23,33 @@ func _init(p_target = null, p_fade_duration: float = 0.3) -> void:
 func execute() -> void:
 	super.execute()
 	
-	if not target:
-		push_error("HideAction: no target resource")
+	if not controller:
+		push_error("HideAction: no controller")
 		_is_complete = true
 		return
 	
-	if not target.scene_node:
-		# Already hidden or never shown
-		_set_model_visible(false)
+	# Use controller to update model visibility
+	if controller.has_method("update_model_visible"):
+		controller.update_model_visible(false)
 		_is_complete = true
-		return
-	
-	# Start fade-out
-	if fade_duration <= 0:
-		_set_model_visible(false)
+	elif controller.model and controller.model.has_method("set_visible"):
+		controller.model.set_visible(false)
+		_is_complete = true
+	else:
+		push_error("HideAction: controller cannot update visibility")
 		_is_complete = true
 
 
 ## Process fade-out animation
+## TODO: Implement fade animations via controller.apply_view_effect()
 func _process_action(_delta: float) -> void:
-	if not target or not target.scene_node:
-		return
-	
-	var progress = get_progress()
-	var alpha = lerp(1.0, end_alpha, progress)
-	_set_alpha(target.scene_node, alpha)
+	# Fade animations would use controller.apply_view_effect() to manipulate alpha
+	# For now, instant hide
+	pass
 
 
-## Hide the node on completion
+## Hide on completion
 func on_complete() -> void:
-	if target:
-		_set_model_visible(false)
-		if target.scene_node:
-			_set_alpha(target.scene_node, end_alpha)
-
-
-## Helper to set alpha on both 2D and 3D nodes
-func _set_alpha(node: Node, alpha: float) -> void:
-	if node is Node2D:
-		# 2D node - use modulate
-		node.modulate.a = alpha
-	elif node is Node3D:
-		# 3D node - set alpha on all MeshInstance3D children's materials
-		for child in node.get_children():
-			if child is MeshInstance3D and child.material_override:
-				child.material_override.albedo_color.a = alpha
-
-
-## Builder method to set fade duration
-func with_fade(p_duration: float) -> HideAction:
-	fade_duration = p_duration
-	duration = p_duration
-	return self
-
-
-## Builder method to hide instantly
-func instant() -> HideAction:
-	fade_duration = 0.0
-	duration = 0.0
-	return self
-
-
-## Helper to set model visible state (works with Transformable models)
-func _set_model_visible(is_visible: bool) -> void:
-	# For Actor: update character.visible
-	if "character" in target and target.character and target.character is Transformable:
-		target.character.set_visible(is_visible)
-	# For other Transformable resources
-	elif target is Transformable:
-		target.set_visible(is_visible)
-	else:
-		push_warning("HideAction: target does not have a Transformable model")
+	if controller and controller.has_method("update_model_visible"):
+		controller.update_model_visible(false)
 

@@ -6,8 +6,8 @@ class_name SayAction
 ## The text to display
 var text: String = ""
 
-## The character speaking (Actor with Character model)
-var speaker = null  # Actor
+## The character speaking (ActorController with Character model and Actor view)
+var speaker = null  # ActorController
 
 ## Reference to the DialogModel
 var dialog_model: DialogModel = null
@@ -54,12 +54,13 @@ func execute() -> void:
 	var speaker_color = Color.WHITE
 	
 	if speaker:
-		# Speaker is an Actor with a Character model
-		if "character" in speaker and speaker.character:
-			speaker_name = speaker.character.display_name if speaker.character.display_name != "" else speaker.character.character_name
-			speaker_color = speaker.character.dialog_color
-		else:
-			speaker_name = speaker.resource_name if "resource_name" in speaker else ""
+		# Speaker is an ActorController with model and view
+		if "model" in speaker and speaker.model:
+			var character = speaker.model
+			speaker_name = character.display_name if character.display_name != "" else character.character_name
+			speaker_color = character.dialog_color
+		elif "name" in speaker:
+			speaker_name = speaker.name
 	
 	# Update the DialogModel - this will notify DialogLayerView
 	dialog_model.show_dialog(speaker_name, text, speaker_color)

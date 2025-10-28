@@ -36,9 +36,15 @@ func _init(p_duration: float = 0.5, p_fade_fraction: float = 0.3, p_target_mode:
 	target_mode = p_target_mode
 
 
-## Applies the animation to target
+## Applies the animation to controller
+## Uses controller.apply_view_effect() for visual fading
 func apply_to(target: Variant, progress: float, delta: float) -> void:
 	if not target:
+		return
+	
+	# Target should be a controller
+	if not ("view" in target and "apply_view_effect" in target):
+		push_warning("StateChangeAnimation: target is not a controller with view")
 		return
 	
 	# Store original alpha on first frame
@@ -71,8 +77,8 @@ func apply_to(target: Variant, progress: float, delta: float) -> void:
 			state_change_callback.call()
 			_state_changed = true
 	
-	# Apply alpha based on target mode
-	_apply_alpha(target, current_alpha)
+	# Apply alpha using controller's view effect method
+	_apply_alpha_via_controller(target, current_alpha)
 
 
 ## Setup animation
@@ -81,83 +87,103 @@ func _setup_animation() -> void:
 
 
 ## Store original alpha values based on target mode
-func _store_original_alpha(target: Variant) -> void:
+## Target is a controller, we access its view
+func _store_original_alpha(controller: Variant) -> void:
+	var view = controller.view if "view" in controller else null
+	if not view:
+		_original_alpha = 1.0
+		return
+	
 	match target_mode:
 		TargetMode.WHOLE_NODE:
 			# Store alpha of the entire sprite container
-			if "sprite_container" in target and target.sprite_container:
-				_original_alpha = _get_alpha_from_node(target.sprite_container)
-			elif target.scene_node:
-				_original_alpha = _get_alpha_from_node(target.scene_node)
+			if "sprite_container" in view and view.sprite_container:
+				_original_alpha = _get_alpha_from_node(view.sprite_container)
+			elif "scene_node" in view and view.scene_node:
+				_original_alpha = _get_alpha_from_node(view.scene_node)
 			else:
 				_original_alpha = 1.0
 		
 		TargetMode.INDIVIDUAL_LAYERS:
 			# Store alpha of each layer
 			_original_alpha = {}
-			if "layers" in target and target.layers is Dictionary:
-				for layer_name in target.layers:
-					var layer = target.layers[layer_name]
+			if "layers" in view and view.layers is Dictionary:
+				for layer_name in view.layers:
+					var layer = view.layers[layer_name]
 					if layer:
 						_original_alpha[layer_name] = _get_alpha_from_node(layer)
 		
 		TargetMode.SPECIFIC_LAYERS:
 			# Store alpha of specified layers only
 			_original_alpha = {}
-			if "layers" in target and target.layers is Dictionary:
+			if "layers" in view and view.layers is Dictionary:
 				for layer_name in target_layers:
-					if layer_name in target.layers:
-						var layer = target.layers[layer_name]
+					if layer_name in view.layers:
+						var layer = view.layers[layer_name]
 						if layer:
 							_original_alpha[layer_name] = _get_alpha_from_node(layer)
 
 
-## Apply alpha value based on target mode
-func _apply_alpha(target: Variant, alpha: float) -> void:
+## Apply alpha value via controller's view effect
+func _apply_alpha_via_controller(controller: Variant, alpha: float) -> void:
+	# Use controller.apply_view_effect() to manipulate the view
 	match target_mode:
 		TargetMode.WHOLE_NODE:
 			# Apply to entire sprite container (prevents layer bleed-through)
-			if "sprite_container" in target and target.sprite_container:
-				_set_alpha_on_node(target.sprite_container, alpha)
-			elif target.scene_node:
-				_set_alpha_on_node(target.scene_node, alpha)
+			controller.apply_view_effect(func(view):
+				if "sprite_container" in view and view.sprite_container:
+					_set_alpha_on_node(view.sprite_container, alpha)
+				elif "scene_node" in view and view.scene_node:
+					_set_alpha_on_node(view.scene_node, alpha)
+			)
 		
 		TargetMode.INDIVIDUAL_LAYERS:
 			# Apply to each layer independently
-			if "layers" in target and target.layers is Dictionary:
-				for layer_name in target.layers:
-					var layer = target.layers[layer_name]
-					if layer:
-						_set_alpha_on_node(layer, alpha)
+			controller.apply_view_effect(func(view):
+				if "layers" in view and view.layers is Dictionary:
+					for layer_name in view.layers:
+						var layer = view.layers[layer_name]
+						if layer:
+							_set_alpha_on_node(layer, alpha)
+			)
 		
 		TargetMode.SPECIFIC_LAYERS:
 			# Apply only to specified layers
-			if "layers" in target and target.layers is Dictionary:
-				for layer_name in target_layers:
-					if layer_name in target.layers:
-						var layer = target.layers[layer_name]
-						if layer:
-							_set_alpha_on_node(layer, alpha)
+			var layers_to_update = target_layers.duplicate()  # Capture for lambda
+			controller.apply_view_effect(func(view):
+				if "layers" in view and view.layers is Dictionary:
+					for layer_name in layers_to_update:
+						if layer_name in view.layers:
+							var layer = view.layers[layer_name]
+							if layer:
+								_set_alpha_on_node(layer, alpha)
+			)
 
 
-## Restore original alpha (called at end or when animation is interrupted)
-func _restore_original_alpha(target: Variant) -> void:
+## Restore original alpha via controller (called at end or when animation is interrupted)
+func _restore_original_alpha(controller: Variant) -> void:
 	match target_mode:
 		TargetMode.WHOLE_NODE:
 			if _original_alpha is float:
-				if "sprite_container" in target and target.sprite_container:
-					_set_alpha_on_node(target.sprite_container, _original_alpha)
-				elif target.scene_node:
-					_set_alpha_on_node(target.scene_node, _original_alpha)
+				var original = _original_alpha  # Capture for lambda
+				controller.apply_view_effect(func(view):
+					if "sprite_container" in view and view.sprite_container:
+						_set_alpha_on_node(view.sprite_container, original)
+					elif "scene_node" in view and view.scene_node:
+						_set_alpha_on_node(view.scene_node, original)
+				)
 		
 		TargetMode.INDIVIDUAL_LAYERS, TargetMode.SPECIFIC_LAYERS:
 			if _original_alpha is Dictionary:
-				if "layers" in target and target.layers is Dictionary:
-					for layer_name in _original_alpha:
-						if layer_name in target.layers:
-							var layer = target.layers[layer_name]
-							if layer:
-								_set_alpha_on_node(layer, _original_alpha[layer_name])
+				var original_dict = _original_alpha.duplicate()  # Capture for lambda
+				controller.apply_view_effect(func(view):
+					if "layers" in view and view.layers is Dictionary:
+						for layer_name in original_dict:
+							if layer_name in view.layers:
+								var layer = view.layers[layer_name]
+								if layer:
+									_set_alpha_on_node(layer, original_dict[layer_name])
+				)
 
 
 ## Builder method to set fade fraction

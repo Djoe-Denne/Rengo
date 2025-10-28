@@ -9,19 +9,41 @@ func _init(p_duration: float = 0.0) -> void:
 	super._init(p_duration)
 
 
-## Applies the fade animation to target
+## Applies the fade animation to controller
+## Uses controller.apply_view_effect() for alpha changes
 func apply_to(target: Variant, progress: float, _delta: float) -> void:
-	if not target or not target.scene_node:
+	if not target:
+		return
+	
+	# Target should be a controller
+	if not ("view" in target and "apply_view_effect" in target):
+		push_warning("FadeAnimation: target is not a controller with view")
+		return
+	
+	var view = target.view
+	if not view:
 		return
 	
 	# Setup from_value on first frame
 	if from_value == null:
-		from_value = _get_alpha_from_node(target.scene_node)
+		if "sprite_container" in view and view.sprite_container:
+			from_value = _get_alpha_from_node(view.sprite_container)
+		elif "scene_node" in view and view.scene_node:
+			from_value = _get_alpha_from_node(view.scene_node)
+		else:
+			from_value = 1.0
 		to_value = 1.0 - from_value
 	
 	# Interpolate alpha
 	var alpha = lerp(float(from_value), float(to_value), progress)
-	_set_alpha_on_node(target.scene_node, alpha)
+	
+	# Apply via controller's view effect
+	target.apply_view_effect(func(v):
+		if "sprite_container" in v and v.sprite_container:
+			_set_alpha_on_node(v.sprite_container, alpha)
+		elif "scene_node" in v and v.scene_node:
+			_set_alpha_on_node(v.scene_node, alpha)
+	)
 
 
 ## Helper to get alpha from both 2D and 3D nodes

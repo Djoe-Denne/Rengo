@@ -2,28 +2,28 @@
 class_name ExpressAction
 extends AnimatedAction
 
-var actor: Actor
+var controller: ActorController
 var emotion: String
 
 
-func _init(p_actor: Actor, p_emotion: String) -> void:
-	super._init(p_actor)
-	actor = p_actor
+func _init(p_controller: ActorController, p_emotion: String) -> void:
+	super._init(p_controller)
+	controller = p_controller
 	emotion = p_emotion
 	target_value = emotion
 
 
-## Get current expression
+## Get current expression from model via controller
 func _get_current_value() -> Variant:
-	if actor and actor.character:
-		return actor.character.get_state("expression", "neutral")
+	if controller and controller.model:
+		return controller.model.get_state("expression", "neutral")
 	return "neutral"
 
 
-## Apply expression to character
+## Apply expression to model via controller
 func _apply_value(value: Variant) -> void:
-	if actor and actor.character:
-		actor.character.express(value)
+	if controller:
+		controller.update_model_state("expression", value)
 
 
 ## Create default animation for expression changes

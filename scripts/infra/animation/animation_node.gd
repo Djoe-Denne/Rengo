@@ -82,7 +82,9 @@ func get_progress() -> float:
 
 ## Applies animation to a target for the current frame
 ## Override this in subclasses to implement specific animation behavior
-## target: The object to animate (ResourceNode, Node, etc.)
+## target: The Controller to animate (e.g., ActorController)
+##         Animations should use controller.update_model_*() for data changes
+##         and controller.apply_view_effect() for pure visual effects
 ## progress: 0.0 to 1.0 normalized time
 ## delta: time elapsed since last frame
 func apply_to(target: Variant, progress: float, delta: float) -> void:

@@ -22,7 +22,7 @@ func to_degrees(degrees: float) -> RotateAction:
 
 ## Rotate by relative amount (radians)
 func by(amount: float) -> RotateAction:
-	var model = _get_model()
+	var model = target.model if ("model" in target) else null
 	if not model or not "rotation" in model:
 		push_warning("RotateAction.by(): target has no rotation model")
 		target_value = Vector3.ZERO
