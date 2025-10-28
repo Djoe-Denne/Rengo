@@ -251,7 +251,7 @@ Scan factory folder and auto-register factories:
 ```gdscript
 func _init() -> void:
     _factory_registry = AnimationFactoryRegistry.new()
-    _factory_registry.scan_and_register_factories("res://scripts/infra/animation/factory/")
+    _factory_registry.scan_and_register_factories("res://rengo/infra/animation/factory/")
 ```
 
 ### Factory Priorities

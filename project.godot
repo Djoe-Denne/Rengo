@@ -17,9 +17,9 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-ResourceRepository="*res://scripts/infra/resource_repository.gd"
-ImageRepository="*res://scripts/infra/image_repository.gd"
-AnimationRepository="*res://scripts/infra/animation/animation_repository.gd"
+ResourceRepository="*res://rengo/infra/resource_repository.gd"
+ImageRepository="*res://rengo/infra/image_repository.gd"
+AnimationRepository="*res://rengo/infra/animation/animation_repository.gd"
 
 [display]
 
