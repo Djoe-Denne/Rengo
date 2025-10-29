@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://dd87kq2kgkg7w"]
 
-[ext_resource type="Script" path="res://core-game/views/title_screen_view.gd" id="1_title_view"]
+[ext_resource type="Script" path="res://core-game/screen/views/title_screen_view.gd" id="1_title_view"]
 
 [node name="TitleScreen" type="Control"]
 script = ExtResource("1_title_view")

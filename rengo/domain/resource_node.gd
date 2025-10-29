@@ -11,6 +11,12 @@ var resource_name: String = ""
 ## Reference to the actual Godot node in the scene tree
 var scene_node: Node = null
 
+## Reference to the interaction area (Area2D or Area3D)
+var interaction_area: Node = null
+
+## Dictionary of registered interactions
+var registered_interactions: Dictionary = {}
+
 
 func _init(p_name: String = "") -> void:
 	resource_name = p_name
@@ -49,4 +55,15 @@ func update_position() -> void:
 ## Subclasses should override this to read from their model
 func update_visibility() -> void:
 	push_warning("ResourceNode.update_visibility should be overridden by subclass")
+
+
+## Registers an interaction for this resource
+## The interaction will be stored but not activated
+func register_interaction(interaction) -> void:  # InteractionDefinition
+	if not interaction:
+		push_error("ResourceNode.register_interaction: interaction is null")
+		return
+	
+	# Store the interaction
+	registered_interactions[interaction.name] = interaction
 

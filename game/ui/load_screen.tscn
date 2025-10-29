@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://load_screen_001"]
 
-[ext_resource type="Script" path="res://core-game/views/save_load_screen_view.gd" id="1_load_view"]
+[ext_resource type="Script" path="res://core-game/screen/views/save_load_screen_view.gd" id="1_load_view"]
 
 [node name="LoadScreen" type="Control"]
 script = ExtResource("1_load_view")

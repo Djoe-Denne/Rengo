@@ -65,7 +65,7 @@ func _setup_controller_callbacks(title_controller: TitleScreenController) -> voi
 	
 	# Continue callback - loads most recent save
 	title_controller.on_continue = func():
-		var SaveSystem = load("res://core-game/domain/save_system.gd")
+		var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 		var slot = SaveSystem.get_most_recent_save_slot()
 		if slot >= 0:
 			_on_continue_from_slot(slot)

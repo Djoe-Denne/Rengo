@@ -72,7 +72,7 @@ func save_to_selected_slot(save_data: SaveData) -> Error:
 		push_error("SaveLoadScreenController: Cannot save null data")
 		return ERR_INVALID_PARAMETER
 	
-	var SaveSystem = load("res://core-game/domain/save_system.gd")
+	var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 	var err = SaveSystem.save_game(save_load_model.selected_slot, save_data)
 	
 	if err == OK:
@@ -101,7 +101,7 @@ func load_from_selected_slot() -> SaveData:
 		push_warning("SaveLoadScreenController: Selected slot is empty")
 		return null
 	
-	var SaveSystem = load("res://core-game/domain/save_system.gd")
+	var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 	var save_data = SaveSystem.load_game(save_load_model.selected_slot, save_data_class)
 	
 	if save_data != null:
@@ -118,7 +118,7 @@ func delete_selected_slot() -> Error:
 	if save_load_model.is_selected_slot_empty():
 		return OK  # Already empty
 	
-	var SaveSystem = load("res://core-game/domain/save_system.gd")
+	var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 	var err = SaveSystem.delete_save(save_load_model.selected_slot)
 	
 	if err == OK:

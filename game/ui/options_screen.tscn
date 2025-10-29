@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://options_screen_001"]
 
-[ext_resource type="Script" path="res://core-game/views/options_screen_view.gd" id="1_options_view"]
+[ext_resource type="Script" path="res://core-game/screen/views/options_screen_view.gd" id="1_options_view"]
 
 [node name="OptionsScreen" type="Control"]
 script = ExtResource("1_options_view")

@@ -16,6 +16,9 @@ var scale: Vector3 = Vector3.ONE
 ## Whether this entity is visible
 var visible: bool = false
 
+## Whether this entity is currently focused (for input handling)
+var focused: bool = false
+
 ## List of observers (Callables) watching this transformable entity
 var _observers: Array = []
 
@@ -53,6 +56,13 @@ func set_visible(new_visible: bool) -> void:
 		_notify_observers()
 
 
+## Sets focused state and notifies observers
+func set_focused(new_focused: bool) -> void:
+	if focused != new_focused:
+		focused = new_focused
+		_notify_observers()
+
+
 ## Adds an observer to be notified of transform changes
 func add_observer(observer: Callable) -> void:
 	if not _observers.has(observer):
@@ -83,6 +93,7 @@ func _get_transform_state() -> Dictionary:
 		"position": position,
 		"rotation": rotation,
 		"scale": scale,
-		"visible": visible
+		"visible": visible,
+		"focused": focused
 	}
 

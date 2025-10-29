@@ -110,6 +110,43 @@ func scale():
 
 
 ## ============================================================================
+## INTERACTION API - Used for input handling
+## ============================================================================
+
+## Registers an interaction definition to this actor
+## The interaction is stored but not activated until interact() is called
+func interaction(interaction_def) -> ActorController:  # InteractionDefinition
+	if not interaction_def:
+		push_error("ActorController.interaction: interaction_def is null")
+		return self
+	
+	# Register to view (for collision detection)
+	if view:
+		view.register_interaction(interaction_def)
+	
+	# Register to InteractionHandler
+	InteractionHandler.register_interaction(self, interaction_def)
+	
+	return self
+
+
+## Creates and auto-registers an InteractAction to activate an interaction
+## Returns the ActionNode for optional chaining
+func interact(interaction_name: String):
+	var InteractAction = load("res://rengo/controllers/actions/input/interact_action.gd")
+	var action = InteractAction.new(self, interaction_name)
+	return register_action(action)
+
+
+## Creates and auto-registers a StopInteractAction to deactivate an interaction
+## Returns the ActionNode for optional chaining
+func stop_interact(interaction_name: String):
+	var StopInteractAction = load("res://rengo/controllers/actions/input/stop_interact_action.gd")
+	var action = StopInteractAction.new(self, interaction_name)
+	return register_action(action)
+
+
+## ============================================================================
 ## ANIMATION API - Used by animations to update Model and View
 ## ============================================================================
 

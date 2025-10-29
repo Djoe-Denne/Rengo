@@ -37,7 +37,7 @@ func _initialize_slots() -> void:
 
 ## Refreshes save slot metadata from disk
 func refresh_slots() -> void:
-	var SaveSystem = load("res://core-game/domain/save_system.gd")
+	var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 	var slots_data = SaveSystem.list_save_slots(max_slots)
 	
 	for i in range(max_slots):

@@ -32,7 +32,7 @@ func on_enter() -> void:
 	super.on_enter()
 	
 	# Check if any save exists and update model
-	var SaveSystem = load("res://core-game/domain/save_system.gd")
+	var SaveSystem = load("res://core-game/screen/domain/save_system.gd")
 	var has_save = SaveSystem.has_any_save()
 	get_title_model().set_has_save_game(has_save)
 
