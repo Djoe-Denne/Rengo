@@ -1,0 +1,7 @@
+faces:
+  - id: "face"
+    layer: "face"
+    image: "images/{plan}/{orientation}/faces/{expression}.png"
+    z: 1
+    anchor: {x: 0, y: 90}
+

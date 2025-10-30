@@ -167,6 +167,38 @@ func load_camera(camera_name: String) -> Dictionary:
 	return data
 
 
+## Resolves template placeholders in a path string using state values
+## Auto-detects {placeholder} patterns and replaces them with values from state dictionary
+## @param template: Template string with {placeholder} patterns (e.g., "images/{plan}/{orientation}/body.png")
+## @param state: Dictionary containing state values to substitute (e.g., {"plan": "medium_shot", "orientation": "front"})
+## @return: Resolved path string with all placeholders replaced
+func resolve_template_path(template: String, state: Dictionary) -> String:
+	if template == "":
+		return ""
+	
+	var result = template
+	
+	# Use regex to find all {placeholder} patterns
+	var regex = RegEx.new()
+	regex.compile("\\{([^}]+)\\}")
+	
+	var matches = regex.search_all(result)
+	
+	# Replace each placeholder with its state value
+	for match_obj in matches:
+		var placeholder = match_obj.get_string(1)  # Get the text inside {}
+		var replacement = state.get(placeholder, "")
+		
+		if replacement != "":
+			# Replace {placeholder} with the actual value
+			result = result.replace("{" + placeholder + "}", str(replacement))
+		else:
+			# Placeholder not found in state - leave it or warn
+			push_warning("Template placeholder '{%s}' not found in state dictionary. Template: %s" % [placeholder, template])
+	
+	return result
+
+
 ## Loads all YAML files from a directory
 ## @param base_dirs: List of base directories to search
 ## @param sub_dir: Subdirectory to scan (e.g., "acts/")

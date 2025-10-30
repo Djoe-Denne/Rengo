@@ -13,3 +13,10 @@ defaults:
   outfit: "default"
   body: "default"
 
+layers:
+  - id: "body"
+    layer: "body"
+    image: "images/{plan}/{orientation}/body/{pose}_{body}.png"
+    z: 0
+    anchor: {x: 0, y: 0}
+

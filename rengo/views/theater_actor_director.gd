@@ -7,36 +7,25 @@ const TheaterCostumier = preload("res://rengo/domain/theater_costumier.gd")
 
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
-## Creates or updates multi-layer sprite setup
+## Creates or updates multi-layer sprite setup using unified template system
 func instruct(actor, new_states: Dictionary = {}) -> void:
 	if not actor:
 		return
 	
-	# Ensure character is loaded
-	if not actor.actor_name in character_acts:
-		if not load_character(actor.actor_name):
-			push_error("Failed to load character: %s" % actor.actor_name)
-			return
+	# Ensure wardrobe is loaded for clothing layers
+	if not actor.actor_name in costumiers:
+		if not load_wardrobe(actor.actor_name):
+			push_warning("Failed to load wardrobe for character: %s" % actor.actor_name)
 	
 	# new_states contains the current states from Character model
-	# We use them directly without storing in actor
 	var current_states = new_states
-	
-	# Get the current pose/act
-	var pose = current_states.get("pose", "idle")
-	var orientation = current_states.get("orientation", "front")
-	
-	var act = get_act(actor.actor_name, pose)
-	if not act:
-		push_warning("Act '%s' not found for character '%s'" % [pose, actor.actor_name])
-		return
 	
 	# If sprite_container doesn't exist, create it
 	if not actor.sprite_container:
 		_create_sprite_container(actor, current_states)
 	
-	# Update all layers based on current states
-	_update_layers(actor, act, orientation, current_states)
+	# Update all layers based on current states (body + face + clothing)
+	_update_layers_unified(actor, current_states)
 
 
 ## Creates the sprite container with initial layer setup
@@ -45,33 +34,133 @@ func _create_sprite_container(actor, current_states: Dictionary) -> void:
 	container.name = "Actor_" + actor.actor_name
 	actor.sprite_container = container
 	
-	# Get default pose and orientation
-	var pose = current_states.get("pose", "idle")
-	var orientation = current_states.get("orientation", "front")
+	# Initialize layers dictionary
+	if not "layers" in actor:
+		actor.layers = {}
 	
-	var act = get_act(actor.actor_name, pose)
-	if not act:
-		push_warning("Default act not found for character: %s" % actor.actor_name)
+	# Layers will be created dynamically in _update_layers_unified
+
+
+## Updates all layers using unified template system (body + face + clothing)
+func _update_layers_unified(actor, current_states: Dictionary) -> void:
+	if not actor.sprite_container:
 		return
 	
-	# Get character size from metadata
-	var char_size = _get_character_size(actor)
+	# Prepare state dictionary with plan for template resolution
+	var state = current_states.duplicate()
+	if scene_model:
+		state["plan"] = scene_model.current_plan_id
 	
-	# Create mesh layers (3D quads)
-	var layer_names = act.get_layer_names(orientation)
-	for layer_name in layer_names:
-		var layer_data = act.get_layer_data(orientation, layer_name)
-		var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_data)
+	# Collect all layer definitions
+	var all_layers = []
+	
+	# 1. Load body layers from character.yaml
+	var body_layers = load_character_layers(actor.actor_name)
+	all_layers.append_array(body_layers)
+	
+	# 2. Load face layers from faces.yaml
+	var face_layers = load_face_layers(actor.actor_name)
+	all_layers.append_array(face_layers)
+	
+	# 3. Get clothing layers from costumier
+	var costumier = get_costumier(actor.actor_name)
+	if costumier and actor.character:
+		var clothing_layers_dict = costumier.get_layers(actor.character.panoplie, state)
 		
-		container.add_child(mesh_instance)
+		# Convert clothing dictionary to array format
+		for clothing_id in clothing_layers_dict.keys():
+			var clothing_layer = clothing_layers_dict[clothing_id]
+			all_layers.append({
+				"id": clothing_id,
+				"layer": clothing_id,
+				"image": clothing_layer.image,
+				"z": clothing_layer.z,
+				"anchor": clothing_layer.get("anchor", {"x": 0, "y": 0})
+			})
+	
+	# Ensure all layers exist as mesh instances
+	for layer_def in all_layers:
+		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
+		if layer_name == "":
+			continue
 		
-		# Store layer reference in actor
-		if not "layers" in actor:
-			actor.layers = {}
-		actor.layers[layer_name] = mesh_instance
+		# Create layer if it doesn't exist
+		if not layer_name in actor.layers:
+			_create_layer_mesh(actor, layer_name, layer_def)
+	
+	# Update all layers with resolved textures
+	for layer_def in all_layers:
+		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
+		if layer_name == "" or not layer_name in actor.layers:
+			continue
+		
+		# Resolve template path
+		var image_template = layer_def.get("image", "")
+		var image_path = ResourceRepository.resolve_template_path(image_template, state)
+		
+		# Load and apply texture
+		if image_path != "":
+			var texture = _load_texture(actor, image_path)
+			if texture:
+				_apply_texture_to_layer(actor, layer_name, texture, layer_def)
+			else:
+				# Hide layer if texture not found
+				_hide_layer(actor, layer_name)
+		else:
+			_hide_layer(actor, layer_name)
 
 
-## Updates all layers based on current states
+## Creates a mesh instance for a layer
+func _create_layer_mesh(actor, layer_name: String, layer_def: Dictionary) -> void:
+	if not actor.sprite_container:
+		return
+	
+	var char_size = _get_character_size(actor)
+	var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_def)
+	
+	actor.sprite_container.add_child(mesh_instance)
+	actor.layers[layer_name] = mesh_instance
+
+
+## Applies a texture to a layer mesh and updates its size
+func _apply_texture_to_layer(actor, layer_name: String, texture: Texture2D, layer_def: Dictionary) -> void:
+	if not layer_name in actor.layers:
+		return
+	
+	var mesh_instance = actor.layers[layer_name]
+	if not mesh_instance is MeshInstance3D or not mesh_instance.material_override:
+		return
+	
+	# Set texture
+	mesh_instance.material_override.albedo_texture = texture
+	mesh_instance.visible = true
+	
+	# Calculate and set quad size based on texture dimensions
+	var char_size = _get_character_size(actor)
+	var layer_size = _calculate_layer_size(texture, char_size, layer_name, actor)
+	if mesh_instance.mesh is QuadMesh:
+		mesh_instance.mesh.size = layer_size
+	
+	# Apply scaled anchor offset
+	if mesh_instance.has_meta("anchor_offset"):
+		var anchor = mesh_instance.get_meta("anchor_offset")
+		var pixels_per_cm = texture.get_size().y / layer_size.y
+		mesh_instance.position.x = anchor.get("x", 0.0) / pixels_per_cm
+		mesh_instance.position.y = anchor.get("y", 0.0) / pixels_per_cm
+
+
+## Hides a layer by clearing its texture
+func _hide_layer(actor, layer_name: String) -> void:
+	if not layer_name in actor.layers:
+		return
+	
+	var mesh_instance = actor.layers[layer_name]
+	if mesh_instance is MeshInstance3D and mesh_instance.material_override:
+		mesh_instance.material_override.albedo_texture = null
+		mesh_instance.visible = false
+
+
+## Updates all layers based on current states (DEPRECATED - kept for compatibility)
 func _update_layers(actor, act: Act, orientation: String, current_states: Dictionary) -> void:
 	var variant = act.get_variant(orientation)
 	if not "layers" in variant:
@@ -184,21 +273,26 @@ func _get_state_key_for_layer(current_states: Dictionary, layer_name: String) ->
 
 
 ## Loads a texture using ImageRepository with base directory resolution
+## Note: Template resolution should be done BEFORE calling this method
+## Includes smart fallback for handling "default" state values
 func _load_texture(actor, image_path: String) -> Texture2D:
 	# Check if it's a color specification (starts with #)
 	if image_path.begins_with("#"):
 		return _create_color_texture(Color(image_path))
 	
-	# Replace {plan} placeholder with current plan from scene model
-	if "{plan}" in image_path:
-		var plan_id = scene_model.current_plan_id if scene_model else ""
-		image_path = image_path.replace("{plan}", plan_id)
-	
 	# Get base directories for this character
 	var base_dirs = get_character_base_dirs(actor.actor_name)
 	
-	# Use ImageRepository to load with base directory resolution
+	# Try to load the resolved path
 	var texture = ImageRepository.get_or_load(base_dirs, image_path)
+	
+	# If not found and path contains "_default", try without it (smart fallback)
+	# This handles cases like "idle_default.png" -> "idle.png"
+	if not texture and "_default" in image_path:
+		var fallback_path = image_path.replace("_default", "")
+		texture = ImageRepository.get_or_load(base_dirs, fallback_path)
+		if texture:
+			return texture
 	
 	if not texture:
 		# Create colored placeholder if image not found

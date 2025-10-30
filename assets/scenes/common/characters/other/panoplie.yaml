@@ -2,33 +2,28 @@ wardrobe:
   - id: "casual"
     tags: ["casual", "top"]
     excluding_tags: ["top"]
-    variants:
-      - image: "images/{plan}/{orientation}/outfits/casual.png"
-        orientations: ["front"]
-        default: true
-      - image: "images/{plan}/{orientation}/outfits/casual_wave.png"
-        orientations: ["front"]
-        tags: ["waving"]
+    image: "images/{plan}/{orientation}/outfits/casual.png"
+    anchor: {x: 0, y: 0}
+    z: 2
+  
+  - id: "casual_wave"
+    tags: ["casual", "top"]
+    excluding_tags: ["top"]
+    image: "images/{plan}/{orientation}/outfits/casual_wave.png"
     anchor: {x: 0, y: 0}
     z: 2
   
   - id: "chino"
     tags: ["casual", "pants", "bottom"]
     excluding_tags: ["bottom"]
-    variants:
-      - image: "images/{plan}/{orientation}/outfits/chino.png"
-        orientations: ["front"]
-        default: true
+    image: "images/{plan}/{orientation}/outfits/chino.png"
     anchor: {x: 0, y: 0}
     z: 1
   
   - id: "jeans"
     tags: ["casual", "pants", "bottom"]
     excluding_tags: ["bottom"]
-    variants:
-      - image: "images/{plan}/{orientation}/outfits/jeans.png"
-        orientations: ["front"]
-        default: true
+    image: "images/{plan}/{orientation}/outfits/jeans.png"
     anchor: {x: 0, y: 0}
     z: 1
 

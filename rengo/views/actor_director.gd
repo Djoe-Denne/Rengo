@@ -127,6 +127,52 @@ func load_wardrobe(character_name: String) -> bool:
 	return false
 
 
+## Loads character layers from character.yaml
+## @param character_name: Name of the character
+## @return: Array of layer definitions or empty array on error
+func load_character_layers(character_name: String) -> Array:
+	var base_dirs = get_character_base_dirs(character_name)
+	
+	if base_dirs.is_empty():
+		push_warning("No base directories found for character: %s" % character_name)
+		return []
+	
+	# Load character.yaml
+	var metadata = ResourceRepository.load_yaml(base_dirs, "character", false)
+	if metadata.is_empty():
+		push_warning("Failed to load character metadata for: %s" % character_name)
+		return []
+	
+	# Extract layers array
+	if "layers" in metadata:
+		return metadata.layers
+	
+	return []
+
+
+## Loads face layers from faces.yaml
+## @param character_name: Name of the character
+## @return: Array of face layer definitions or empty array on error
+func load_face_layers(character_name: String) -> Array:
+	var base_dirs = get_character_base_dirs(character_name)
+	
+	if base_dirs.is_empty():
+		push_warning("No base directories found for character: %s" % character_name)
+		return []
+	
+	# Load faces.yaml
+	var faces_data = ResourceRepository.load_yaml(base_dirs, "faces", false)
+	if faces_data.is_empty():
+		push_warning("Failed to load faces for: %s" % character_name)
+		return []
+	
+	# Extract faces array
+	if "faces" in faces_data:
+		return faces_data.faces
+	
+	return []
+
+
 ## Gets the base directories for a character's assets
 ## Returns scene-specific path first (if it exists), then common path
 func get_character_base_dirs(character_name: String) -> Array:

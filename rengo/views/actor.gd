@@ -18,6 +18,9 @@ var layers: Dictionary = {}
 ## Reference to the director managing this actor
 var director = null  # ActorDirector
 
+## Reference to the ActorController (MVC: view knows its controller)
+var controller = null  # ActorController
+
 
 func _init(p_actor_name: String = "", p_director = null) -> void:
 	super(p_actor_name)
@@ -107,15 +110,6 @@ func _create_interaction_area() -> void:
 	if not sprite_container:
 		return
 	
-	# Determine if this is 3D or 2D based on sprite_container type
-	if sprite_container is Node3D:
-		_create_area3d()
-	elif sprite_container is Node2D:
-		_create_area2d()
-
-
-## Creates Area3D for 3D actors (theater mode)
-func _create_area3d() -> void:
 	var CollisionHelper = load("res://core-game/input/collision_helper.gd")
 	interaction_area = CollisionHelper.create_area3d_for_actor(sprite_container)
 	
@@ -123,93 +117,24 @@ func _create_area3d() -> void:
 		sprite_container.add_child(interaction_area)
 		
 		# Connect signals to InteractionHandler
-		interaction_area.input_event.connect(_on_area3d_input_event)
-		interaction_area.mouse_entered.connect(_on_area3d_mouse_entered)
-		interaction_area.mouse_exited.connect(_on_area3d_mouse_exited)
-
-
-## Creates Area2D for 2D actors (movie mode)
-func _create_area2d() -> void:
-	# For 2D mode, we need a Sprite2D child
-	var sprite: Sprite2D = null
-	for child in sprite_container.get_children():
-		if child is Sprite2D:
-			sprite = child
-			break
-	
-	if not sprite:
-		return
-	
-	var CollisionHelper = load("res://core-game/input/collision_helper.gd")
-	interaction_area = CollisionHelper.create_area2d_for_sprite(sprite)
-	
-	if interaction_area:
-		sprite_container.add_child(interaction_area)
-		
-		# Connect signals to InteractionHandler
-		interaction_area.input_event.connect(_on_area2d_input_event)
-		interaction_area.mouse_entered.connect(_on_area2d_mouse_entered)
-		interaction_area.mouse_exited.connect(_on_area2d_mouse_exited)
+		interaction_area.input_event.connect(_on_input_event)
+		interaction_area.mouse_entered.connect(_on_mouse_entered)
+		interaction_area.mouse_exited.connect(_on_mouse_exited)
 
 
 ## Signal handlers for Area3D
-func _on_area3d_input_event(_camera: Node, _event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
+func _on_input_event(_camera: Node, _event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
 	# Input events are handled by InteractionHandler via custom actions
 	pass
 
 
-func _on_area3d_mouse_entered() -> void:
+func _on_mouse_entered() -> void:
 	# Notify InteractionHandler that this actor is hovered
-	var controller = _get_controller()
 	if controller:
 		InteractionHandler.on_hover_enter(controller)
 
 
-func _on_area3d_mouse_exited() -> void:
+func _on_mouse_exited() -> void:
 	# Notify InteractionHandler that this actor is no longer hovered
-	var controller = _get_controller()
 	if controller:
 		InteractionHandler.on_hover_exit(controller)
-
-
-## Signal handlers for Area2D
-func _on_area2d_input_event(_viewport: Node, _event: InputEvent, _shape_idx: int) -> void:
-	# Input events are handled by InteractionHandler via custom actions
-	pass
-
-
-func _on_area2d_mouse_entered() -> void:
-	# Notify InteractionHandler that this actor is hovered
-	var controller = _get_controller()
-	if controller:
-		InteractionHandler.on_hover_enter(controller)
-
-
-func _on_area2d_mouse_exited() -> void:
-	# Notify InteractionHandler that this actor is no longer hovered
-	var controller = _get_controller()
-	if controller:
-		InteractionHandler.on_hover_exit(controller)
-
-
-## Gets the ActorController for this actor
-## Searches for controller in the scene
-func _get_controller():
-	# The controller should be accessible through vn_scene
-	if not vn_scene or not vn_scene.controller:
-		return null
-	
-	# Find the controller that references this actor
-	var scene_controller = vn_scene.controller
-	for resource_name in scene_controller.resources:
-		var resource = scene_controller.resources[resource_name]
-		# Check if this resource is an ActorController with this view
-		if resource.has_method("get") and resource.get("view") == self:
-			return resource
-		# Or if it's the ResourceNode itself (for backward compatibility)
-		if resource == self:
-			# Try to find the controller by actor_name
-			# This is a fallback - ideally controllers should be registered
-			pass
-	
-	return null
