@@ -167,13 +167,18 @@ func _input(event: InputEvent) -> void:
 		# Update hover state
 		if is_hit and not is_mouse_over:
 			_trigger_mouse_enter()
+			# Consume the event - mouse is over opaque part of this layer
+			get_viewport().set_input_as_handled()
 		elif not is_hit and is_mouse_over:
 			_trigger_mouse_exit()
+			# Don't consume - mouse moved to transparent area or outside quad
 	
 	# Handle mouse button clicks
 	elif event is InputEventMouseButton:
 		if event.pressed and is_mouse_over:
 			layer_clicked.emit(layer_name, event)
+			# Consume the event - click was on opaque part of this layer
+			get_viewport().set_input_as_handled()
 
 
 ## Performs 2-step collision check: raycast to quad, then alpha check

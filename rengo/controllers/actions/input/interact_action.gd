@@ -44,7 +44,7 @@ func execute() -> void:
 	InteractionHandler.activate(controller, interaction_name, target_layer)
 	
 	# Enable debug visualization for the target layer
-	_enable_debug_visualization()
+	#_enable_debug_visualization()
 	
 	_is_complete = true
 
