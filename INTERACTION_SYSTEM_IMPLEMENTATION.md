@@ -1,28 +1,57 @@
-# Interaction Input System - Implementation Complete
+# Interaction Input System - Layer-Based Texture Collision
 
 ## Overview
 
-A flexible, builder-pattern-based input handling system has been successfully implemented for ResourceNodes (characters, cameras, etc.) in the visual novel engine. The system provides an easy-to-use API for handling hover events, custom Godot actions, and focus management, fully integrated with the existing MVC architecture and action queue system.
+A flexible, builder-pattern-based input handling system with texture-based collision detection has been successfully implemented for DisplayableNodes (characters, backgrounds, etc.) in the visual novel engine. The system provides per-layer interaction support, allowing fine-grained input handling on specific visual layers or merged root collision areas. All callbacks receive layer information, enabling layer-specific responses to user input.
 
 ## What Was Implemented
 
-### Core Input System Classes (in `core-game/input/`)
+### Core Architecture
+
+**NEW: DisplayableNode/DisplayableLayer System**
+
+1. **DisplayableLayer** (`rengo/views/displayable_layer.gd`) - **NEW**
+   - Self-contained layer wrapper extending Node3D
+   - Manages: MeshInstance3D, texture, collision area, shader, visibility
+   - **Texture-based collision**: Extracts polygon from alpha channel
+   - Signals: `layer_hovered`, `layer_unhovered`, `layer_clicked`
+   - Automatically notifies InteractionHandler with layer information
+   - Dynamically rebuilds collision when texture changes
+
+2. **DisplayableNode** (`rengo/views/displayable_node.gd`) - **NEW**
+   - Base class for multi-layer displayable resources
+   - Extends ResourceNode
+   - Manages dictionary of DisplayableLayer instances
+   - **Root collision area**: Merged collision of all visible layers
+   - Automatically rebuilds root collision when layer visibility changes
+   - Routes layer signals to InteractionHandler
+
+3. **Actor** (`rengo/views/actor.gd`) - **REFACTORED**
+   - Now extends DisplayableNode (was ResourceNode)
+   - Simplified: layer management delegated to base class
+   - Focuses on character-specific logic and observation
+
+### Input System Classes (in `core-game/input/`)
 
 1. **InputDefinition** (`input_definition.gd`)
    - Data class representing a single input configuration
    - Supports "hover" and "custom" input types
    - Stores callbacks for in/out/on events
+   - **Callbacks now receive (controller, layer_name) parameters**
    - Includes focus requirement flag
 
-2. **InputBuilder** (`input_builder.gd`)
+2. **InputBuilder** (`input_builder.gd`) - **UPDATED**
    - Fluent API for building InputDefinitions
    - Static methods: `hover()`, `custom(action_name)`
    - Chaining methods: `on_focus()`, `in_callback()`, `out_callback()`, `callback()`
+   - **All callbacks have signature: func(controller, layer_name)**
    - `build()` method returns InputDefinition
 
-3. **InteractionDefinition** (`interaction_definition.gd`)
+3. **InteractionDefinition** (`interaction_definition.gd`) - **UPDATED**
    - Data class for complete interactions
    - Contains name, array of InputDefinitions, and activation state
+   - **NEW: Layer tracking with `active_layers` dictionary**
+   - Methods: `activate_on_layer()`, `deactivate_on_layer()`, `is_active_on_layer()`
    - Helper methods for querying inputs by type or action
 
 4. **InteractionBuilder** (`interaction_builder.gd`)
@@ -30,18 +59,24 @@ A flexible, builder-pattern-based input handling system has been successfully im
    - Static constructor: `builder()`
    - Methods: `name()`, `add()`, `build()`
 
-5. **InteractionHandler** (`interaction_handler.gd`)
+5. **InteractionHandler** (`interaction_handler.gd`) - **UPDATED**
    - Singleton autoload managing all interactions
    - Maintains registry of active/registered interactions per controller
+   - **Layer-aware routing**: Tracks activation per layer
+   - Methods accept optional `layer_name` parameter (null = root)
+   - **Passes layer information to all callbacks**
    - Tracks focus state per resource
-   - Routes input events to appropriate callbacks
    - Registered as autoload in project.godot
 
-6. **CollisionHelper** (`collision_helper.gd`)
+6. **CollisionHelper** (`collision_helper.gd`) - **UPDATED**
    - Utility for generating collision shapes
-   - `create_area3d_for_actor()`: Creates Area3D with BoxShape3D for 3D meshes
+   - **NEW: `create_area3d_from_texture()`**: Texture-based 3D collision
+   - **NEW: `create_collision_polygon_from_texture()`**: Alpha channel extraction
+   - **NEW: `convert_2d_polygon_to_3d_collision()`**: 2D to 3D shape conversion
+   - **NEW: `merge_area3d_shapes()`**: Merges multiple Area3D for root collision
+   - **NEW: `update_merged_area3d()`**: Updates merged collision dynamically
+   - `create_area3d_for_actor()`: DEPRECATED - use DisplayableLayer
    - `create_area2d_for_sprite()`: Creates Area2D with polygon from texture alpha
-   - Update methods for refreshing collision shapes
 
 ### Model Extensions
 
@@ -57,16 +92,48 @@ A flexible, builder-pattern-based input handling system has been successfully im
 - Added `registered_interactions: Dictionary` for storing InteractionDefinitions
 - Added `register_interaction(InteractionDefinition)` method
 
-**Actor** (`rengo/views/actor.gd`)
-- Modified `create_scene_node()` to call `_create_interaction_area()`
-- Added `_create_interaction_area()` to detect 2D vs 3D mode
-- Added `_create_area3d()` for 3D theater mode (Node3D + Area3D)
-- Added `_create_area2d()` for 2D movie mode (Node2D + Area2D)
-- Connected area signals to InteractionHandler:
-  - `input_event` → `_on_area3d/2d_input_event()`
-  - `mouse_entered` → `_on_area3d/2d_mouse_entered()`
-  - `mouse_exited` → `_on_area3d/2d_mouse_exited()`
-- Added `_get_controller()` helper to find ActorController reference
+**DisplayableNode** (`rengo/views/displayable_node.gd`) - **NEW**
+- Extends ResourceNode
+- Properties:
+  - `layers: Dictionary` - All DisplayableLayer instances by name
+  - `root_interaction_area: Area3D` - Merged collision of visible layers
+  - `interaction_areas: Dictionary` - All collision areas (root + per-layer)
+  - `controller` - Reference for interaction callbacks
+- Methods:
+  - `add_layer()` - Creates and registers a DisplayableLayer
+  - `get_layer()` - Retrieves layer by name
+  - `remove_layer()` - Removes and frees a layer
+  - `get_visible_layers()` - Returns array of visible layers
+  - `rebuild_root_collision()` - Merges all visible layer collisions
+  - `_on_layer_visibility_changed()` - Triggered when layer visibility changes
+  - `_connect_layer_signals()` - Connects layer signals to interaction system
+- Signal handlers for root area hover events
+
+**DisplayableLayer** (`rengo/views/displayable_layer.gd`) - **NEW**
+- Extends Node3D (wraps mesh, texture, collision, shader)
+- Properties:
+  - `layer_name: String` - Layer identifier
+  - `mesh_instance: MeshInstance3D` - Visual mesh
+  - `interaction_area: Area3D` - Texture-based collision
+  - `texture: Texture2D` - Current texture
+  - `shader_material: ShaderMaterial` - Applied shader
+  - `is_layer_visible: bool` - Visibility state
+  - `z_index: float` - Layer ordering
+- Methods:
+  - `set_texture()` - Updates texture and rebuilds collision
+  - `apply_shader()` - Applies shader with parameters
+  - `clear_shader()` - Removes shader
+  - `set_layer_visible()` - Controls visibility (triggers root rebuild)
+  - `create_collision_area()` - Generates Area3D from texture alpha
+  - `rebuild_collision()` - Regenerates collision
+- Automatically notifies InteractionHandler on hover with layer name
+
+**Actor** (`rengo/views/actor.gd`) - **REFACTORED**
+- Now extends DisplayableNode (was ResourceNode)
+- Removed: `sprite_container`, `layers` dictionary (inherited from DisplayableNode)
+- Simplified `create_scene_node()` - delegates collision to parent
+- Removed direct mesh/collision management
+- Focuses on character observation and state management
 
 ### Controller Extensions
 
@@ -74,24 +141,30 @@ A flexible, builder-pattern-based input handling system has been successfully im
 - Added `interaction(InteractionDefinition)` method
   - Registers interaction to view and InteractionHandler
   - Returns self for chaining
-- Added `interact(String)` method
+- Added `interact(String)` method - **UPDATED**
   - Creates and registers InteractAction
-  - Returns ActionNode for chaining
-- Added `stop_interact(String)` method
+  - Returns ActionNode with `.on()` chaining support
+- Added `stop_interact(String)` method - **UPDATED**
   - Creates and registers StopInteractAction
-  - Returns ActionNode for chaining
+  - Returns ActionNode with `.on()` chaining support
 
 ### New Actions
 
-**InteractAction** (`rengo/controllers/actions/input/interact_action.gd`)
+**InteractAction** (`rengo/controllers/actions/input/interact_action.gd`) - **UPDATED**
 - Activates a registered interaction
 - Instant completion (duration = 0)
-- Calls `InteractionHandler.activate(controller, interaction_name)`
+- **NEW: `target_layer` property** - Specifies layer (null = root only)
+- **NEW: `on(layer_name)` method** - Fluent API for layer targeting
+- Calls `InteractionHandler.activate(controller, interaction_name, target_layer)`
+- **Example**: `actor_ctrl.interact("poke").on("face")`
 
-**StopInteractAction** (`rengo/controllers/actions/input/stop_interact_action.gd`)
+**StopInteractAction** (`rengo/controllers/actions/input/stop_interact_action.gd`) - **UPDATED**
 - Deactivates an active interaction
 - Instant completion (duration = 0)
-- Calls `InteractionHandler.deactivate(controller, interaction_name)`
+- **NEW: `target_layer` property** - Specifies layer (null = all layers)
+- **NEW: `on(layer_name)` method** - Fluent API for layer targeting
+- Calls `InteractionHandler.deactivate(controller, interaction_name, target_layer)`
+- **Example**: `actor_ctrl.stop_interact("poke").on("face")`
 
 ### Configuration
 
@@ -129,23 +202,38 @@ A flexible, builder-pattern-based input handling system has been successfully im
 
 ```gdscript
 # Define an interaction
+# NOTE: All callbacks now receive (controller, layer_name) parameters
 var poke_interaction = InteractionBuilder.builder() \
     .name("poke") \
     .add(InputBuilder.hover() \
-        .in_callback(func(ctrl): ctrl.model.set_focused(true)) \
-        .out_callback(func(ctrl): ctrl.model.set_focused(false)) \
+        .in_callback(func(ctrl, layer): 
+            print("Hovering ", layer if layer else "root")
+            ctrl.model.set_state("status", "focused")) \
+        .out_callback(func(ctrl, layer): 
+            ctrl.model.set_state("status", "")) \
         .build()) \
     .add(InputBuilder.custom("ok_confirm") \
         .on_focus(true) \
-        .callback(func(ctrl): ctrl.express("surprised").say("Ow!")) \
+        .callback(func(ctrl, layer): 
+            var msg = "Ow on " + (layer if layer else "character")
+            ctrl.express("surprised").say(msg)) \
         .build()) \
     .build()
 
-# Register and activate
-actor_ctrl.interaction(poke_interaction)  # Register (stores but inactive)
-actor_ctrl.interact("poke")                # Queue action to activate
-# ... later ...
-actor_ctrl.stop_interact("poke")           # Queue action to deactivate
+# Register interaction (stores but inactive)
+actor_ctrl.interaction(poke_interaction)
+
+# Activate on root (merged collision of all visible layers)
+actor_ctrl.interact("poke")
+
+# Activate on specific layer only (e.g., face layer)
+actor_ctrl.interact("poke").on("face")
+
+# Deactivate all layers
+actor_ctrl.stop_interact("poke")
+
+# Deactivate specific layer only
+actor_ctrl.stop_interact("poke").on("face")
 ```
 
 ## Key Features
@@ -153,29 +241,48 @@ actor_ctrl.stop_interact("poke")           # Queue action to deactivate
 ### 1. Builder Pattern API
 Clean, fluent API for defining complex interactions with multiple inputs and callbacks.
 
-### 2. MVC Integration
-- **Model**: Focus state stored in Transformable with observer pattern
-- **View**: Collision detection via Area3D/Area2D
-- **Controller**: Public API for interaction management
+### 2. Texture-Based Collision Detection
+- **Alpha channel extraction**: Precise collision polygons from texture transparency
+- **Per-layer collision**: Each DisplayableLayer has its own interaction area
+- **Root collision**: Dynamically merged collision of all visible layers
+- **Automatic rebuild**: Root collision updates when layer visibility changes
 
-### 3. Action Queue Integration
+### 3. Per-Layer Interactions
+- **Layer targeting**: Activate interactions on specific layers with `.on(layer_name)`
+- **Layer callbacks**: All callbacks receive layer information
+- **Mixed activation**: Same interaction can be active on multiple layers simultaneously
+- **Fine-grained control**: Deactivate per layer or all at once
+
+### 4. MVC Integration
+- **Model**: Focus state stored in Transformable with observer pattern
+- **View**: DisplayableNode/DisplayableLayer architecture for self-managing layers
+- **Controller**: Public API for interaction management with layer support
+
+### 5. Action Queue Integration
 Activation/deactivation queued as actions for synchronization with scene flow.
 
-### 4. Immediate Callback Execution
+### 6. Immediate Callback Execution
 Callbacks execute immediately for responsive input, but can enqueue actions for choreographed responses.
 
-### 5. Automatic Collision Generation
-- 3D: BoxShape3D for each mesh layer
-- 2D: Polygon from texture alpha channel
+### 7. Automatic Collision Management
+- **3D**: ConvexPolygonShape3D from texture alpha channel
+- **2D**: Polygon2D from texture alpha channel
+- **Dynamic**: Collision rebuilds when texture changes
+- **Merged**: Root area combines all visible layer collisions
 
-### 6. Focus Management
+### 8. Focus Management
 - Stored in model for observer reactivity
 - Automatically managed by hover callbacks
 - Enforceable requirement for custom actions
 
-### 7. Flexible Input Types
-- **Hover**: Mouse enter/exit events
+### 9. Flexible Input Types
+- **Hover**: Mouse enter/exit events (per layer or root)
 - **Custom**: Any Godot input action (keyboard, mouse, gamepad)
+
+### 10. Scalable Architecture
+- **DisplayableNode**: Base class for any multi-layer displayable resource
+- **DisplayableLayer**: Self-contained layer with texture, collision, shader
+- **Extensible**: Easy to add support for Backgrounds, Props, UI elements
 
 ## Architecture Decisions
 
@@ -249,6 +356,10 @@ Possible improvements:
 ## Files Created
 
 ```
+rengo/views/
+├── displayable_layer.gd         # NEW: Self-contained layer wrapper
+└── displayable_node.gd          # NEW: Multi-layer displayable base class
+
 core-game/input/
 ├── input_definition.gd
 ├── input_builder.gd
@@ -268,16 +379,56 @@ rengo/controllers/actions/input/
 ## Files Modified
 
 ```
-rengo/models/interfaces/transformable.gd  # Added focused property
-rengo/domain/resource_node.gd            # Added interaction support
-rengo/views/actor.gd                     # Added collision area creation
-rengo/controllers/actor_controller.gd    # Added interaction methods
-project.godot                            # Registered autoload + ok_confirm action
+rengo/views/actor.gd                           # REFACTORED: Extends DisplayableNode
+rengo/views/theater_actor_director.gd          # UPDATED: Works with DisplayableLayer
+rengo/controllers/actor_controller.gd          # Added interaction methods
+core-game/input/collision_helper.gd            # UPDATED: Texture polygon extraction
+core-game/input/interaction_definition.gd      # UPDATED: Layer activation tracking
+core-game/input/interaction_handler.gd         # UPDATED: Layer-aware routing
+core-game/input/input_builder.gd               # UPDATED: Callback signature docs
+rengo/controllers/actions/input/interact_action.gd       # UPDATED: .on() chaining
+rengo/controllers/actions/input/stop_interact_action.gd  # UPDATED: .on() chaining
+rengo/models/interfaces/transformable.gd       # Added focused property
+rengo/domain/resource_node.gd                  # Added interaction support
+project.godot                                  # Registered autoload + ok_confirm action
 ```
+
+## Architecture Benefits
+
+### Encapsulation
+Each DisplayableLayer manages its own texture, collision, shader, and visibility. No external code needs to manage these concerns.
+
+### Scalability
+The DisplayableNode/DisplayableLayer pattern can be extended to:
+- Backgrounds with multi-layer parallax
+- Interactive UI elements with layer-specific hotspots
+- Props and environmental objects
+- Any resource that needs layered rendering and interaction
+
+### Maintainability
+Clear separation of concerns:
+- **DisplayableLayer**: Single layer management
+- **DisplayableNode**: Multi-layer coordination and root collision
+- **Actor**: Character-specific observation and behavior
+- **Director**: Layer creation and texture application
+- **InteractionHandler**: Global interaction routing
+
+### Performance
+- Collision shapes generated once per texture
+- Root collision rebuilds only when layer visibility changes
+- No per-frame overhead for inactive interactions
+- Dictionary lookups for O(1) interaction queries
 
 ## Conclusion
 
-The interaction input system is fully implemented and ready for use. It provides a clean, flexible API for handling user input on visual novel ResourceNodes while maintaining full integration with the existing MVC architecture and action queue system.
+The interaction input system with layer-based texture collision is fully implemented and ready for use. It provides:
+
+1. **Texture-based collision**: Precise interaction areas from alpha channels
+2. **Per-layer targeting**: Fine-grained control over which layers respond to input
+3. **Dynamic root collision**: Automatically merged collision of visible layers
+4. **Clean architecture**: DisplayableNode/DisplayableLayer pattern for scalability
+5. **Fluent API**: `.on()` chaining for layer-specific activation
+6. **Layer-aware callbacks**: All callbacks receive layer information
 
 All planned features have been implemented, documented, and tested. The system is extensible and follows established patterns in the codebase.
 

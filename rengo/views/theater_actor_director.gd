@@ -30,19 +30,19 @@ func instruct(actor, new_states: Dictionary = {}) -> void:
 
 ## Creates the sprite container with initial layer setup
 func _create_sprite_container(actor, current_states: Dictionary) -> void:
-	var container = Node3D.new()
-	container.name = "Actor_" + actor.actor_name
-	actor.sprite_container = container
+	# Actor now extends DisplayableNode, sprite_container should already exist
+	if not actor.sprite_container:
+		var container = Node3D.new()
+		container.name = "Actor_" + actor.actor_name
+		actor.sprite_container = container
 	
-	# Initialize layers dictionary
-	if not "layers" in actor:
-		actor.layers = {}
+	# Initialize shader manager for this actor
+	if not actor.shader_manager:
+		actor.shader_manager = ShaderManager.new()
+		var base_dirs = get_character_base_dirs(actor.actor_name)
+		actor.shader_manager.load_config(base_dirs)
 	
-	# Load shader configuration for this actor
-	if actor.shader_config.is_empty():
-		actor.shader_config = load_shader_config(actor.actor_name)
-	
-	# Layers will be created dynamically in _update_layers_unified
+	# Layers will be created dynamically in _update_layers_unified as DisplayableLayer instances
 
 
 ## Updates all layers using unified template system (body + face + clothing)
@@ -82,20 +82,24 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 				"anchor": clothing_layer.get("anchor", {"x": 0, "y": 0})
 			})
 	
-	# Ensure all layers exist as mesh instances
+	# Ensure all layers exist as DisplayableLayer instances
 	for layer_def in all_layers:
 		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
 		if layer_name == "":
 			continue
 		
-		# Create layer if it doesn't exist
+		# Create layer if it doesn't exist (using DisplayableNode's add_layer)
 		if not layer_name in actor.layers:
-			_create_layer_mesh(actor, layer_name, layer_def)
+			actor.add_layer(layer_name, layer_def)
 	
 	# Update all layers with resolved textures
 	for layer_def in all_layers:
 		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
 		if layer_name == "" or not layer_name in actor.layers:
+			continue
+		
+		var layer = actor.get_layer(layer_name)
+		if not layer:
 			continue
 		
 		# Resolve template path
@@ -106,16 +110,42 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 		if image_path != "":
 			var texture = _load_texture(actor, image_path)
 			if texture:
-				_apply_texture_to_layer(actor, layer_name, texture, layer_def)
+				# Apply texture to DisplayableLayer
+				_apply_texture_to_displayable_layer(actor, layer, texture, layer_def)
 			else:
 				# Hide layer if texture not found
-				_hide_layer(actor, layer_name)
+				layer.set_layer_visible(false)
 		else:
-			_hide_layer(actor, layer_name)
+			layer.set_layer_visible(false)
 
 
-## Creates a mesh instance for a layer
+## Applies a texture to a DisplayableLayer and updates its size
+func _apply_texture_to_displayable_layer(actor, layer: DisplayableLayer, texture: Texture2D, layer_def: Dictionary) -> void:
+	if not layer or not texture:
+		return
+	
+	# Calculate quad size based on texture dimensions
+	var char_size = _get_character_size(actor)
+	var layer_size = _calculate_layer_size(texture, char_size, layer.layer_name, actor)
+	
+	# Set texture on DisplayableLayer (this also rebuilds collision)
+	layer.set_texture(texture, layer_size)
+	
+	# Apply anchor offset if specified
+	if "anchor" in layer_def:
+		var anchor = layer_def.anchor
+		var pixels_per_cm = texture.get_size().y / layer_size.y
+		layer.position.x = anchor.get("x", 0.0) / pixels_per_cm
+		layer.position.y = anchor.get("y", 0.0) / pixels_per_cm
+	
+	# Make layer visible
+	layer.set_layer_visible(true)
+
+
+## DEPRECATED: Old mesh-based methods kept for compatibility
+## Creates a mesh instance for a layer (DEPRECATED - use DisplayableLayer)
 func _create_layer_mesh(actor, layer_name: String, layer_def: Dictionary) -> void:
+	push_warning("TheaterActorDirector._create_layer_mesh is deprecated, use DisplayableLayer instead")
 	if not actor.sprite_container:
 		return
 	
@@ -126,26 +156,32 @@ func _create_layer_mesh(actor, layer_name: String, layer_def: Dictionary) -> voi
 	actor.layers[layer_name] = mesh_instance
 
 
-## Applies a texture to a layer mesh and updates its size
+## Applies a texture to a layer mesh (DEPRECATED - use _apply_texture_to_displayable_layer)
 func _apply_texture_to_layer(actor, layer_name: String, texture: Texture2D, layer_def: Dictionary) -> void:
+	push_warning("TheaterActorDirector._apply_texture_to_layer is deprecated")
 	if not layer_name in actor.layers:
 		return
 	
-	var mesh_instance = actor.layers[layer_name]
-	if not mesh_instance is MeshInstance3D or not mesh_instance.material_override:
+	var layer_obj = actor.layers[layer_name]
+	
+	# Check if it's a DisplayableLayer
+	if layer_obj is DisplayableLayer:
+		_apply_texture_to_displayable_layer(actor, layer_obj, texture, layer_def)
 		return
 	
-	# Set texture
+	# Old MeshInstance3D path (for compatibility)
+	var mesh_instance = layer_obj as MeshInstance3D
+	if not mesh_instance or not mesh_instance.material_override:
+		return
+	
 	mesh_instance.material_override.albedo_texture = texture
 	mesh_instance.visible = true
 	
-	# Calculate and set quad size based on texture dimensions
 	var char_size = _get_character_size(actor)
 	var layer_size = _calculate_layer_size(texture, char_size, layer_name, actor)
 	if mesh_instance.mesh is QuadMesh:
 		mesh_instance.mesh.size = layer_size
 	
-	# Apply scaled anchor offset
 	if mesh_instance.has_meta("anchor_offset"):
 		var anchor = mesh_instance.get_meta("anchor_offset")
 		var pixels_per_cm = texture.get_size().y / layer_size.y
@@ -153,13 +189,21 @@ func _apply_texture_to_layer(actor, layer_name: String, texture: Texture2D, laye
 		mesh_instance.position.y = anchor.get("y", 0.0) / pixels_per_cm
 
 
-## Hides a layer by clearing its texture
+## Hides a layer (DEPRECATED - use layer.set_layer_visible(false))
 func _hide_layer(actor, layer_name: String) -> void:
 	if not layer_name in actor.layers:
 		return
 	
-	var mesh_instance = actor.layers[layer_name]
-	if mesh_instance is MeshInstance3D and mesh_instance.material_override:
+	var layer_obj = actor.layers[layer_name]
+	
+	# Check if it's a DisplayableLayer
+	if layer_obj is DisplayableLayer:
+		layer_obj.set_layer_visible(false)
+		return
+	
+	# Old MeshInstance3D path (for compatibility)
+	var mesh_instance = layer_obj as MeshInstance3D
+	if mesh_instance and mesh_instance.material_override:
 		mesh_instance.material_override.albedo_texture = null
 		mesh_instance.visible = false
 

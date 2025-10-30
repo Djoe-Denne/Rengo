@@ -12,6 +12,11 @@ var inputs: Array = []
 ## Whether this interaction is currently active
 var is_active: bool = false
 
+## Dictionary tracking which layers this interaction is active on
+## { layer_name: bool } where layer_name can be null for root
+## null key means root (merged collision area)
+var active_layers: Dictionary = {}
+
 
 func _init(p_name: String = "", p_inputs: Array = []) -> void:
 	name = p_name
@@ -49,4 +54,42 @@ func get_input_by_action(action_name: String) -> InputDefinition:
 		if input.input_type == "custom" and input.action_name == action_name:
 			return input
 	return null
+
+
+## ============================================================================
+## LAYER ACTIVATION METHODS
+## ============================================================================
+
+## Returns true if this interaction is active on the specified layer
+## layer_name: String or null (null = root)
+func is_active_on_layer(layer_name) -> bool:
+	return active_layers.get(layer_name, false)
+
+
+## Activates this interaction for a specific layer
+## layer_name: String or null (null = root only)
+func activate_on_layer(layer_name) -> void:
+	active_layers[layer_name] = true
+	is_active = true  # Mark as active if any layer is active
+
+
+## Deactivates this interaction for a specific layer
+## layer_name: String or null (null = root)
+func deactivate_on_layer(layer_name) -> void:
+	active_layers.erase(layer_name)
+	
+	# If no layers are active, mark as inactive
+	if active_layers.is_empty():
+		is_active = false
+
+
+## Deactivates this interaction for all layers
+func deactivate_all_layers() -> void:
+	active_layers.clear()
+	is_active = false
+
+
+## Gets all active layers for this interaction
+func get_active_layers() -> Array:
+	return active_layers.keys()
 

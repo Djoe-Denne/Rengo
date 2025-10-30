@@ -4,6 +4,39 @@ class_name CollisionHelper
 extends RefCounted
 
 
+## Creates an Area3D with texture-based collision for a single layer
+## Uses texture alpha channel to create precise collision polygon
+static func create_area3d_from_texture(texture: Texture2D, quad_size: Vector2) -> Area3D:
+	if not texture:
+		push_error("CollisionHelper: texture is null")
+		return null
+	
+	var area = Area3D.new()
+	area.name = "InteractionArea3D"
+	area.input_ray_pickable = true
+	
+	# Extract 2D polygon from texture alpha
+	var polygon_2d = create_collision_polygon_from_texture(texture)
+	
+	if polygon_2d.size() == 0:
+		push_warning("CollisionHelper: No collision polygon generated from texture")
+		# Fallback to box collision
+		var collision_shape = CollisionShape3D.new()
+		var box_shape = BoxShape3D.new()
+		box_shape.size = Vector3(quad_size.x, quad_size.y, 0.1)
+		collision_shape.shape = box_shape
+		area.add_child(collision_shape)
+		return area
+	
+	# Convert 2D polygon to 3D collision shape
+	var collision_shape = convert_2d_polygon_to_3d_collision(polygon_2d, quad_size, texture.get_size())
+	if collision_shape:
+		area.add_child(collision_shape)
+	
+	return area
+
+
+## DEPRECATED: Use DisplayableLayer instead for new code
 ## Creates an Area3D with collision shapes for a 3D actor (theater mode)
 ## Analyzes all MeshInstance3D children and creates BoxShape3D for each quad
 static func create_area3d_for_actor(sprite_container: Node3D) -> Area3D:
@@ -148,3 +181,143 @@ static func update_area2d_collision(area: Area2D, sprite: Sprite2D) -> void:
 		if collision_polygon:
 			area.add_child(collision_polygon)
 
+
+## ============================================================================
+## NEW TEXTURE-BASED COLLISION METHODS FOR DISPLAYABLELAYER
+## ============================================================================
+
+## Extracts a collision polygon from a texture's alpha channel
+## Returns a PackedVector2Array of polygon points (normalized 0-1 range)
+static func create_collision_polygon_from_texture(texture: Texture2D) -> PackedVector2Array:
+	var image = texture.get_image()
+	if not image:
+		push_warning("CollisionHelper: Cannot get image from texture")
+		return PackedVector2Array()
+	
+	# Create bitmap from image alpha channel
+	var bitmap = BitMap.new()
+	bitmap.create_from_image_alpha(image)
+	
+	# Generate polygons from opaque pixels
+	var polygons = bitmap.opaque_to_polygons(Rect2(Vector2.ZERO, image.get_size()))
+	
+	if polygons.size() == 0:
+		return PackedVector2Array()
+	
+	# Use the first (and typically largest) polygon
+	var polygon = polygons[0]
+	
+	# Normalize to 0-1 range and center
+	var size = Vector2(image.get_size())  # Convert Vector2i to Vector2
+	var normalized_polygon = PackedVector2Array()
+	
+	for point in polygon:
+		# Normalize to 0-1 range
+		var normalized = Vector2(point) / size  # Ensure point is Vector2
+		# Center around origin (0.5, 0.5 becomes 0, 0)
+		normalized -= Vector2(0.5, 0.5)
+		normalized_polygon.append(normalized)
+	
+	return normalized_polygon
+
+
+## Converts a 2D polygon to a 3D collision shape
+## polygon_2d: normalized polygon (0-1 range, centered)
+## quad_size: size of the quad mesh in world units
+## texture_size: original texture pixel size
+static func convert_2d_polygon_to_3d_collision(polygon_2d: PackedVector2Array, quad_size: Vector2, texture_size: Vector2) -> CollisionShape3D:
+	if polygon_2d.size() < 3:
+		push_warning("CollisionHelper: Polygon has less than 3 points")
+		return null
+	
+	# Scale normalized polygon to quad size
+	var scaled_polygon = PackedVector3Array()
+	for point_2d in polygon_2d:
+		var scaled_point = Vector3(
+			point_2d.x * quad_size.x,
+			point_2d.y * quad_size.y,
+			0.0
+		)
+		scaled_polygon.append(scaled_point)
+	
+	# Create a ConvexPolygonShape3D from the points
+	var shape = ConvexPolygonShape3D.new()
+	
+	# ConvexPolygonShape3D needs both front and back faces (thin 3D shape)
+	var all_points = PackedVector3Array()
+	for point in scaled_polygon:
+		all_points.append(point)
+	# Add back face with slight z offset
+	for point in scaled_polygon:
+		all_points.append(point + Vector3(0, 0, 0.1))
+	
+	shape.points = all_points
+	
+	var collision_shape = CollisionShape3D.new()
+	collision_shape.shape = shape
+	
+	return collision_shape
+
+
+## Merges multiple Area3D collision shapes into a single Area3D
+## Used to create root collision area from all visible layer areas
+static func merge_area3d_shapes(layer_areas: Array) -> Area3D:
+	var merged_area = Area3D.new()
+	merged_area.name = "MergedInteractionArea"
+	merged_area.input_ray_pickable = true
+	
+	if layer_areas.size() == 0:
+		return merged_area
+	
+	# Collect all collision shapes from all areas
+	for area in layer_areas:
+		if not area is Area3D:
+			continue
+		
+		for child in area.get_children():
+			if child is CollisionShape3D:
+				# Duplicate the collision shape
+				var new_shape = CollisionShape3D.new()
+				new_shape.shape = child.shape
+				new_shape.position = child.position
+				new_shape.rotation = child.rotation
+				new_shape.scale = child.scale
+				
+				# Adjust position relative to layer parent
+				if area.get_parent():
+					new_shape.position += area.get_parent().position
+				
+				merged_area.add_child(new_shape)
+	
+	return merged_area
+
+
+## Updates a merged Area3D with new layer collision shapes
+static func update_merged_area3d(merged_area: Area3D, layer_areas: Array) -> void:
+	if not merged_area:
+		return
+	
+	# Remove all existing collision shapes
+	for child in merged_area.get_children():
+		if child is CollisionShape3D:
+			child.queue_free()
+	
+	# Add collision shapes from all layer areas
+	for area in layer_areas:
+		if not area is Area3D:
+			continue
+		
+		for child in area.get_children():
+			if child is CollisionShape3D:
+				# Duplicate the collision shape
+				var new_shape = CollisionShape3D.new()
+				new_shape.shape = child.shape
+				new_shape.position = child.position
+				new_shape.rotation = child.rotation
+				new_shape.scale = child.scale
+				
+				# Adjust position relative to layer parent
+				if area.get_parent():
+					new_shape.position += area.get_parent().position
+				
+				merged_area.add_child(new_shape)

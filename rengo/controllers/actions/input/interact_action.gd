@@ -9,11 +9,21 @@ var controller = null
 ## Name of the interaction to activate
 var interaction_name: String = ""
 
+## Target layer (null = root only, String = specific layer)
+var target_layer = null
+
 
 func _init(p_controller, p_interaction_name: String) -> void:
 	super._init(p_controller, 0.0)  # Instant action (duration = 0)
 	controller = p_controller
 	interaction_name = p_interaction_name
+
+
+## Specifies which layer to activate the interaction on
+## Enables chaining: actor_ctrl.interact("poke").on("face")
+func on(layer_name: String) -> InteractAction:
+	target_layer = layer_name
+	return self
 
 
 ## Executes the action - activates the interaction
@@ -30,8 +40,8 @@ func execute() -> void:
 		_is_complete = true
 		return
 	
-	# Activate the interaction via InteractionHandler
-	InteractionHandler.activate(controller, interaction_name)
+	# Activate the interaction via InteractionHandler (with layer)
+	InteractionHandler.activate(controller, interaction_name, target_layer)
 	
 	_is_complete = true
 

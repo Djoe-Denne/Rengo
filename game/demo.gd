@@ -30,12 +30,12 @@ func _ready() -> void:
 	var poke_interaction = InteractionBuilder.builder() \
 									.name("poke") \
 									.add(InputBuilder.hover() \
-										.in_callback(func(ctrl): ctrl.model.set_state("status", "focused")) \
-										.out_callback(func(ctrl): ctrl.model.set_state("status", "")) \
+										.in_callback(func(ctrl, layer): ctrl.model.set_state("status", "focused")) \
+										.out_callback(func(ctrl, layer): ctrl.model.set_state("status", "")) \
 										.build()) \
 									.add(InputBuilder.custom("ok_confirm") \
 										.on_focus(true) \
-										.callback(func(ctrl): ctrl.say("Ow!")) \
+										.callback(func(ctrl, layer): ctrl.say("Ow!")) \
 										.build()) \
 									.build()
 
@@ -98,7 +98,7 @@ func _play_story() -> void:
 	
 	# Scene 10: Switch to close-up plan (cinematic ratio)
 	vn_scene.change_plan("close_up")
-	me_actor_ctrl.interact("poke")                # Activate (queued as action)
+	me_actor_ctrl.interact("poke").on("casual")                # Activate (queued as action)
 	me_actor_ctrl.say("Wait, let me show you something...")
 	
 	# Scene 11: Both wave happily

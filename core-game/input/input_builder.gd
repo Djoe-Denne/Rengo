@@ -1,5 +1,18 @@
 ## InputBuilder - Fluent API for building InputDefinitions
 ## Provides convenient methods for configuring input handling
+##
+## CALLBACK SIGNATURE: All callbacks receive (controller, layer_name) parameters
+##   - controller: The ActorController or ResourceNode controller
+##   - layer_name: String for specific layer, null for root (merged) collision area
+##
+## Example:
+##   InputBuilder.hover()
+##     .in_callback(func(ctrl, layer):
+##       print("Hovering ", layer if layer else "root")
+##       ctrl.model.set_state("status", "focused"))
+##     .out_callback(func(ctrl, layer):
+##       ctrl.model.set_state("status", ""))
+##     .build()
 class_name InputBuilder
 extends RefCounted
 
@@ -12,6 +25,7 @@ var _on_callback: Callable = Callable()
 
 
 ## Creates a hover input definition (mouse enter/exit)
+## Callbacks receive (controller, layer_name) where layer_name can be null for root
 static func hover() -> InputBuilder:
 	var builder = InputBuilder.new()
 	builder._input_type = "hover"
@@ -19,6 +33,7 @@ static func hover() -> InputBuilder:
 
 
 ## Creates a custom action input definition
+## Callbacks receive (controller, layer_name) where layer_name can be null for root
 static func custom(action_name: String) -> InputBuilder:
 	var builder = InputBuilder.new()
 	builder._input_type = "custom"
@@ -33,18 +48,21 @@ func on_focus(required: bool) -> InputBuilder:
 
 
 ## Sets the "in" callback (hover enter, action pressed)
+## Callback signature: func(controller, layer_name)
 func in_callback(callback: Callable) -> InputBuilder:
 	_in_callback = callback
 	return self
 
 
 ## Sets the "out" callback (hover exit, action released)
+## Callback signature: func(controller, layer_name)
 func out_callback(callback: Callable) -> InputBuilder:
 	_out_callback = callback
 	return self
 
 
 ## Sets the single-fire callback (for immediate events)
+## Callback signature: func(controller, layer_name)
 func callback(callback: Callable) -> InputBuilder:
 	_on_callback = callback
 	return self
