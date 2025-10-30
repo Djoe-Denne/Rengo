@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 ResourceRepository="*res://rengo/infra/resource_repository.gd"
 ImageRepository="*res://rengo/infra/image_repository.gd"
 AnimationRepository="*res://rengo/infra/animation/animation_repository.gd"
+ShaderRepository="*res://rengo/infra/shader_repository.gd"
 InteractionHandler="*res://core-game/input/interaction_handler.gd"
 
 [display]

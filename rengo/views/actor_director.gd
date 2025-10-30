@@ -127,6 +127,19 @@ func load_wardrobe(character_name: String) -> bool:
 	return false
 
 
+## Loads shader configuration for a character
+## @param character_name: Name of the character
+## @return: Dictionary with shader configurations or empty dictionary
+func load_shader_config(character_name: String) -> Dictionary:
+	var base_dirs = get_character_base_dirs(character_name)
+	
+	if base_dirs.is_empty():
+		return {}
+	
+	# Load shader config using ShaderRepository
+	return ShaderRepository.load_shader_config(base_dirs)
+
+
 ## Loads character layers from character.yaml
 ## @param character_name: Name of the character
 ## @return: Array of layer definitions or empty array on error

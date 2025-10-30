@@ -44,6 +44,10 @@ func _create_sprite(actor) -> void:
 	
 	actor.sprite_container = sprite
 	actor.scene_node = sprite
+	
+	# Load shader configuration for this actor
+	if actor.shader_config.is_empty():
+		actor.shader_config = load_shader_config(actor.actor_name)
 
 
 ## Updates the sprite texture based on current state

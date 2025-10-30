@@ -38,6 +38,10 @@ func _create_sprite_container(actor, current_states: Dictionary) -> void:
 	if not "layers" in actor:
 		actor.layers = {}
 	
+	# Load shader configuration for this actor
+	if actor.shader_config.is_empty():
+		actor.shader_config = load_shader_config(actor.actor_name)
+	
 	# Layers will be created dynamically in _update_layers_unified
 
 
