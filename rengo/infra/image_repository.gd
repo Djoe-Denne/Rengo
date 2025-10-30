@@ -89,4 +89,3 @@ func print_stats() -> void:
 	print("Cache misses: %d" % stats.cache_misses)
 	print("Failed loads: %d" % stats.failed_loads)
 	print("============================")
-

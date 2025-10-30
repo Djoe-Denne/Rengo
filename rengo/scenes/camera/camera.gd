@@ -64,4 +64,3 @@ func update_position() -> void:
 	
 	var pixel_pos = Vector2(target_pos.x * screen_size.x, target_pos.y * screen_size.y)
 	scene_node.position = pixel_pos
-

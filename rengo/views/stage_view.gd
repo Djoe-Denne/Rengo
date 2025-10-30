@@ -12,6 +12,11 @@ var scene_model: Scene = null
 ## Reference to the parent VNScene node
 var vn_scene: Node = null
 
+## Reference to a controller (MVC: view knows its controller)
+## Currently StageView doesn't have a dedicated controller, but this is here
+## for future extensibility if background interactions are needed
+var controller = null
+
 ## Distance of background from camera (in centimeters)
 const BACKGROUND_DISTANCE = 1000.0
 

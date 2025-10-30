@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dd1vqrhma2dlc"
-path="res://.godot/imported/casual.png-b5d15d8aea69af8283d3dabbcddcf9c5.ctex"
+uid="uid://gp8jkmipybeo"
+path="res://.godot/imported/casual_waving.png-c0338bb9fc5a75bc927d942bf73b8de9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/outfits/casual.png"
-dest_files=["res://.godot/imported/casual.png-b5d15d8aea69af8283d3dabbcddcf9c5.ctex"]
+source_file="res://casual_waving.png"
+dest_files=["res://.godot/imported/casual_waving.png-c0338bb9fc5a75bc927d942bf73b8de9.ctex"]
 
 [params]
 

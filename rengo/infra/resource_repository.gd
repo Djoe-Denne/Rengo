@@ -189,12 +189,11 @@ func resolve_template_path(template: String, state: Dictionary) -> String:
 		var placeholder = match_obj.get_string(1)  # Get the text inside {}
 		var replacement = state.get(placeholder, "")
 		
-		if replacement != "":
+		if not null and replacement != "" and replacement != "default":
 			# Replace {placeholder} with the actual value
 			result = result.replace("{" + placeholder + "}", str(replacement))
 		else:
-			# Placeholder not found in state - leave it or warn
-			push_warning("Template placeholder '{%s}' not found in state dictionary. Template: %s" % [placeholder, template])
+			result = result.replace("_{" + placeholder + "}", "")
 	
 	return result
 
@@ -236,4 +235,3 @@ func load_yaml_directory(base_dirs: Array, sub_dir: String) -> Dictionary:
 		dir.list_dir_end()
 	
 	return result
-

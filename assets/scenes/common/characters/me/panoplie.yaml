@@ -2,14 +2,7 @@ wardrobe:
   - id: "casual"
     tags: ["casual", "top"]
     excluding_tags: ["top"]
-    image: "images/{plan}/{orientation}/outfits/casual.png"
-    anchor: {x: 0, y: 0}
-    z: 2
-  
-  - id: "casual_wave"
-    tags: ["casual", "top"]
-    excluding_tags: ["top"]
-    image: "images/{plan}/{orientation}/outfits/casual_wave.png"
+    image: "images/{plan}/{orientation}/outfits/casual_{pose}.png"
     anchor: {x: 0, y: 0}
     z: 2
   

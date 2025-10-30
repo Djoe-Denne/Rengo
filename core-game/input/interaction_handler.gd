@@ -186,4 +186,3 @@ func unregister_controller(controller) -> void:
 	_active_interactions.erase(controller)
 	_registered_interactions.erase(controller)
 	_focused_resources.erase(controller)
-

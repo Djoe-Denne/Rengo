@@ -202,8 +202,10 @@ func cast(character_name: String) -> ActorController:
 	# Add actor to controller as a resource (still needed for legacy scene tracking)
 	add_resource(actor)
 	
+	# Create ActorController and link it to the view (MVC)
 	var actor_ctrl = ActorController.new(character_name, character, actor)
 	actor_ctrl.vn_scene = self  # For action registration
+	actor.controller = actor_ctrl  # View knows its controller
 	
 	return actor_ctrl
 

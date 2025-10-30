@@ -16,7 +16,7 @@ defaults:
 layers:
   - id: "body"
     layer: "body"
-    image: "images/{plan}/{orientation}/body/{pose}_{body}.png"
+    image: "images/{plan}/{orientation}/body/{pose}_{body}_{status}.png"
     z: 0
     anchor: {x: 0, y: 0}
 
