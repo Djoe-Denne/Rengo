@@ -11,9 +11,6 @@ var resource_name: String = ""
 ## Reference to the actual Godot node in the scene tree
 var scene_node: Node = null
 
-## Reference to the interaction area (Area2D or Area3D)
-var interaction_area: Node = null
-
 ## Dictionary of registered interactions
 var registered_interactions: Dictionary = {}
 

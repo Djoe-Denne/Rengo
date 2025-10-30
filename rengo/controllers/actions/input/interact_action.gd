@@ -43,5 +43,29 @@ func execute() -> void:
 	# Activate the interaction via InteractionHandler (with layer)
 	InteractionHandler.activate(controller, interaction_name, target_layer)
 	
+	# Enable debug visualization for the target layer
+	_enable_debug_visualization()
+	
 	_is_complete = true
+
+
+## Enables debug visualization for the target layer (if specified)
+func _enable_debug_visualization() -> void:
+	# Only enable debug if a specific layer is targeted
+	if target_layer == null or target_layer == "":
+		return
+	
+	# Get the view from the controller
+	var view = controller.view if controller else null
+	if not view:
+		return
+	
+	# Check if view has layers (DisplayableNode)
+	if not view.has_method("get_layer"):
+		return
+	
+	# Get the target layer
+	var layer = view.get_layer(target_layer)
+	if layer and layer.has_method("set_debug_enabled"):
+		layer.set_debug_enabled(true)
 

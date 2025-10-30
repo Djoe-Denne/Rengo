@@ -40,8 +40,37 @@ func execute() -> void:
 		_is_complete = true
 		return
 	
+	# Disable debug visualization before deactivating
+	_disable_debug_visualization()
+	
 	# Deactivate the interaction via InteractionHandler (with layer)
 	InteractionHandler.deactivate(controller, interaction_name, target_layer)
 	
 	_is_complete = true
+
+
+## Disables debug visualization for the target layer (or all if null)
+func _disable_debug_visualization() -> void:
+	# Get the view from the controller
+	var view = controller.view if controller else null
+	if not view:
+		return
+	
+	# Check if view has layers (DisplayableNode)
+	if not view.has_method("get_layer"):
+		return
+	
+	if target_layer == null:
+		# Disable debug for all layers
+		if view.has_method("get_visible_layers"):
+			var all_layers = view.layers
+			for layer_name in all_layers:
+				var layer = all_layers[layer_name]
+				if layer and layer.has_method("set_debug_enabled"):
+					layer.set_debug_enabled(false)
+	else:
+		# Disable debug for specific layer
+		var layer = view.get_layer(target_layer)
+		if layer and layer.has_method("set_debug_enabled"):
+			layer.set_debug_enabled(false)
 

@@ -65,10 +65,10 @@ func activate(controller, interaction_name: String, layer_name = null) -> void:
 	
 	# Activate on the specified layer
 	if layer_name == null:
-		# Activate on root only
-		interaction.activate_on_layer(null)
+		var layers = controller.view.get_visible_layers()
+		for layer in layers:
+			interaction.activate_on_layer(layer.layer_name)
 	else:
-		# Activate on specific layer
 		interaction.activate_on_layer(layer_name)
 	
 	# Add to active interactions
@@ -111,6 +111,7 @@ func deactivate(controller, interaction_name: String, layer_name = null) -> void
 ## Called by Area3D/Area2D when mouse enters
 ## layer_name: null for root, String for specific layer
 func on_hover_enter(controller, layer_name = null) -> void:
+	print("InteractionHandler.on_hover_enter: ", layer_name)
 	if not controller:
 		return
 	
@@ -133,12 +134,14 @@ func on_hover_enter(controller, layer_name = null) -> void:
 		for input in hover_inputs:
 			# Call in_callback with layer parameter
 			if input.in_callback.is_valid():
+				print("InteractionHandler.on_hover_enter: calling in_callback for layer: ", layer_name)
 				input.in_callback.call(controller, layer_name)
 
 
 ## Called by Area3D/Area2D when mouse exits
 ## layer_name: null for root, String for specific layer
 func on_hover_exit(controller, layer_name = null) -> void:
+	print("InteractionHandler.on_hover_exit: ", layer_name)
 	if not controller:
 		return
 	
@@ -161,6 +164,7 @@ func on_hover_exit(controller, layer_name = null) -> void:
 		for input in hover_inputs:
 			# Call out_callback with layer parameter
 			if input.out_callback.is_valid():
+				print("InteractionHandler.on_hover_exit: calling out_callback for layer: ", layer_name)
 				input.out_callback.call(controller, layer_name)
 
 

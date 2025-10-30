@@ -1,4 +1,4 @@
-## DisplayableLayer - Self-contained layer with mesh, texture, collision, and shader
+## DisplayableLayer - Self-contained layer with mesh, texture, and raycast-based collision
 ## Each layer manages its own visibility, input handling, and collision detection
 class_name DisplayableLayer
 extends Node3D
@@ -13,9 +13,6 @@ var layer_name: String = ""
 
 ## The visual mesh instance
 var mesh_instance: MeshInstance3D = null
-
-## Texture-based collision area
-var interaction_area: Area3D = null
 
 ## Current texture
 var texture: Texture2D = null
@@ -32,6 +29,16 @@ var z_index: float = 0.0
 ## Reference to parent displayable node (for callbacks)
 var parent_displayable = null  # DisplayableNode
 
+## Alpha threshold for collision detection (configurable per layer)
+var alpha_threshold: float = 0.5
+
+## Track mouse hover state
+var is_mouse_over: bool = false
+
+## Debug visualization
+var debug_outline: MeshInstance3D = null
+var debug_enabled: bool = false
+
 
 func _init(p_layer_name: String = "") -> void:
 	layer_name = p_layer_name
@@ -43,7 +50,12 @@ func _init(p_layer_name: String = "") -> void:
 	add_child(mesh_instance)
 
 
-## Sets the texture and rebuilds collision area
+func _ready() -> void:
+	# Enable input processing for this node
+	set_process_input(true)
+
+
+## Sets the texture and updates the quad mesh
 func set_texture(tex: Texture2D, quad_size: Vector2 = Vector2(100, 100)) -> void:
 	if not tex:
 		push_warning("DisplayableLayer: Attempted to set null texture on layer '%s'" % layer_name)
@@ -76,8 +88,9 @@ func set_texture(tex: Texture2D, quad_size: Vector2 = Vector2(100, 100)) -> void
 	else:
 		mesh_instance.material_override = material
 	
-	# Rebuild collision based on new texture
-	rebuild_collision()
+	# Refresh debug visualization if enabled
+	if debug_enabled:
+		_create_debug_outline()
 
 
 ## Applies a shader with parameters
@@ -126,54 +139,71 @@ func set_layer_visible(p_visible: bool) -> void:
 	if mesh_instance:
 		mesh_instance.visible = p_visible
 	
+	# If layer becomes invisible while mouse is over, trigger exit
+	if not p_visible and is_mouse_over:
+		_trigger_mouse_exit()
+	
 	# Notify parent to rebuild root collision
 	if parent_displayable and parent_displayable.has_method("_on_layer_visibility_changed"):
 		parent_displayable._on_layer_visibility_changed()
 
 
-## Creates collision area from texture alpha channel
-func create_collision_area() -> void:
-	if not texture:
+## Handles input events for raycast-based collision detection
+func _input(event: InputEvent) -> void:
+	# Only process if layer is visible
+	if not is_layer_visible or not texture:
 		return
 	
-	# Remove existing collision area if any
-	if interaction_area:
-		interaction_area.queue_free()
-		interaction_area = null
+	# Get the camera
+	var camera = get_viewport().get_camera_3d()
+	if not camera:
+		return
 	
-	# Get CollisionHelper to create polygon from texture
-	var CollisionHelper = load("res://core-game/input/collision_helper.gd")
+	# Handle mouse motion for hover detection
+	if event is InputEventMouseMotion:
+		var mouse_pos = event.position
+		var is_hit = check_mouse_intersection(camera, mouse_pos)
+		
+		# Update hover state
+		if is_hit and not is_mouse_over:
+			_trigger_mouse_enter()
+		elif not is_hit and is_mouse_over:
+			_trigger_mouse_exit()
 	
-	# Get quad size for scaling
+	# Handle mouse button clicks
+	elif event is InputEventMouseButton:
+		if event.pressed and is_mouse_over:
+			layer_clicked.emit(layer_name, event)
+
+
+## Performs 2-step collision check: raycast to quad, then alpha check
+## Returns true if mouse hits quad AND texture alpha exceeds threshold
+func check_mouse_intersection(camera: Camera3D, mouse_pos: Vector2) -> bool:
+	if not texture or not mesh_instance or not mesh_instance.mesh:
+		return false
+	
+	# Get quad size
 	var quad_size = Vector2(100, 100)
-	if mesh_instance and mesh_instance.mesh is QuadMesh:
+	if mesh_instance.mesh is QuadMesh:
 		quad_size = (mesh_instance.mesh as QuadMesh).size
 	
-	# Create Area3D with texture-based collision
-	interaction_area = CollisionHelper.create_area3d_from_texture(texture, quad_size)
+	# Get the global transform of this layer
+	var quad_transform = global_transform
 	
-	if interaction_area:
-		interaction_area.name = "InteractionArea_" + layer_name
-		add_child(interaction_area)
-		
-		# Connect signals
-		interaction_area.input_event.connect(_on_input_event)
-		interaction_area.mouse_entered.connect(_on_mouse_entered)
-		interaction_area.mouse_exited.connect(_on_mouse_exited)
+	# Step 1: Raycast to quad
+	var hit_info = CollisionHelper.raycast_to_quad(camera, mouse_pos, quad_transform, quad_size)
+	
+	if not hit_info.hit:
+		return false
+	
+	# Step 2: Check alpha at UV coordinate
+	var uv = hit_info.uv
+	return CollisionHelper.check_texture_alpha_at_uv(texture, uv, alpha_threshold)
 
 
-## Rebuilds collision area (when texture changes)
-func rebuild_collision() -> void:
-	create_collision_area()
-
-
-## Signal handler for input events on this layer
-func _on_input_event(_camera: Node, event: InputEvent, _position: Vector3, _normal: Vector3, _shape_idx: int) -> void:
-	layer_clicked.emit(layer_name, event)
-
-
-## Signal handler for mouse entering this layer
-func _on_mouse_entered() -> void:
+## Triggers mouse enter event
+func _trigger_mouse_enter() -> void:
+	is_mouse_over = true
 	layer_hovered.emit(layer_name)
 	
 	# Notify InteractionHandler
@@ -183,8 +213,9 @@ func _on_mouse_entered() -> void:
 			InteractionHandler.on_hover_enter(controller, layer_name)
 
 
-## Signal handler for mouse exiting this layer
-func _on_mouse_exited() -> void:
+## Triggers mouse exit event
+func _trigger_mouse_exit() -> void:
+	is_mouse_over = false
 	layer_unhovered.emit(layer_name)
 	
 	# Notify InteractionHandler
@@ -199,3 +230,85 @@ func set_z_index(z: float) -> void:
 	z_index = z
 	position.z = z / 100.0  # Convert to actual position (assuming 1cm per z-unit)
 
+
+## Sets the alpha threshold for collision detection
+func set_alpha_threshold(threshold: float) -> void:
+	alpha_threshold = clamp(threshold, 0.0, 1.0)
+
+
+## ============================================================================
+## DEBUG VISUALIZATION
+## ============================================================================
+
+## Enables or disables debug visualization of collision area
+func set_debug_enabled(enabled: bool) -> void:
+	debug_enabled = enabled
+	
+	if debug_enabled:
+		_create_debug_outline()
+	else:
+		_remove_debug_outline()
+
+
+## Creates a visual debug outline for the quad bounds
+func _create_debug_outline() -> void:
+	# Remove existing outline if any
+	_remove_debug_outline()
+	
+	if not mesh_instance or not mesh_instance.mesh:
+		return
+	
+	# Get quad size
+	var quad_size = Vector2(100, 100)
+	if mesh_instance.mesh is QuadMesh:
+		quad_size = (mesh_instance.mesh as QuadMesh).size
+	
+	# Create outline mesh
+	debug_outline = MeshInstance3D.new()
+	debug_outline.name = "DebugOutline_" + layer_name
+	add_child(debug_outline)
+	
+	# Create rectangle outline points
+	var half_width = quad_size.x / 2.0
+	var half_height = quad_size.y / 2.0
+	
+	var corners = PackedVector3Array([
+		Vector3(-half_width, -half_height, 0),
+		Vector3(half_width, -half_height, 0),
+		Vector3(half_width, half_height, 0),
+		Vector3(-half_width, half_height, 0)
+	])
+	
+	# Create line mesh from corners
+	var immediate_mesh = ImmediateMesh.new()
+	immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+	
+	# Draw the outline
+	for corner in corners:
+		immediate_mesh.surface_add_vertex(corner)
+	# Close the loop
+	immediate_mesh.surface_add_vertex(corners[0])
+	
+	immediate_mesh.surface_end()
+	
+	debug_outline.mesh = immediate_mesh
+	
+	# Create red material for the outline
+	var material = StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(1.0, 0.0, 0.0, 1.0)  # Red
+	material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+	material.no_depth_test = true  # Always visible
+	material.render_priority = 10  # Render on top
+	
+	debug_outline.material_override = material
+	
+	# Offset slightly toward camera so it's visible over the texture
+	debug_outline.position.z = 0.15
+
+
+## Removes debug outline visualization
+func _remove_debug_outline() -> void:
+	if debug_outline:
+		debug_outline.queue_free()
+		debug_outline = null
