@@ -41,7 +41,7 @@ func execute() -> void:
 		return
 	
 	# Disable debug visualization before deactivating
-	#_disable_debug_visualization()
+	_disable_debug_visualization()
 	
 	# Deactivate the interaction via InteractionHandler (with layer)
 	InteractionHandler.deactivate(controller, interaction_name, target_layer)

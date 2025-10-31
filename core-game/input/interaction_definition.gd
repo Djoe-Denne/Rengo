@@ -12,6 +12,9 @@ var inputs: Array = []
 ## Whether this interaction is currently active
 var is_active: bool = false
 
+## Whether this interaction is currently active on the root layer
+var is_root_active: bool = true
+
 ## Dictionary tracking which layers this interaction is active on
 ## { layer_name: bool } where layer_name can be null for root
 ## null key means root (merged collision area)
@@ -81,15 +84,21 @@ func deactivate_on_layer(layer_name) -> void:
 	# If no layers are active, mark as inactive
 	if active_layers.is_empty():
 		is_active = false
-
+		is_root_active = false
 
 ## Deactivates this interaction for all layers
 func deactivate_all_layers() -> void:
 	active_layers.clear()
 	is_active = false
+	is_root_active = false
 
 
 ## Gets all active layers for this interaction
 func get_active_layers() -> Array:
 	return active_layers.keys()
 
+func is_root_active_on() -> bool:
+	return is_root_active
+
+func set_root_active_on(value: bool) -> void:
+	is_root_active = value

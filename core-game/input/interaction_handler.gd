@@ -68,9 +68,10 @@ func activate(controller, interaction_name: String, layer_name = null) -> void:
 		var layers = controller.view.get_visible_layers()
 		for layer in layers:
 			interaction.activate_on_layer(layer.layer_name)
+		interaction.set_root_active_on(true)
 	else:
 		interaction.activate_on_layer(layer_name)
-	
+		interaction.set_root_active_on(false)
 	# Add to active interactions
 	if not controller in _active_interactions:
 		_active_interactions[controller] = {}
@@ -115,8 +116,6 @@ func on_hover_enter(controller, layer_name = null) -> void:
 	if not controller:
 		return
 	
-	# Mark as focused
-	_focused_resources[controller] = true
 	
 	# Get all active interactions for this controller
 	if not controller in _active_interactions:
@@ -124,11 +123,17 @@ func on_hover_enter(controller, layer_name = null) -> void:
 	
 	for interaction_name in _active_interactions[controller]:
 		var interaction = _active_interactions[controller][interaction_name]
-		
+
 		# Check if interaction is active on this layer
 		if not interaction.is_active_on_layer(layer_name):
 			continue
-		
+
+		# Mark as focused
+		_focused_resources[controller] = _focused_resources.get(controller, 0) + 1
+
+		if interaction.is_root_active_on() and _focused_resources.get(controller, 1) > 1:
+			continue
+
 		# Find all hover inputs
 		var hover_inputs = interaction.get_inputs_by_type("hover")
 		for input in hover_inputs:
@@ -145,8 +150,6 @@ func on_hover_exit(controller, layer_name = null) -> void:
 	if not controller:
 		return
 	
-	# Mark as not focused
-	_focused_resources[controller] = false
 	
 	# Get all active interactions for this controller
 	if not controller in _active_interactions:
@@ -159,6 +162,16 @@ func on_hover_exit(controller, layer_name = null) -> void:
 		if not interaction.is_active_on_layer(layer_name):
 			continue
 		
+		# Mark as not focused
+		_focused_resources[controller] = _focused_resources.get(controller, 0) - 1
+
+		if _focused_resources[controller] < 0:
+			push_error("InteractionHandler: Controller %s has negative focused resources" % controller)
+			_focused_resources[controller] = 0
+
+		if interaction.is_root_active_on() and _focused_resources[controller] != 0:
+			continue
+
 		# Find all hover inputs
 		var hover_inputs = interaction.get_inputs_by_type("hover")
 		for input in hover_inputs:

@@ -30,7 +30,7 @@ func _ready() -> void:
 	var poke_interaction = InteractionBuilder.builder() \
 									.name("poke") \
 									.add(InputBuilder.hover() \
-										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
+										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "focused")) \
 										.out_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
 										.build()) \
 									.add(InputBuilder.custom("ok_confirm") \
@@ -59,8 +59,6 @@ func _play_story() -> void:
 	other_actor_ctrl.show()
 	other_actor_ctrl.move().right(0.1).over(0.8).using("bounce")  # Bounce in from left
 	other_actor_ctrl.pose("waving")
-	me_actor_ctrl.interact("poke").on("body")                # Activate (queued as action)
-	me_actor_ctrl.interact("poke").on("face")                # Activate (queued as action)
 	other_actor_ctrl.express("happy")
 	other_actor_ctrl.say("Good morning!")
 	
@@ -105,6 +103,7 @@ func _play_story() -> void:
 	# Scene 11: Both wave happily
 	me_actor_ctrl.pose("waving").over(0.3)
 	me_actor_ctrl.express("happy")
+	me_actor_ctrl.interact("poke")
 	me_actor_ctrl.say("Thanks for stopping by!")
 	
 	other_actor_ctrl.say("See you later!")
