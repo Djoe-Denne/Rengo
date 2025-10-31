@@ -55,14 +55,9 @@ static func raycast_to_quad(camera: Camera3D, mouse_pos: Vector2, quad_transform
 ## uv: Vector2 in 0-1 range
 ## threshold: Alpha value threshold (0.0-1.0)
 ## Returns true if alpha > threshold
-static func check_texture_alpha_at_uv(texture: Texture2D, uv: Vector2, threshold: float = 0.5) -> bool:
+static func check_texture_alpha_at_uv(texture: Image, uv: Vector2, threshold: float = 0.5) -> bool:
 	if not texture:
 		push_warning("CollisionHelper: texture is null")
-		return false
-	
-	var image = texture.get_image()
-	if not image:
-		push_warning("CollisionHelper: Cannot get image from texture")
 		return false
 	
 	# Clamp UV to valid range
@@ -70,7 +65,7 @@ static func check_texture_alpha_at_uv(texture: Texture2D, uv: Vector2, threshold
 	uv.y = clamp(uv.y, 0.0, 1.0)
 	
 	# Convert UV to pixel coordinates
-	var texture_size = image.get_size()
+	var texture_size = texture.get_size()
 	var pixel_x = int(uv.x * texture_size.x)
 	var pixel_y = int(uv.y * texture_size.y)
 	
@@ -79,7 +74,7 @@ static func check_texture_alpha_at_uv(texture: Texture2D, uv: Vector2, threshold
 	pixel_y = clamp(pixel_y, 0, texture_size.y - 1)
 	
 	# Get pixel color and check alpha
-	var pixel_color = image.get_pixel(pixel_x, pixel_y)
+	var pixel_color = texture.get_pixel(pixel_x, pixel_y)
 	
 	return pixel_color.a > threshold
 

@@ -30,7 +30,7 @@ func _ready() -> void:
 	var poke_interaction = InteractionBuilder.builder() \
 									.name("poke") \
 									.add(InputBuilder.hover() \
-										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "focused")) \
+										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
 										.out_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
 										.build()) \
 									.add(InputBuilder.custom("ok_confirm") \
@@ -80,6 +80,7 @@ func _play_story() -> void:
 	# Scene 6: Me puts on casual outfit - with animated outfit change
 	me_actor_ctrl.wear("casual").over(0.5)  # Fade out, change, fade in
 	me_actor_ctrl.say("Much better!")
+	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
 	
 	# Scene 7: Other changes to jeans - animated
 	other_actor_ctrl.wear("jeans").over(0.5)
@@ -103,7 +104,6 @@ func _play_story() -> void:
 	# Scene 11: Both wave happily
 	me_actor_ctrl.pose("waving").over(0.3)
 	me_actor_ctrl.express("happy")
-	me_actor_ctrl.interact("poke")
 	me_actor_ctrl.say("Thanks for stopping by!")
 	
 	other_actor_ctrl.say("See you later!")

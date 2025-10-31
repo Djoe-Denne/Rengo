@@ -10,7 +10,7 @@ var controller = null
 var interaction_name: String = ""
 
 ## Target layer (null = root only, String = specific layer)
-var target_layer = null
+var target_layer: Array[String] = []
 
 
 func _init(p_controller, p_interaction_name: String) -> void:
@@ -20,9 +20,9 @@ func _init(p_controller, p_interaction_name: String) -> void:
 
 
 ## Specifies which layer to activate the interaction on
-## Enables chaining: actor_ctrl.interact("poke").on("face")
+## Enables chaining: actor_ctrl.interact("poke").on("face", "body")
 func on(layer_name: String) -> InteractAction:
-	target_layer = layer_name
+	target_layer.append(layer_name)
 	return self
 
 
@@ -39,9 +39,13 @@ func execute() -> void:
 		push_error("InteractAction: interaction_name is empty")
 		_is_complete = true
 		return
-	
+
 	# Activate the interaction via InteractionHandler (with layer)
-	InteractionHandler.activate(controller, interaction_name, target_layer)
+	if target_layer.is_empty():
+		InteractionHandler.activate(controller, interaction_name, null)
+	else:
+		for layer_name in target_layer:
+			InteractionHandler.activate(controller, interaction_name, layer_name)
 	
 	# Enable debug visualization for the target layer
 	_enable_debug_visualization()
@@ -52,7 +56,7 @@ func execute() -> void:
 ## Enables debug visualization for the target layer (if specified)
 func _enable_debug_visualization() -> void:
 	# Only enable debug if a specific layer is targeted
-	if target_layer == null or target_layer == "":
+	if target_layer.is_empty():
 		return
 	
 	# Get the view from the controller
@@ -64,8 +68,18 @@ func _enable_debug_visualization() -> void:
 	if not view.has_method("get_layer"):
 		return
 	
-	# Get the target layer
-	var layer = view.get_layer(target_layer)
-	if layer and layer.has_method("set_debug_enabled"):
-		layer.set_debug_enabled(true)
-
+	# Enable debug for the target layer
+	if target_layer.is_empty():
+		# Enable debug for all layers
+		if view.has_method("get_visible_layers"):
+			var all_layers = view.layers
+			for layer_name in all_layers:
+				var layer = all_layers[layer_name]
+				if layer and layer.has_method("set_debug_enabled"):
+					layer.set_debug_enabled(true)
+	else:
+		# Enable debug for specific layer
+		for layer_name in target_layer:
+			var layer = view.get_layer(layer_name)
+			if layer and layer.has_method("set_debug_enabled"):
+				layer.set_debug_enabled(true)

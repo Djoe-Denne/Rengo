@@ -19,6 +19,9 @@ var director: Director = null
 ## Machinist that handles shader effects for this displayable
 var machinist: Machinist = null
 
+## Input handler for centralized mouse event coordination
+var input_handler = null  # DisplayableInputHandler
+
 
 func _init(p_name: String = "") -> void:
 	super(p_name)
@@ -113,8 +116,12 @@ func _on_layer_clicked(_layer_name: String, _event: InputEvent) -> void:
 
 ## Called when a layer's visibility changes (kept for compatibility)
 func _on_layer_visibility_changed() -> void:
-	# No longer needs to rebuild collision - layers handle their own raycasting
-	pass
+	# Clear hover state if the layer that became invisible was hovered
+	if input_handler:
+		for layer_name in layers:
+			var layer = layers[layer_name]
+			if not layer.is_layer_visible:
+				input_handler.clear_hover_if_layer(layer)
 
 
 ## Gets the controller for this displayable node
@@ -127,7 +134,25 @@ func get_controller():
 func create_scene_node(parent: Node) -> Node:
 	# Subclasses should override this and create sprite_container
 	if sprite_container:
+		# Create and attach input handler for centralized mouse event coordination
+		_create_input_handler()
+		
 		parent.add_child(sprite_container)
 		scene_node = sprite_container
 	
 	return sprite_container
+
+
+## Creates the input handler and attaches it to sprite_container
+func _create_input_handler() -> void:
+	if not sprite_container:
+		return
+	
+	# Load the input handler class
+	var InputHandlerClass = load("res://rengo/views/displayable_input_handler.gd")
+	input_handler = InputHandlerClass.new()
+	input_handler.displayable_node = self
+	input_handler.name = "InputHandler"
+	
+	# Add as child to sprite_container
+	sprite_container.add_child(input_handler)

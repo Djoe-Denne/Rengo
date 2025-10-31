@@ -35,6 +35,9 @@ var alpha_threshold: float = 0.5
 ## Track mouse hover state
 var is_mouse_over: bool = false
 
+## Cached alpha mask for performance
+var alpha_mask: Image = null
+
 ## Debug visualization
 var debug_outline: MeshInstance3D = null
 var debug_enabled: bool = false
@@ -51,8 +54,8 @@ func _init(p_layer_name: String = "") -> void:
 
 
 func _ready() -> void:
-	# Enable input processing for this node
-	set_process_input(true)
+	# Input processing now handled by DisplayableNode parent
+	pass
 
 
 ## Sets the texture and updates the quad mesh
@@ -62,6 +65,9 @@ func set_texture(tex: Texture2D, quad_size: Vector2 = Vector2(100, 100)) -> void
 		return
 	
 	texture = tex
+	
+	# Cache the alpha mask for efficient collision detection
+	alpha_mask = tex.get_image()
 	
 	# Create or update the quad mesh
 	if not mesh_instance.mesh or not mesh_instance.mesh is QuadMesh:
@@ -150,35 +156,12 @@ func set_layer_visible(p_visible: bool) -> void:
 
 ## Handles input events for raycast-based collision detection
 func _input(event: InputEvent) -> void:
-	# Only process if layer is visible
-	if not is_layer_visible or not texture:
-		return
-	
-	# Get the camera
-	var camera = get_viewport().get_camera_3d()
-	if not camera:
-		return
-	
-	# Handle mouse motion for hover detection
-	if event is InputEventMouseMotion:
-		var mouse_pos = event.position
-		var is_hit = check_mouse_intersection(camera, mouse_pos)
-		
-		# Update hover state
-		if is_hit and not is_mouse_over:
-			_trigger_mouse_enter()
-			# Consume the event - mouse is over opaque part of this layer
-			get_viewport().set_input_as_handled()
-		elif not is_hit and is_mouse_over:
-			_trigger_mouse_exit()
-			# Don't consume - mouse moved to transparent area or outside quad
-	
-	# Handle mouse button clicks
-	elif event is InputEventMouseButton:
+	# Only process clicks - mouse motion is handled by DisplayableNode
+	if event is InputEventMouseButton:
 		if event.pressed and is_mouse_over:
 			layer_clicked.emit(layer_name, event)
-			# Consume the event - click was on opaque part of this layer
 			get_viewport().set_input_as_handled()
+
 
 
 ## Performs 2-step collision check: raycast to quad, then alpha check
@@ -201,10 +184,8 @@ func check_mouse_intersection(camera: Camera3D, mouse_pos: Vector2) -> bool:
 	if not hit_info.hit:
 		return false
 	
-	# Step 2: Check alpha at UV coordinate
-	var uv = hit_info.uv
-	return CollisionHelper.check_texture_alpha_at_uv(texture, uv, alpha_threshold)
-
+	# Check alpha at UV coordinate using cached mask
+	return CollisionHelper.check_texture_alpha_at_uv(alpha_mask, hit_info.uv, alpha_threshold)
 
 ## Triggers mouse enter event
 func _trigger_mouse_enter() -> void:

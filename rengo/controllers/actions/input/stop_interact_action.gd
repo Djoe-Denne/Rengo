@@ -10,7 +10,7 @@ var controller = null
 var interaction_name: String = ""
 
 ## Target layer (null = all layers, String = specific layer only)
-var target_layer = null
+var target_layer: Array[String] = []
 
 
 func _init(p_controller, p_interaction_name: String) -> void:
@@ -22,7 +22,7 @@ func _init(p_controller, p_interaction_name: String) -> void:
 ## Specifies which layer to deactivate the interaction on
 ## Enables chaining: actor_ctrl.stop_interact("poke").on("face")
 func on(layer_name: String) -> StopInteractAction:
-	target_layer = layer_name
+	target_layer.append(layer_name)
 	return self
 
 
@@ -44,7 +44,11 @@ func execute() -> void:
 	_disable_debug_visualization()
 	
 	# Deactivate the interaction via InteractionHandler (with layer)
-	InteractionHandler.deactivate(controller, interaction_name, target_layer)
+	if target_layer.is_empty():
+		InteractionHandler.deactivate(controller, interaction_name, null)
+	else:
+		for layer_name in target_layer:
+			InteractionHandler.deactivate(controller, interaction_name, layer_name)
 	
 	_is_complete = true
 
@@ -60,7 +64,7 @@ func _disable_debug_visualization() -> void:
 	if not view.has_method("get_layer"):
 		return
 	
-	if target_layer == null:
+	if target_layer.is_empty():
 		# Disable debug for all layers
 		if view.has_method("get_visible_layers"):
 			var all_layers = view.layers
@@ -70,7 +74,8 @@ func _disable_debug_visualization() -> void:
 					layer.set_debug_enabled(false)
 	else:
 		# Disable debug for specific layer
-		var layer = view.get_layer(target_layer)
-		if layer and layer.has_method("set_debug_enabled"):
-			layer.set_debug_enabled(false)
+		for layer_name in target_layer:
+			var layer = view.get_layer(layer_name)
+			if layer and layer.has_method("set_debug_enabled"):
+				layer.set_debug_enabled(false)
 
