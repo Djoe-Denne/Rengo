@@ -17,9 +17,6 @@ var mesh_instance: MeshInstance3D = null
 ## Current texture
 var texture: Texture2D = null
 
-## Applied shader material
-var shader_material: ShaderMaterial = null
-
 ## Layer visibility (separate from Node3D.visible for control)
 var is_layer_visible: bool = true
 
@@ -87,54 +84,11 @@ func set_texture(tex: Texture2D, quad_size: Vector2 = Vector2(100, 100)) -> void
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	
-	# If we have a shader material, preserve it
-	if shader_material:
-		shader_material.set_shader_parameter("albedo_texture", texture)
-		mesh_instance.material_override = shader_material
-	else:
-		mesh_instance.material_override = material
+	mesh_instance.material_override = material
 	
 	# Refresh debug visualization if enabled
 	if debug_enabled:
 		_create_debug_outline()
-
-
-## Applies a shader with parameters
-func apply_shader(shader: Shader, params: Dictionary = {}) -> void:
-	if not shader:
-		push_warning("DisplayableLayer: Attempted to apply null shader on layer '%s'" % layer_name)
-		return
-	
-	# Create shader material if it doesn't exist
-	if not shader_material:
-		shader_material = ShaderMaterial.new()
-	
-	shader_material.shader = shader
-	
-	# Set shader parameters
-	for param_name in params:
-		shader_material.set_shader_parameter(param_name, params[param_name])
-	
-	# Ensure texture is set if we have one
-	if texture:
-		shader_material.set_shader_parameter("albedo_texture", texture)
-	
-	# Apply to mesh
-	if mesh_instance:
-		mesh_instance.material_override = shader_material
-
-
-## Clears the shader and reverts to standard material
-func clear_shader() -> void:
-	shader_material = null
-	
-	if mesh_instance and texture:
-		var material = StandardMaterial3D.new()
-		material.albedo_texture = texture
-		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		material.cull_mode = BaseMaterial3D.CULL_DISABLED
-		mesh_instance.material_override = material
 
 
 ## Controls layer visibility

@@ -12,11 +12,12 @@ void fragment() {
 	// Sample the input texture (from previous pass or base texture)
 	vec4 input_color = texture(screen_texture, SCREEN_UV);
 	
-	// Calculate glow based on alpha (only glow where sprite exists)
-	vec3 glow = glow_color.rgb * intensity * input_color.a;
-	
-	// Output glow with additive blending
-	ALBEDO = glow;
-	ALPHA = input_color.a * intensity;
+	if input_color.a > 0.0 {
+		ALBEDO = (1.0, 1.0, 1.0);
+		ALPHA = 1.0;
+	} else {
+		ALBEDO = input_color.rgb;
+		ALPHA = input_color.a;
+	}
 }
 

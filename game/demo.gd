@@ -30,7 +30,7 @@ func _ready() -> void:
 	var poke_interaction = InteractionBuilder.builder() \
 									.name("poke") \
 									.add(InputBuilder.hover() \
-										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
+										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "focused")) \
 										.out_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
 										.build()) \
 									.add(InputBuilder.custom("ok_confirm") \
