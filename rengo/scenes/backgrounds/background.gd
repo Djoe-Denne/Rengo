@@ -11,8 +11,8 @@ var config: Dictionary = {}
 ## Current background states (for shader activation)
 var current_states: Dictionary = {}
 
-## Shader manager for handling state-based shader effects
-var shader_manager: ShaderManager = null
+## Machinist for handling state-based shader effects
+var machinist: Machinist = null
 
 
 func _ready() -> void:
@@ -54,9 +54,9 @@ func _load_shader_config() -> void:
 	if base_dirs.is_empty():
 		return
 	
-	# Create shader manager and load configuration
-	shader_manager = ShaderManager.new()
-	shader_manager.load_config(base_dirs)
+	# Create machinist and load configuration
+	machinist = Machinist.new()
+	machinist.load_config(base_dirs)
 
 
 ## Gets base directories for background resources
@@ -81,8 +81,8 @@ func _get_background_base_dirs() -> Array:
 func set_state(key: String, value: Variant) -> void:
 	if current_states.get(key) != value:
 		current_states[key] = value
-		if shader_manager:
-			shader_manager.update_shaders(current_states, {"background": self})
+		if machinist:
+			machinist.update_shaders(current_states, {"background": self})
 
 
 ## Updates multiple states at once
@@ -93,6 +93,6 @@ func update_states(new_states: Dictionary) -> void:
 			current_states[key] = new_states[key]
 			changed = true
 	
-	if changed and shader_manager:
-		shader_manager.update_shaders(current_states, {"background": self})
+	if changed and machinist:
+		machinist.update_shaders(current_states, {"background": self})
 

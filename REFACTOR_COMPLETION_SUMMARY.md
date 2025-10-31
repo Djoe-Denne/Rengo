@@ -163,7 +163,7 @@ Scene Node Update (sprite_container.position = character.position)
 - ✅ `actor.say("Hello!")`
 - ✅ `actor.express("happy")`
 - ✅ `actor.pose("waving")`
-- ✅ `vn_scene.cast("character_name")`
+- ✅ `vn_scene.cast("name")`
 
 ## Testing Recommendations
 

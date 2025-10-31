@@ -6,14 +6,14 @@ extends RefCounted
 var config: Dictionary = {}
 
 ## The character name this act belongs to
-var character_name: String = ""
+var name: String = ""
 
 ## The act name/ID (e.g., "idle", "wave", "talk")
 var act_name: String = ""
 
 
-func _init(p_character_name: String = "", p_act_name: String = "", p_config: Dictionary = {}) -> void:
-	character_name = p_character_name
+func _init(p_name: String = "", p_act_name: String = "", p_config: Dictionary = {}) -> void:
+	name = p_name
 	act_name = p_act_name
 	config = p_config
 

@@ -1,7 +1,8 @@
-## ShaderManager - Manages shader application for displayable resources
+## Machinist - Manages shader application for displayable resources
+## Named after theatrical machinists who handle lights and stage effects
 ## Can be composed into any visual resource (Actors, Backgrounds, etc.)
 ## Handles state-based shader activation/deactivation with Material.next_pass chaining
-class_name ShaderManager
+class_name Machinist
 extends RefCounted
 
 ## Shader configuration loaded from YAML { state_name: [shader_defs] }
@@ -83,7 +84,7 @@ func _apply_shader_to_node(target_key: String, state_name: String, node: Node, s
 	elif node is Sprite2D:
 		_apply_shader_chain_2d(target_key, state_name, node, shader_defs, current_states)
 	else:
-		push_warning("ShaderManager: Unsupported node type: %s" % node.get_class())
+		push_warning("Machinist: Unsupported node type: %s" % node.get_class())
 
 
 ## Applies a shader chain to a 3D mesh (MeshInstance3D)

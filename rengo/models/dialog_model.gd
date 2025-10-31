@@ -80,7 +80,7 @@ func set_character(p_character: Character) -> void:
 	character = p_character
 	if character:
 		# Use character's display name and dialog color
-		speaker_name = character.display_name if character.display_name != "" else character.character_name
+		speaker_name = character.display_name if character.display_name != "" else character.name
 		color = character.dialog_color
 
 

@@ -57,7 +57,7 @@ func execute() -> void:
 		# Speaker is an ActorController with model and view
 		if "model" in speaker and speaker.model:
 			var character = speaker.model
-			speaker_name = character.display_name if character.display_name != "" else character.character_name
+			speaker_name = character.display_name if character.display_name != "" else character.name
 			speaker_color = character.dialog_color
 		elif "name" in speaker:
 			speaker_name = speaker.name

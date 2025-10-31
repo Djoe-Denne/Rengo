@@ -1,58 +1,32 @@
 ## Base class for actor directors
 ## Directors manage how actors are displayed (theater vs movie style)
 class_name ActorDirector
-extends RefCounted
+extends Director
 
-## Dictionary of loaded character acts { character_name: { act_name: Act } }
+## Dictionary of loaded character acts { name: { act_name: Act } }
 var character_acts: Dictionary = {}
 
-## Dictionary of costumiers per character { character_name: Costumier }
+## Dictionary of costumiers per character { name: Costumier }
 var costumiers: Dictionary = {}
-
-## The scene path this director is working with
-var scene_path: String = ""
-
-## Reference to Scene model (for observing plan changes)
-var scene_model: Scene = null
 
 ## Base asset paths for resolving character resources
 const COMMON_CHARACTERS_PATH = "res://assets/scenes/common/characters/"
 const SCENES_PATH = "res://assets/scenes/"
 
 
-## Prepares the director with the scene path
-func prepare(p_scene_path: String) -> void:
-	scene_path = p_scene_path
-
-
-## Sets the scene model and subscribes to changes
-func set_scene_model(p_scene_model: Scene) -> void:
-	scene_model = p_scene_model
-	
-	# Subscribe to scene changes
-	if scene_model:
-		scene_model.add_observer(_on_scene_changed)
-
-
-## Observer callback - called when Scene model changes
-func _on_scene_changed(scene_state: Dictionary) -> void:
-	# Plan changed - subclasses can override to refresh actors
-	pass
-
-
 ## Loads character metadata (display name, colors, defaults) into Character model
 func load_character_metadata(character: Character) -> bool:
 	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(character.character_name)
+	var base_dirs = get_character_base_dirs(character.name)
 	
 	if base_dirs.is_empty():
-		push_warning("No base directories found for character: %s" % character.character_name)
+		push_warning("No base directories found for character: %s" % character.name)
 		return false
 	
 	# Load character.yaml using ResourceRepository (no merging for character metadata)
 	var metadata = ResourceRepository.load_yaml(base_dirs, "character", false)
 	if metadata.is_empty():
-		push_warning("Failed to load character metadata for: %s" % character.character_name)
+		push_warning("Failed to load character metadata for: %s" % character.name)
 		return false
 	
 	# Apply metadata to character
@@ -66,72 +40,66 @@ func load_character_metadata(character: Character) -> bool:
 	return true
 
 
-## Instructs an actor to change their appearance/state
-## Must be implemented by subclasses
-func instruct(actor, new_states: Dictionary = {}) -> void:
-	push_error("instruct() must be implemented by subclass")
-
-
 ## Loads a character's acts from their YAML files
-func load_character(character_name: String) -> bool:
+func load_character(name: String) -> bool:
 	# Check if already loaded
-	if character_name in character_acts:
+	if name in character_acts:
 		return true
 	
 	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(character_name)
+	var base_dirs = get_character_base_dirs(name)
 	
 	if base_dirs.is_empty():
-		push_error("No base directories found for character: %s" % character_name)
+		push_error("No base directories found for character: %s" % name)
 		return false
 	
 	# Load all act YAML files from the acts/ subdirectory
 	var acts_data = ResourceRepository.load_yaml_directory(base_dirs, "acts/")
 	
 	if acts_data.is_empty():
-		push_warning("No acts found for character: %s" % character_name)
+		push_warning("No acts found for character: %s" % name)
 		return false
 	
 	# Create Act objects from loaded data
-	character_acts[character_name] = {}
+	character_acts[name] = {}
 	
 	for act_name in acts_data:
 		var act_config = acts_data[act_name]
 		if not act_config.is_empty():
-			var act = Act.new(character_name, act_name, act_config)
-			character_acts[character_name][act_name] = act
+			var act = Act.new(name, act_name, act_config)
+			character_acts[name][act_name] = act
 	
 	return true
 
 
 ## Gets a specific act for a character
-func get_act(character_name: String, act_name: String) -> Act:
-	if character_name in character_acts:
-		if act_name in character_acts[character_name]:
-			return character_acts[character_name][act_name]
+func get_act(name: String, act_name: String) -> Act:
+	if name in character_acts:
+		if act_name in character_acts[name]:
+			return character_acts[name][act_name]
 	return null
 
 
 ## Gets the costumier for a character
-func get_costumier(character_name: String) -> Costumier:
-	if character_name in costumiers:
-		return costumiers[character_name]
+func get_costumier(name: String) -> Costumier:
+	if name in costumiers:
+		return costumiers[name]
 	return null
 
 
 ## Loads the wardrobe (panoplie.yaml) for a character
 ## Must be implemented by subclasses to create appropriate Costumier type
-func load_wardrobe(character_name: String) -> bool:
+func load_wardrobe(name: String) -> bool:
 	# Default implementation does nothing
 	# Subclasses (TheaterActorDirector, MovieActorDirector) should override
 	return false
 
 
 ## Loads shader configuration for a character
-## @param character_name: Name of the character
+## @param name: Name of the character
 ## @return: Dictionary with shader configurations or empty dictionary
-func load_shader_config(character_name: String) -> Dictionary:
-	var base_dirs = get_character_base_dirs(character_name)
+func load_shader_config(name: String) -> Dictionary:
+	var base_dirs = get_character_base_dirs(name)
 	
 	if base_dirs.is_empty():
 		return {}
@@ -141,19 +109,19 @@ func load_shader_config(character_name: String) -> Dictionary:
 
 
 ## Loads character layers from character.yaml
-## @param character_name: Name of the character
+## @param name: Name of the character
 ## @return: Array of layer definitions or empty array on error
-func load_character_layers(character_name: String) -> Array:
-	var base_dirs = get_character_base_dirs(character_name)
+func load_character_layers(name: String) -> Array:
+	var base_dirs = get_character_base_dirs(name)
 	
 	if base_dirs.is_empty():
-		push_warning("No base directories found for character: %s" % character_name)
+		push_warning("No base directories found for character: %s" % name)
 		return []
 	
 	# Load character.yaml
 	var metadata = ResourceRepository.load_yaml(base_dirs, "character", false)
 	if metadata.is_empty():
-		push_warning("Failed to load character metadata for: %s" % character_name)
+		push_warning("Failed to load character metadata for: %s" % name)
 		return []
 	
 	# Extract layers array
@@ -164,19 +132,19 @@ func load_character_layers(character_name: String) -> Array:
 
 
 ## Loads face layers from faces.yaml
-## @param character_name: Name of the character
+## @param name: Name of the character
 ## @return: Array of face layer definitions or empty array on error
-func load_face_layers(character_name: String) -> Array:
-	var base_dirs = get_character_base_dirs(character_name)
+func load_face_layers(name: String) -> Array:
+	var base_dirs = get_character_base_dirs(name)
 	
 	if base_dirs.is_empty():
-		push_warning("No base directories found for character: %s" % character_name)
+		push_warning("No base directories found for character: %s" % name)
 		return []
 	
 	# Load faces.yaml
 	var faces_data = ResourceRepository.load_yaml(base_dirs, "faces", false)
 	if faces_data.is_empty():
-		push_warning("Failed to load faces for: %s" % character_name)
+		push_warning("Failed to load faces for: %s" % name)
 		return []
 	
 	# Extract faces array
@@ -188,17 +156,17 @@ func load_face_layers(character_name: String) -> Array:
 
 ## Gets the base directories for a character's assets
 ## Returns scene-specific path first (if it exists), then common path
-func get_character_base_dirs(character_name: String) -> Array:
+func get_character_base_dirs(name: String) -> Array:
 	var base_dirs = []
 	
 	# Scene-specific character path (higher priority)
 	if scene_path != "":
-		var scene_char_path = SCENES_PATH + scene_path + "/characters/" + character_name + "/"
+		var scene_char_path = SCENES_PATH + scene_path + "/characters/" + name + "/"
 		if DirAccess.dir_exists_absolute(scene_char_path):
 			base_dirs.append(scene_char_path)
 	
 	# Common character path (fallback)
-	var common_char_path = COMMON_CHARACTERS_PATH + character_name + "/"
+	var common_char_path = COMMON_CHARACTERS_PATH + name + "/"
 	if DirAccess.dir_exists_absolute(common_char_path):
 		base_dirs.append(common_char_path)
 	
@@ -224,4 +192,3 @@ func _load_yaml_file(path: String) -> Dictionary:
 	
 	push_warning("YAML file did not contain a dictionary: %s" % path)
 	return {}
-

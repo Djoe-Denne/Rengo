@@ -45,11 +45,11 @@ func _create_sprite(actor) -> void:
 	actor.sprite_container = sprite
 	actor.scene_node = sprite
 	
-	# Initialize shader manager for this actor
-	if not actor.shader_manager:
-		actor.shader_manager = ShaderManager.new()
+	# Initialize machinist for this actor
+	if not actor.machinist:
+		actor.machinist = Machinist.new()
 		var base_dirs = get_character_base_dirs(actor.actor_name)
-		actor.shader_manager.load_config(base_dirs)
+		actor.machinist.load_config(base_dirs)
 
 
 ## Updates the sprite texture based on current state

@@ -5,7 +5,7 @@
 class_name Character extends Transformable
 
 ## Character identifier (e.g., "alice", "bob")
-var character_name: String = ""
+var name: String = ""
 
 ## Display name shown in dialogue
 var display_name: String = ""
@@ -29,9 +29,9 @@ var panoplie: Array = []
 var stats: Dictionary = {}
 
 
-func _init(p_character_name: String = "") -> void:
+func _init(p_name: String = "") -> void:
 	super._init(Vector3.ZERO, false)  # Initialize Transformable
-	character_name = p_character_name
+	name = p_name
 	
 	# Initialize default states
 	current_states = {
@@ -95,7 +95,7 @@ func _get_transform_state() -> Dictionary:
 	# Add character-specific state
 	state["current_states"] = current_states
 	state["panoplie"] = panoplie
-	state["character_name"] = character_name
+	state["name"] = name
 	
 	return state
 

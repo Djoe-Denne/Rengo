@@ -86,7 +86,7 @@ Character (Pure Model)
 - Work with Character state methods
 
 **WearAction:**
-- Takes `Character`, `clothing_id`, `character_name`, `director`
+- Takes `Character`, `clothing_id`, `name`, `director`
 - Needs director for Costumier access
 - ActorController passes `view.director`
 
@@ -99,7 +99,7 @@ Character (Pure Model)
 
 **cast() method:**
 ```gdscript
-func cast(character_name: String) -> ActorController:
+func cast(name: String) -> ActorController:
     # Create Character model
     # Create Actor view
     # Link Actor to observe Character

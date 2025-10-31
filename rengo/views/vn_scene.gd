@@ -165,30 +165,30 @@ func set_stage_view(p_stage_view: StageView) -> void:
 ## Casts a character as an actor in this scene
 ## Creates Character model, Actor view, and ActorController
 ## Returns ActorController for public API
-func cast(character_name: String) -> ActorController:
+func cast(name: String) -> ActorController:
 	# Create or retrieve Character model
 	var character = null
-	if character_name in characters:
-		character = characters[character_name]
+	if name in characters:
+		character = characters[name]
 	else:
 		# Create new Character model
-		character = Character.new(character_name)
-		characters[character_name] = character
+		character = Character.new(name)
+		characters[name] = character
 		
 		# Load character metadata from director
 		if director:
 			director.load_character_metadata(character)
 	
 	# Load character acts if not already loaded
-	if director and not character_name in director.character_acts:
-		director.load_character(character_name)
+	if director and not name in director.character_acts:
+		director.load_character(name)
 	
 	# Load character wardrobe if not already loaded
-	if director and not character_name in director.costumiers:
-		director.load_wardrobe(character_name)
+	if director and not name in director.costumiers:
+		director.load_wardrobe(name)
 	
 	# Create Actor view instance
-	var actor = Actor.new(character_name, director)
+	var actor = Actor.new(name, director)
 	actor.vn_scene = self
 	
 	# Link Actor to Character model (observer pattern)
@@ -203,7 +203,7 @@ func cast(character_name: String) -> ActorController:
 	add_resource(actor)
 	
 	# Create ActorController and link it to the view (MVC)
-	var actor_ctrl = ActorController.new(character_name, character, actor)
+	var actor_ctrl = ActorController.new(name, character, actor)
 	actor_ctrl.vn_scene = self  # For action registration
 	actor.controller = actor_ctrl  # View knows its controller
 	

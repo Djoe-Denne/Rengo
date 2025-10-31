@@ -48,7 +48,7 @@ func _on_mouse_entered() -> void:
 **Changes:**
 ```gdscript
 # Create ActorController and link it to the view (MVC)
-var actor_ctrl = ActorController.new(character_name, character, actor)
+var actor_ctrl = ActorController.new(name, character, actor)
 actor_ctrl.vn_scene = self  # For action registration
 actor.controller = actor_ctrl  # View knows its controller ← NEW
 ```

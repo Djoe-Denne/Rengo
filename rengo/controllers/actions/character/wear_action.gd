@@ -4,16 +4,16 @@ extends AnimatedAction
 
 var controller: ActorController
 var clothing_id: String
-var character_name: String
+var name: String
 var director  # ActorDirector (for Costumier access)
 
 
-func _init(p_controller: ActorController, p_clothing_id: String, p_character_name: String = "", p_director = null) -> void:
+func _init(p_controller: ActorController, p_clothing_id: String, p_name: String = "", p_director = null) -> void:
 	super._init(p_controller)
 	controller = p_controller
 	clothing_id = p_clothing_id
 	var model = p_controller.model if p_controller else null
-	character_name = p_character_name if p_character_name != "" else (model.character_name if model else "")
+	name = p_name if p_name != "" else (model.name if model else "")
 	director = p_director
 	parameters = {"target_layers": [p_clothing_id]}
 
@@ -32,7 +32,7 @@ func _apply_value(value: Variant) -> void:
 	var model = controller.model
 	
 	# Get the Costumier for this character
-	var costumier = director.get_costumier(character_name) if director else null
+	var costumier = director.get_costumier(name) if director else null
 	
 	if costumier:
 		# Use Costumier.select() to handle exclusions properly

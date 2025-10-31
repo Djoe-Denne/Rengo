@@ -3,13 +3,13 @@
 class_name Costumier extends RefCounted
 
 ## Character name this costumier manages
-var character_name: String = ""
+var name: String = ""
 
 ## Wardrobe configuration loaded from panoplie.yaml
 var wardrobe: Array = []
 
-func _init(p_character_name: String = "") -> void:
-	character_name = p_character_name
+func _init(p_name: String = "") -> void:
+	name = p_name
 
 
 ## Selects a clothing item and returns updated panoplie

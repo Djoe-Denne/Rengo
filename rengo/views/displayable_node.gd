@@ -13,6 +13,12 @@ var sprite_container: Node = null
 ## Reference to controller (for interaction callbacks)
 var controller = null  # Controller reference
 
+## Director that handles visual updates for this displayable
+var director: Director = null
+
+## Machinist that handles shader effects for this displayable
+var machinist: Machinist = null
+
 
 func _init(p_name: String = "") -> void:
 	super(p_name)

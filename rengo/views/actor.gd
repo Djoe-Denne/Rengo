@@ -10,12 +10,6 @@ var actor_name: String = ""
 ## Reference to the Character model (data/state holder)
 var character: Character = null
 
-## Reference to the director managing this actor
-var director = null  # ActorDirector
-
-## Shader manager for handling state-based shader effects
-var shader_manager: ShaderManager = null
-
 
 func _init(p_actor_name: String = "", p_director = null) -> void:
 	super(p_actor_name)
@@ -59,13 +53,13 @@ func _on_character_changed(state_dict: Dictionary) -> void:
 		update_scale()
 	
 	# Update shaders when states change
-	if "current_states" in state_dict and shader_manager:
-		shader_manager.update_shaders(character.current_states, layers)
+	if "current_states" in state_dict and machinist:
+		machinist.update_shaders(character.current_states, layers)
 
 
 ## Creates the scene node for this actor
 func create_scene_node(parent: Node) -> Node:
-	# Initialize sprite_container if not already created
+	# Initialize sprite_container if not already createdO
 	if not sprite_container:
 		sprite_container = Node3D.new()
 		sprite_container.name = "Actor_" + actor_name

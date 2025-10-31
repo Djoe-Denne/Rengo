@@ -36,11 +36,11 @@ func _create_sprite_container(actor, current_states: Dictionary) -> void:
 		container.name = "Actor_" + actor.actor_name
 		actor.sprite_container = container
 	
-	# Initialize shader manager for this actor
-	if not actor.shader_manager:
-		actor.shader_manager = ShaderManager.new()
+	# Initialize machinist for this actor
+	if not actor.machinist:
+		actor.machinist = Machinist.new()
 		var base_dirs = get_character_base_dirs(actor.actor_name)
-		actor.shader_manager.load_config(base_dirs)
+		actor.machinist.load_config(base_dirs)
 	
 	# Layers will be created dynamically in _update_layers_unified as DisplayableLayer instances
 
@@ -440,22 +440,23 @@ func _calculate_layer_size(texture: Texture2D, char_size: Vector2, layer_name: S
 
 
 ## Loads the wardrobe (panoplie.yaml) for a character
-func load_wardrobe(character_name: String) -> bool:
+func load_wardrobe(name: String) -> bool:
 	# Check if already loaded
-	if character_name in costumiers:
+	if name in costumiers:
 		return true
 	
 	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(character_name)
+	var base_dirs = get_character_base_dirs(name)
 	
 	if base_dirs.is_empty():
-		push_warning("No base directories found for character: %s" % character_name)
+		push_warning("No base directories found for character: %s" % name)
 		return false
 	
 	# Create TheaterCostumier and load wardrobe with merging support
-	var costumier = TheaterCostumier.new(character_name)
+	var costumier = TheaterCostumier.new(name)
 	if costumier.load_wardrobe(base_dirs, true):
-		costumiers[character_name] = costumier
+		costumiers[name] = costumier
 		return true
 	
 	return false
+
