@@ -177,19 +177,16 @@ func cast(name: String) -> ActorController:
 		
 		# Load character metadata from director
 		if director:
-			director.load_character_metadata(character)
-	
-	# Load character acts if not already loaded
-	if director and not name in director.character_acts:
-		director.load_character(name)
-	
-	# Load character wardrobe if not already loaded
-	if director and not name in director.costumiers:
-		director.load_wardrobe(name)
+			director.load_character(character)
 	
 	# Create Actor view instance
 	var actor = Actor.new(name, director)
 	actor.vn_scene = self
+	
+	# Create ActorController and link it to the view (MVC)
+	var actor_ctrl = ActorController.new(name, character, actor)
+	actor_ctrl.vn_scene = self  # For action registration
+	actor.controller = actor_ctrl  # View knows its controller
 	
 	# Link Actor to Character model (observer pattern)
 	actor.observe(character)
@@ -201,11 +198,6 @@ func cast(name: String) -> ActorController:
 	
 	# Add actor to controller as a resource (still needed for legacy scene tracking)
 	add_resource(actor)
-	
-	# Create ActorController and link it to the view (MVC)
-	var actor_ctrl = ActorController.new(name, character, actor)
-	actor_ctrl.vn_scene = self  # For action registration
-	actor.controller = actor_ctrl  # View knows its controller
 	
 	return actor_ctrl
 

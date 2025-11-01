@@ -2,7 +2,7 @@
 ## Holds all character data independently of visual representation
 ## Notifies observers (Actors) when state changes
 ## Extends Transformable to include position, rotation, scale, visible properties
-class_name Character extends Transformable
+class_name Character extends DisplayableModel
 
 ## Character identifier (e.g., "alice", "bob")
 var name: String = ""
@@ -19,9 +19,6 @@ var inner_dialog_color: Color = Color(1.0, 1.0, 1.0, 0.5)
 ## Full metadata dictionary (includes size_cm, etc.)
 var metadata: Dictionary = {}
 
-## Current visual states (pose, expression, orientation, etc.)
-var current_states: Dictionary = {}
-
 ## Current outfit items
 var panoplie: Array = []
 
@@ -30,40 +27,13 @@ var stats: Dictionary = {}
 
 
 func _init(p_name: String = "") -> void:
-	super._init(Vector3.ZERO, false)  # Initialize Transformable
-	name = p_name
-	
-	# Initialize default states
-	current_states = {
+	super._init({
 		"pose": "idle",
 		"orientation": "front",
 		"expression": "neutral",
 		"body": "default"
-	}
-
-
-## Sets a single state value and notifies observers
-func set_state(key: String, value: Variant) -> void:
-	if current_states.get(key) != value:
-		current_states[key] = value
-		_notify_observers()
-
-
-## Gets a state value
-func get_state(key: String, default_value: Variant = null) -> Variant:
-	return current_states.get(key, default_value)
-
-
-## Updates multiple states at once and notifies observers
-func update_states(new_states: Dictionary) -> void:
-	var changed = false
-	for key in new_states:
-		if current_states.get(key) != new_states[key]:
-			current_states[key] = new_states[key]
-			changed = true
-	
-	if changed:
-		_notify_observers()
+	})
+	name = p_name
 
 
 ## Convenience method: Sets expression state

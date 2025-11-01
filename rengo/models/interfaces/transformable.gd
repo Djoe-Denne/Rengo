@@ -96,4 +96,3 @@ func _get_transform_state() -> Dictionary:
 		"visible": visible,
 		"focused": focused
 	}
-

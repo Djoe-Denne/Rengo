@@ -123,23 +123,9 @@ func _input(event: InputEvent) -> void:
 func check_mouse_intersection(camera: Camera3D, mouse_pos: Vector2) -> bool:
 	if not texture or not mesh_instance or not mesh_instance.mesh:
 		return false
-	
-	# Get quad size
-	var quad_size = Vector2(100, 100)
-	if mesh_instance.mesh is QuadMesh:
-		quad_size = (mesh_instance.mesh as QuadMesh).size
-	
-	# Get the global transform of this layer
-	var quad_transform = global_transform
-	
-	# Step 1: Raycast to quad
-	var hit_info = CollisionHelper.raycast_to_quad(camera, mouse_pos, quad_transform, quad_size)
-	
-	if not hit_info.hit:
-		return false
-	
+
 	# Check alpha at UV coordinate using cached mask
-	return CollisionHelper.check_texture_alpha_at_uv(alpha_mask, hit_info.uv, alpha_threshold)
+	return CollisionHelper.check_texture_alpha_at_uv(alpha_mask, mouse_pos, alpha_threshold)
 
 ## Triggers mouse enter event
 func _trigger_mouse_enter() -> void:

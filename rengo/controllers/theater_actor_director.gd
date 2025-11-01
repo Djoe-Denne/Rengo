@@ -20,29 +20,8 @@ func instruct(actor, new_states: Dictionary = {}) -> void:
 	# new_states contains the current states from Character model
 	var current_states = new_states
 	
-	# If sprite_container doesn't exist, create it
-	if not actor.sprite_container:
-		_create_sprite_container(actor, current_states)
-	
 	# Update all layers based on current states (body + face + clothing)
 	_update_layers_unified(actor, current_states)
-
-
-## Creates the sprite container with initial layer setup
-func _create_sprite_container(actor, current_states: Dictionary) -> void:
-	# Actor now extends DisplayableNode, sprite_container should already exist
-	if not actor.sprite_container:
-		var container = Node3D.new()
-		container.name = "Actor_" + actor.actor_name
-		actor.sprite_container = container
-	
-	# Initialize machinist for this actor
-	if not actor.machinist:
-		actor.machinist = Machinist.new()
-		var base_dirs = get_character_base_dirs(actor.actor_name)
-		actor.machinist.load_config(base_dirs)
-	
-	# Layers will be created dynamically in _update_layers_unified as DisplayableLayer instances
 
 
 ## Updates all layers using unified template system (body + face + clothing)
@@ -56,31 +35,7 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 		state["plan"] = scene_model.current_plan_id
 	
 	# Collect all layer definitions
-	var all_layers = []
-	
-	# 1. Load body layers from character.yaml
-	var body_layers = load_character_layers(actor.actor_name)
-	all_layers.append_array(body_layers)
-	
-	# 2. Load face layers from faces.yaml
-	var face_layers = load_face_layers(actor.actor_name)
-	all_layers.append_array(face_layers)
-	
-	# 3. Get clothing layers from costumier
-	var costumier = get_costumier(actor.actor_name)
-	if costumier and actor.character:
-		var clothing_layers_dict = costumier.get_layers(actor.character.panoplie, state)
-		
-		# Convert clothing dictionary to array format
-		for clothing_id in clothing_layers_dict.keys():
-			var clothing_layer = clothing_layers_dict[clothing_id]
-			all_layers.append({
-				"id": clothing_id,
-				"layer": clothing_id,
-				"image": clothing_layer.image,
-				"z": clothing_layer.z,
-				"anchor": clothing_layer.get("anchor", {"x": 0, "y": 0})
-			})
+	var all_layers = get_character_layers(actor.controller.model as Character)
 	
 	# Ensure all layers exist as DisplayableLayer instances
 	for layer_def in all_layers:
@@ -140,172 +95,10 @@ func _apply_texture_to_displayable_layer(actor, layer: DisplayableLayer, texture
 	
 	# Make layer visible
 	layer.set_layer_visible(true)
-
-
-## DEPRECATED: Old mesh-based methods kept for compatibility
-## Creates a mesh instance for a layer (DEPRECATED - use DisplayableLayer)
-func _create_layer_mesh(actor, layer_name: String, layer_def: Dictionary) -> void:
-	push_warning("TheaterActorDirector._create_layer_mesh is deprecated, use DisplayableLayer instead")
-	if not actor.sprite_container:
-		return
 	
-	var char_size = _get_character_size(actor)
-	var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_def)
-	
-	actor.sprite_container.add_child(mesh_instance)
-	actor.layers[layer_name] = mesh_instance
-
-
-## Applies a texture to a layer mesh (DEPRECATED - use _apply_texture_to_displayable_layer)
-func _apply_texture_to_layer(actor, layer_name: String, texture: Texture2D, layer_def: Dictionary) -> void:
-	push_warning("TheaterActorDirector._apply_texture_to_layer is deprecated")
-	if not layer_name in actor.layers:
-		return
-	
-	var layer_obj = actor.layers[layer_name]
-	
-	# Check if it's a DisplayableLayer
-	if layer_obj is DisplayableLayer:
-		_apply_texture_to_displayable_layer(actor, layer_obj, texture, layer_def)
-		return
-	
-	# Old MeshInstance3D path (for compatibility)
-	var mesh_instance = layer_obj as MeshInstance3D
-	if not mesh_instance or not mesh_instance.material_override:
-		return
-	
-	mesh_instance.material_override.albedo_texture = texture
-	mesh_instance.visible = true
-	
-	var char_size = _get_character_size(actor)
-	var layer_size = _calculate_layer_size(texture, char_size, layer_name, actor)
-	if mesh_instance.mesh is QuadMesh:
-		mesh_instance.mesh.size = layer_size
-	
-	if mesh_instance.has_meta("anchor_offset"):
-		var anchor = mesh_instance.get_meta("anchor_offset")
-		var pixels_per_cm = texture.get_size().y / layer_size.y
-		mesh_instance.position.x = anchor.get("x", 0.0) / pixels_per_cm
-		mesh_instance.position.y = anchor.get("y", 0.0) / pixels_per_cm
-
-
-## Hides a layer (DEPRECATED - use layer.set_layer_visible(false))
-func _hide_layer(actor, layer_name: String) -> void:
-	if not layer_name in actor.layers:
-		return
-	
-	var layer_obj = actor.layers[layer_name]
-	
-	# Check if it's a DisplayableLayer
-	if layer_obj is DisplayableLayer:
-		layer_obj.set_layer_visible(false)
-		return
-	
-	# Old MeshInstance3D path (for compatibility)
-	var mesh_instance = layer_obj as MeshInstance3D
-	if mesh_instance and mesh_instance.material_override:
-		mesh_instance.material_override.albedo_texture = null
-		mesh_instance.visible = false
-
-
-## Updates all layers based on current states (DEPRECATED - kept for compatibility)
-func _update_layers(actor, act: Act, orientation: String, current_states: Dictionary) -> void:
-	var variant = act.get_variant(orientation)
-	if not "layers" in variant:
-		return
-	
-	# Start with Act layers (body, face, etc.)
-	var layers_data = variant.layers.duplicate(true)
-	
-	# Get clothing layers from Costumier and merge them
-	var costumier = get_costumier(actor.actor_name)
-	if costumier and actor.character:
-		# Add plan to states for template substitution
-		var states_with_plan = current_states.duplicate()
-		if scene_model:
-			states_with_plan["plan"] = scene_model.current_plan_id
-		
-		# Pass character's panoplie (current outfit items) and states
-		var clothing_layers = costumier.get_layers(actor.character.panoplie, states_with_plan)
-		# Merge clothing layers into layers_data
-		for layer_name in clothing_layers.keys():
-			layers_data[layer_name] = clothing_layers[layer_name]
-	
-	# Ensure all layer sprites exist
-	for layer_name in layers_data.keys():
-		if not layer_name in actor.layers:
-			_create_layer_sprite(actor, layer_name, layers_data[layer_name])
-	
-	# Update all layers
-	for layer_name in layers_data.keys():
-		var layer_data = layers_data[layer_name]
-		var images = layer_data.get("images", {})
-		
-		# Determine which state key to use for this layer
-		var state_key = _get_state_key_for_layer(current_states, layer_name)
-		
-		# Get the image path for this state
-		var image_path = ""
-		
-		# For clothing layers, use the direct image path
-		if "image" in layer_data:
-			image_path = layer_data.image
-		else:
-			# For Act layers, resolve from images dict
-			image_path = images.get(state_key, "")
-			if image_path == "":
-				# Try "default" as fallback
-				image_path = images.get("default", "")
-			
-			# If we still don't have an image, try the first available
-			if image_path == "" and images.size() > 0:
-				image_path = images.values()[0]
-		
-		# Load and set texture
-		if image_path != "":
-			var texture = _load_texture(actor, image_path)
-			if texture and layer_name in actor.layers:
-				var mesh_instance = actor.layers[layer_name]
-				if mesh_instance is MeshInstance3D and mesh_instance.material_override:
-					mesh_instance.material_override.albedo_texture = texture
-					
-					# Calculate quad size based on texture dimensions
-					var char_size = _get_character_size(actor)
-					var layer_size = _calculate_layer_size(texture, char_size, layer_name, actor)
-					if mesh_instance.mesh is QuadMesh:
-						mesh_instance.mesh.size = layer_size
-					
-					# Apply scaled anchor offset
-					if mesh_instance.has_meta("anchor_offset"):
-						var anchor = mesh_instance.get_meta("anchor_offset")
-						var pixels_per_cm = texture.get_size().y / layer_size.y
-						mesh_instance.position.x = anchor.get("x", 0.0) / pixels_per_cm
-						mesh_instance.position.y = anchor.get("y", 0.0) / pixels_per_cm
-		else:
-			# No texture found, hide this layer
-			if layer_name in actor.layers:
-				var mesh_instance = actor.layers[layer_name]
-				if mesh_instance is MeshInstance3D and mesh_instance.material_override:
-					mesh_instance.material_override.albedo_texture = null
-
-
-## Creates a new sprite layer dynamically (for clothing items)
-func _create_layer_sprite(actor, layer_name: String, layer_data: Dictionary) -> void:
-	if not actor.sprite_container:
-		return
-	
-	# Get character size
-	var char_size = _get_character_size(actor)
-	
-	# Create 3D quad mesh
-	var mesh_instance = _create_quad_mesh(layer_name, char_size, layer_data)
-	
-	actor.sprite_container.add_child(mesh_instance)
-	
-	# Store layer reference in actor
-	if not "layers" in actor:
-		actor.layers = {}
-	actor.layers[layer_name] = mesh_instance
+	# Update viewport size based on new layer dimensions
+	if actor.has_method("_update_viewport_size"):
+		actor._update_viewport_size()
 
 
 ## Determines which state key to use for a given layer
@@ -360,11 +153,11 @@ func _create_color_texture(color: Color, size: Vector2 = Vector2(150, 200)) -> T
 
 ## Gets the character size in centimeters from metadata
 func _get_character_size(actor) -> Vector2:
-	if not actor.character:
+	if not actor.controller.model:
 		return Vector2(60, 170)  # Default size
 	
 	# Try to get size from character metadata
-	var metadata = actor.character.metadata
+	var metadata = (actor.controller.model as Character).metadata
 	if metadata and "size_cm" in metadata:
 		var size_cm = metadata.size_cm
 		return Vector2(
@@ -459,4 +252,3 @@ func load_wardrobe(name: String) -> bool:
 		return true
 	
 	return false
-

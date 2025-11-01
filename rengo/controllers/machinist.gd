@@ -249,4 +249,3 @@ func clear_all_shaders(target_nodes: Dictionary) -> void:
 	
 	# Clear internal state
 	active_shaders.clear()
-

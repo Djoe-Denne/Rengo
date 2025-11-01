@@ -60,6 +60,7 @@ static func check_texture_alpha_at_uv(texture: Image, uv: Vector2, threshold: fl
 		push_warning("CollisionHelper: texture is null")
 		return false
 	
+	print("Checking texture alpha at UV: ", uv)
 	# Clamp UV to valid range
 	uv.x = clamp(uv.x, 0.0, 1.0)
 	uv.y = clamp(uv.y, 0.0, 1.0)
