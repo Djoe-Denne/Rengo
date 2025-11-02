@@ -37,17 +37,9 @@ static func raycast_to_quad(camera: Camera3D, mouse_pos: Vector2, quad_transform
 	if abs(local_hit.x) > half_width or abs(local_hit.y) > half_height:
 		return {"hit": false}
 	
-	# Convert local position to UV coordinates (0-1 range)
-	# QuadMesh: center is (0,0), x ranges [-width/2, width/2], y ranges [-height/2, height/2]
-	var uv = Vector2(
-		(local_hit.x / quad_size.x) + 0.5,  # Normalize to 0-1
-		(-local_hit.y / quad_size.y) + 0.5   # Flip Y and normalize (texture Y is down)
-	)
-	
 	return {
 		"hit": true,
-		"position": hit_position,
-		"uv": uv
+		"position": hit_position
 	}
 
 
@@ -55,12 +47,13 @@ static func raycast_to_quad(camera: Camera3D, mouse_pos: Vector2, quad_transform
 ## uv: Vector2 in 0-1 range
 ## threshold: Alpha value threshold (0.0-1.0)
 ## Returns true if alpha > threshold
-static func check_texture_alpha_at_uv(texture: Image, uv: Vector2, threshold: float = 0.5) -> bool:
+static func check_texture_alpha_at_uv(texture: Image, viewport_mouse_pos: Vector2, threshold: float = 0.5) -> bool:
 	if not texture:
 		push_warning("CollisionHelper: texture is null")
 		return false
 	
-	print("Checking texture alpha at UV: ", uv)
+	# Convert viewport mouse position to UV
+	var uv = viewport_mouse_pos
 	# Clamp UV to valid range
 	uv.x = clamp(uv.x, 0.0, 1.0)
 	uv.y = clamp(uv.y, 0.0, 1.0)
@@ -82,7 +75,7 @@ static func check_texture_alpha_at_uv(texture: Image, uv: Vector2, threshold: fl
 
 ## Converts a 3D world hit position to UV coordinates in quad space
 ## This is a utility function if you already have the hit position from another raycast
-static func get_uv_from_world_hit(hit_position: Vector3, quad_transform: Transform3D, quad_size: Vector2) -> Vector2:
+static func get_uv_from_local_hit(hit_position: Vector3, quad_transform: Transform3D, quad_size: Vector2) -> Vector2:
 	# Convert world position to local quad space
 	var local_hit = quad_transform.affine_inverse() * hit_position
 	

@@ -29,7 +29,7 @@ var sub_viewport: SubViewport = null
 var viewport_camera: Camera3D = null
 var viewport_container: Node3D = null
 var output_mesh: MeshInstance3D = null
-var largest_layer_size: Vector2 = Vector2(100, 100)  # Default size
+var largest_layer_size: Vector2 = Vector2(10, 10)  # Default size
 
 
 func _init(p_name: String = "") -> void:
@@ -142,7 +142,7 @@ func _update_viewport_size() -> void:
 		return
 	
 	# Find the largest layer dimensions
-	var new_largest_size = Vector2(100, 100)  # Minimum size
+	var new_largest_size = Vector2(10, 10)  # Minimum size
 	
 	for layer_name in layers:
 		var layer = layers[layer_name]
@@ -152,16 +152,18 @@ func _update_viewport_size() -> void:
 		# Get layer quad size
 		if layer.mesh_instance and layer.mesh_instance.mesh is QuadMesh:
 			var quad_size = (layer.mesh_instance.mesh as QuadMesh).size
-			new_largest_size.x = max(new_largest_size.x, quad_size.x)
-			new_largest_size.y = max(new_largest_size.y, quad_size.y)
+			if quad_size.x * quad_size.y > largest_layer_size.x * largest_layer_size.y:
+				new_largest_size = quad_size
 	
 	# Only update if size changed significantly (avoid unnecessary updates)
-	if abs(new_largest_size.x - largest_layer_size.x) > 1.0 or abs(new_largest_size.y - largest_layer_size.y) > 1.0:
+	if new_largest_size.x * new_largest_size.y > largest_layer_size.x * largest_layer_size.y:
 		largest_layer_size = new_largest_size
 		
 		# Update SubViewport size
 		sub_viewport.size = Vector2i(int(largest_layer_size.x), int(largest_layer_size.y))
-		
+
+		# Update output mesh size
+		output_mesh.mesh.size = largest_layer_size
 
 ## Updates the viewport
 func _update_viewport() -> void:

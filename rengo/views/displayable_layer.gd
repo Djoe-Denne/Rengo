@@ -117,16 +117,6 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 
-
-## Performs 2-step collision check: raycast to quad, then alpha check
-## Returns true if mouse hits quad AND texture alpha exceeds threshold
-func check_mouse_intersection(camera: Camera3D, mouse_pos: Vector2) -> bool:
-	if not texture or not mesh_instance or not mesh_instance.mesh:
-		return false
-
-	# Check alpha at UV coordinate using cached mask
-	return CollisionHelper.check_texture_alpha_at_uv(alpha_mask, mouse_pos, alpha_threshold)
-
 ## Triggers mouse enter event
 func _trigger_mouse_enter() -> void:
 	is_mouse_over = true
