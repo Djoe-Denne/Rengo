@@ -4,16 +4,19 @@ class_name MovieActorDirector
 extends ActorDirector
 
 
+func _init() -> void:
+	super()
+
 ## Instructs an actor to change states
 ## Creates or updates single sprite setup
-func instruct(actor, new_states: Dictionary = {}) -> void:
-	if not actor:
+func instruct(new_states: Dictionary = {}) -> void:
+	if not controller:
 		return
 	
 	# Ensure character is loaded
-	if not actor.actor_name in character_acts:
-		if not load_character(actor.actor_name):
-			push_error("Failed to load character: %s" % actor.actor_name)
+	if not character_acts:
+		if not load_character(controller.get_model().name):
+			push_error("Failed to load character: %s" % controller.get_model().name)
 			return
 	
 	# new_states contains the current states from Character model
@@ -23,37 +26,33 @@ func instruct(actor, new_states: Dictionary = {}) -> void:
 	var pose = current_states.get("pose", "idle")
 	var orientation = current_states.get("orientation", "front")
 	
-	var act = get_act(actor.actor_name, pose)
+	var act = get_act(controller.get_model().name, pose)
 	if not act:
-		push_warning("Act '%s' not found for character '%s'" % [pose, actor.actor_name])
+		push_warning("Act '%s' not found for character '%s'" % [pose, controller.get_model().name])
 		return
 	
 	# If sprite_container doesn't exist, create it
-	if not actor.sprite_container:
-		_create_sprite(actor)
+	if not controller.get_view().sprite_container:
+		_create_sprite()
 	
 	# Update the sprite texture
-	_update_sprite(actor, act, orientation)
+	_update_sprite(act, orientation)
 
 
 ## Creates the sprite for the actor
-func _create_sprite(actor) -> void:
+func _create_sprite() -> void:
+	var actor = controller.get_view()
 	var sprite = Sprite2D.new()
 	sprite.name = "Actor_" + actor.actor_name
 	sprite.centered = true
 	
 	actor.sprite_container = sprite
 	actor.scene_node = sprite
-	
-	# Initialize machinist for this actor
-	if not actor.machinist:
-		actor.machinist = Machinist.new()
-		var base_dirs = get_character_base_dirs(actor.actor_name)
-		actor.machinist.load_config(base_dirs)
 
 
 ## Updates the sprite texture based on current state
-func _update_sprite(actor, act: Act, orientation: String) -> void:
+func _update_sprite(act: Act, orientation: String) -> void:
+	var actor = controller.get_view()
 	var variant = act.get_variant(orientation)
 	
 	# Try to get image path from variant
@@ -72,7 +71,7 @@ func _update_sprite(actor, act: Act, orientation: String) -> void:
 	
 	# Load and set texture
 	if image_path != "":
-		var texture = _load_texture(actor, image_path)
+		var texture = _load_texture(image_path)
 		if texture and actor.sprite_container:
 			actor.sprite_container.texture = texture
 	else:
@@ -80,7 +79,7 @@ func _update_sprite(actor, act: Act, orientation: String) -> void:
 
 
 ## Loads a texture using ImageRepository with base directory resolution
-func _load_texture(actor, image_path: String) -> Texture2D:
+func _load_texture(image_path: String) -> Texture2D:
 	# Check if it's a color specification (starts with #)
 	if image_path.begins_with("#"):
 		return _create_color_texture(Color(image_path))
@@ -91,7 +90,7 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 		image_path = image_path.replace("{plan}", plan_id)
 	
 	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(actor.actor_name)
+	var base_dirs = get_character_base_dirs(controller.get_model().name)
 	
 	# Use ImageRepository to load with base directory resolution
 	var texture = ImageRepository.get_or_load(base_dirs, image_path)
@@ -99,7 +98,7 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 	if not texture:
 		# Create colored placeholder if image not found
 		var plan_id = scene_model.current_plan_id if scene_model else "unknown"
-		push_warning("Texture not found: %s (character: %s, plan: %s)" % [image_path, actor.actor_name, plan_id])
+		push_warning("Texture not found: %s (character: %s, plan: %s)" % [image_path, controller.get_model().name, plan_id])
 		return _create_color_texture(Color(1.0, 0.0, 1.0))  # Magenta placeholder
 	
 	return texture

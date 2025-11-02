@@ -1,6 +1,11 @@
 class_name DisplayableModel
 extends Transformable
 
+## The controller (pure display)
+var controller: Controller = null
+
+## signals for model changes
+signal state_changed(new_states: Dictionary)
 ## States of the displayable model
 var current_states: Dictionary = {}
 
@@ -13,8 +18,12 @@ func _init(p_states: Dictionary = {}) -> void:
 func set_state(key: String, value: Variant) -> void:
 	if current_states.get(key) != value:
 		current_states[key] = value
-		_notify_observers()
+		state_changed.emit(current_states)
 
+func remove_state(key: String) -> void:
+	if current_states.has(key):
+		current_states.erase(key)
+		state_changed.emit(current_states)
 
 ## Gets a state value
 func get_state(key: String, default_value: Variant = null) -> Variant:
@@ -33,5 +42,12 @@ func update_states(new_states: Dictionary) -> void:
 			changed = true
 	
 	if changed:
-		_notify_observers()
+		state_changed.emit(new_states)
 
+func on_plan_changed() -> void: state_changed.emit(current_states)
+
+func get_controller() -> Controller:
+	return controller
+
+func set_controller(p_controller: Controller) -> void:
+	controller = p_controller

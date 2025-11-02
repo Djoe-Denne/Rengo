@@ -15,12 +15,6 @@ var sprite_container: Node3D = null
 ## Reference to controller (for interaction callbacks)
 var controller = null  # Controller reference
 
-## Director that handles visual updates for this displayable
-var director: Director = null
-
-## Machinist that handles shader effects for this displayable
-var machinist: Machinist = null
-
 ## Input handler for centralized mouse event coordination
 var input_handler = null  # DisplayableInputHandler
 
@@ -35,17 +29,8 @@ var largest_layer_size: Vector2 = Vector2(10, 10)  # Default size
 func _init(p_name: String = "") -> void:
 	super(p_name)
 
-
-## Observes a Character model for state changes
-func observe(p_model: DisplayableModel) -> void:
-	# Register as observer for ALL changes (states + transforms)
-	p_model.add_observer(_on_model_changed)
-	
-	# Initial visual update
-	update_position()
-	update_visibility()
-	update_rotation()
-	update_scale()
+func set_controller(p_controller: Controller) -> void:
+	controller = p_controller
 
 ## Sets up the SubViewport rendering system
 func _setup_viewport() -> void:
@@ -73,8 +58,6 @@ func _setup_viewport() -> void:
 	viewport_camera.size = largest_layer_size.y  # Orthogonal size
 	viewport_container.add_child(viewport_camera)
 	
-	# Position camera to view layers from -Z direction
-	_update_camera_position()
 	
 	output_mesh = MeshInstance3D.new()
 	output_mesh.name = "OutputMesh_" + resource_name
@@ -92,7 +75,8 @@ func _setup_viewport() -> void:
 	
 	sprite_container.add_child(sub_viewport)
 	sprite_container.add_child(viewport_container)
-	sprite_container.add_child(output_mesh)
+	# Position camera to view layers from -Z direction
+	_update_camera_position()
 
 ## Creates the scene node - should be overridden by subclasses
 ## Subclasses should create sprite_container and call parent's method
@@ -112,8 +96,8 @@ func create_scene_node(parent: Node) -> Node:
 	scene_node = parent
 
 	# Instruct director to set up initial layers
-	if director and controller.model:
-		director.instruct(self, controller.model.current_states)
+	if controller.director and controller.model:
+		controller.director.instruct(controller.model.current_states)
 
 	return sprite_container
 
@@ -240,44 +224,21 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_clicked.connect(_on_layer_clicked)
 
 
-## Called when the observed model changes (states or transforms)
-func _on_model_changed(state_dict: Dictionary) -> void:
-	# Update visual states (pose, expression, etc.)
-	if "current_states" in state_dict and director:
-		director.instruct(self, state_dict.current_states)
-	
-	# Update transform properties (position, rotation, scale, visible)
-	if "position" in state_dict:
-		update_position()
-	
-	if "visible" in state_dict:
-		update_visibility()
-	
-	if "rotation" in state_dict:
-		update_rotation()
-	
-	if "scale" in state_dict:
-		update_scale()
-	
-	# Update shaders when states change
-	if "current_states" in state_dict and machinist:
-		machinist.update_shaders(state_dict.current_states, layers)
-
-func update_position() -> void:
+func on_model_position_changed(new_position: Vector3) -> void:
 	if sprite_container:
-		sprite_container.position = controller.model.position
+		sprite_container.position = new_position
 
-func update_visibility() -> void:
+func on_model_visibility_changed(new_visible: bool) -> void:
 	if sprite_container:
-		sprite_container.visible = controller.model.visible
+		sprite_container.visible = new_visible
 
-func update_rotation() -> void:
+func on_model_rotation_changed(new_rotation: Vector3) -> void:
 	if sprite_container:
-		sprite_container.rotation_degrees = controller.model.rotation
+		sprite_container.rotation_degrees = new_rotation
 
-func update_scale() -> void:
+func on_model_scale_changed(new_scale: Vector3) -> void:
 	if sprite_container:
-		sprite_container.scale = controller.model.scale
+		sprite_container.scale = new_scale
 
 ## Layer signal handlers (for potential custom logic)
 func _on_layer_hovered(_layer_name: String) -> void:

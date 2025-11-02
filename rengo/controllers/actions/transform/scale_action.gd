@@ -85,4 +85,3 @@ func z(value: float) -> ScaleAction:
 ## Alias for in_duration
 func in_time(p_duration: float) -> ScaleAction:
 	return in_duration(p_duration)
-

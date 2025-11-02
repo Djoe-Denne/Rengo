@@ -77,4 +77,3 @@ func get_progress() -> float:
 	if duration <= 0.0:
 		return 1.0
 	return clamp(_elapsed_time / duration, 0.0, 1.0)
-

@@ -4,6 +4,12 @@
 ## Extends Transformable to include position, rotation, scale, visible properties
 class_name Character extends DisplayableModel
 
+## Signals for character changes
+signal pose_changed(new_pose: String)
+signal expression_changed(new_expression: String)
+signal orientation_changed(new_orientation: String)
+signal outfit_changed(new_outfit: Array)
+
 ## Character identifier (e.g., "alice", "bob")
 var name: String = ""
 
@@ -39,23 +45,22 @@ func _init(p_name: String = "") -> void:
 ## Convenience method: Sets expression state
 func express(emotion: String) -> void:
 	set_state("expression", emotion)
-
+	expression_changed.emit(emotion)
 
 ## Convenience method: Sets pose state
 func pose(pose_name: String) -> void:
 	set_state("pose", pose_name)
-
+	pose_changed.emit(pose_name)
 
 ## Convenience method: Sets orientation state
 func look(orientation: String) -> void:
 	set_state("orientation", orientation)
-
+	orientation_changed.emit(orientation)
 
 ## Convenience method: Updates outfit state
 func wear(outfit_items: Array) -> void:
 	panoplie = outfit_items
-	_notify_observers()
-
+	outfit_changed.emit(current_states)
 
 ## Override _get_transform_state to include character-specific state
 func _get_transform_state() -> Dictionary:
@@ -90,3 +95,4 @@ func apply_defaults(defaults: Dictionary) -> void:
 	for key in defaults:
 		if not key in current_states:
 			current_states[key] = defaults[key]
+	state_changed.emit(current_states)

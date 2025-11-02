@@ -4,6 +4,9 @@
 class_name Scene
 extends RefCounted
 
+## Signals for scene changes
+signal plan_changed(new_plan_id: String)
+
 ## Scene identifier (e.g., "demo_scene")
 var scene_name: String = ""
 
@@ -22,10 +25,6 @@ var stage: StageModel = null
 ## List of available character names
 var available_characters: Array = []
 
-## List of observers (Callables) watching this scene
-var _observers: Array = []
-
-
 func _init(p_scene_name: String = "", p_scene_type: String = "theater") -> void:
 	scene_name = p_scene_name
 	scene_type = p_scene_type
@@ -40,7 +39,7 @@ func set_plan(plan_id: String) -> void:
 	
 	if current_plan_id != plan_id:
 		current_plan_id = plan_id
-		_notify_observers()
+		plan_changed.emit()
 
 
 ## Gets the current Plan object
@@ -61,32 +60,6 @@ func get_current_camera() -> Camera:
 ## Adds a plan to the scene
 func add_plan(plan: Plan) -> void:
 	plans[plan.plan_id] = plan
-
-
-## Adds an observer to be notified of state changes
-func add_observer(observer: Callable) -> void:
-	if not _observers.has(observer):
-		_observers.append(observer)
-
-
-## Removes an observer
-func remove_observer(observer: Callable) -> void:
-	var idx = _observers.find(observer)
-	if idx >= 0:
-		_observers.remove_at(idx)
-
-
-## Notifies all observers of state changes
-func _notify_observers() -> void:
-	var scene_state = {
-		"current_plan_id": current_plan_id,
-		"scene_name": scene_name,
-		"scene_type": scene_type
-	}
-	
-	for observer in _observers:
-		if observer.is_valid():
-			observer.call(scene_state)
 
 
 ## Creates a Scene from a dictionary configuration

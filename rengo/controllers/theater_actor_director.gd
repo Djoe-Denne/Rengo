@@ -3,29 +3,32 @@
 class_name TheaterActorDirector
 extends ActorDirector
 
-const TheaterCostumier = preload("res://rengo/domain/theater_costumier.gd")
+const TheaterCostumier = preload("res://rengo/controllers/theater_costumier.gd")
 
+func _init() -> void:
+	super()
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
 ## Creates or updates multi-layer sprite setup using unified template system
-func instruct(actor, new_states: Dictionary = {}) -> void:
-	if not actor:
+func instruct(new_states: Dictionary = {}) -> void:
+	if not controller:
 		return
 	
 	# Ensure wardrobe is loaded for clothing layers
-	if not actor.actor_name in costumiers:
-		if not load_wardrobe(actor.actor_name):
-			push_warning("Failed to load wardrobe for character: %s" % actor.actor_name)
+	if not costumier:
+		if not load_wardrobe(controller.get_model().name):
+			push_warning("Failed to load wardrobe for character: %s" % controller.get_model().name)
 	
 	# new_states contains the current states from Character model
 	var current_states = new_states
 	
 	# Update all layers based on current states (body + face + clothing)
-	_update_layers_unified(actor, current_states)
+	_update_layers_unified(current_states)
 
 
 ## Updates all layers using unified template system (body + face + clothing)
-func _update_layers_unified(actor, current_states: Dictionary) -> void:
+func _update_layers_unified(current_states: Dictionary) -> void:
+	var actor = controller.get_view()
 	if not actor.sprite_container:
 		return
 	
@@ -35,7 +38,7 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 		state["plan"] = scene_model.current_plan_id
 	
 	# Collect all layer definitions
-	var all_layers = get_character_layers(actor.controller.model as Character)
+	var all_layers = get_character_layers()
 	
 	# Ensure all layers exist as DisplayableLayer instances
 	for layer_def in all_layers:
@@ -66,7 +69,7 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 			var texture = _load_texture(actor, image_path)
 			if texture:
 				# Apply texture to DisplayableLayer
-				_apply_texture_to_displayable_layer(actor, layer, texture, layer_def)
+				_apply_texture_to_displayable_layer(layer, texture, layer_def)
 			else:
 				# Hide layer if texture not found
 				layer.set_layer_visible(false)
@@ -75,10 +78,11 @@ func _update_layers_unified(actor, current_states: Dictionary) -> void:
 
 
 ## Applies a texture to a DisplayableLayer and updates its size
-func _apply_texture_to_displayable_layer(actor, layer: DisplayableLayer, texture: Texture2D, layer_def: Dictionary) -> void:
+func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Texture2D, layer_def: Dictionary) -> void:
 	if not layer or not texture:
 		return
 	
+	var actor = controller.get_view()
 	# Calculate quad size based on texture dimensions
 	var char_size = _get_character_size(actor)
 	var layer_size = _calculate_layer_size(texture, char_size, layer.layer_name, actor)
@@ -122,7 +126,7 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 		return _create_color_texture(Color(image_path))
 	
 	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(actor.actor_name)
+	var base_dirs = get_character_base_dirs(controller.get_model().name)
 	
 	# Try to load the resolved path
 	var texture = ImageRepository.get_or_load(base_dirs, image_path)
@@ -138,7 +142,7 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 	if not texture:
 		# Create colored placeholder if image not found
 		var plan_id = scene_model.current_plan_id if scene_model else "unknown"
-		push_warning("Texture not found: %s (character: %s, plan: %s)" % [image_path, actor.actor_name, plan_id])
+		push_error("Texture not found: %s (character: %s, plan: %s)" % [image_path, actor.actor_name, plan_id])
 		return _create_color_texture(Color(1.0, 0.0, 1.0))  # Magenta placeholder
 	
 	return texture
@@ -235,7 +239,7 @@ func _calculate_layer_size(texture: Texture2D, char_size: Vector2, layer_name: S
 ## Loads the wardrobe (panoplie.yaml) for a character
 func load_wardrobe(name: String) -> bool:
 	# Check if already loaded
-	if name in costumiers:
+	if costumier:
 		return true
 	
 	# Get base directories for this character
@@ -246,9 +250,6 @@ func load_wardrobe(name: String) -> bool:
 		return false
 	
 	# Create TheaterCostumier and load wardrobe with merging support
-	var costumier = TheaterCostumier.new(name)
-	if costumier.load_wardrobe(base_dirs, true):
-		costumiers[name] = costumier
-		return true
-	
-	return false
+	costumier = TheaterCostumier.new(controller)
+	return costumier.load_wardrobe(base_dirs, true)
+		

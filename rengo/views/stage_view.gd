@@ -32,7 +32,7 @@ func set_scene_model(p_scene_model: Scene, p_vn_scene: Node) -> void:
 	
 	# Subscribe to scene changes
 	if scene_model:
-		scene_model.add_observer(_on_scene_changed)
+		scene_model.plan_changed.connect(_on_scene_changed)
 
 
 ## Creates the initial background mesh (3D quad)
@@ -122,7 +122,7 @@ func scale_to_viewport() -> void:
 
 
 ## Observer callback - called when Scene model changes
-func _on_scene_changed(scene_state: Dictionary) -> void:
+func _on_scene_changed() -> void:
 	if not scene_model:
 		return
 	

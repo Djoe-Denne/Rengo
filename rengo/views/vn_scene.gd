@@ -10,10 +10,7 @@ var Character = load("res://rengo/models/character.gd")
 var ActorController = load("res://rengo/controllers/actor_controller.gd")
 
 ## The scene controller (FSM)
-var controller = null  # VNSceneController
-
-## The actor director (Theater or Movie mode)
-var director = null  # ActorDirector
+var controller: VNSceneController = null  # VNSceneController
 
 ## The scene model (contains all scene state)
 var scene_model: Scene = null
@@ -79,7 +76,7 @@ func _ready() -> void:
 	
 	# Subscribe to scene model changes to handle plan changes
 	if scene_model:
-		scene_model.add_observer(_on_scene_changed)
+		scene_model.plan_changed.connect(_on_scene_changed)
 	
 	# Setup camera to observe the camera model
 	var camera = scene_model.get_current_camera() if scene_model else null
@@ -152,11 +149,6 @@ func set_scene_model(p_scene_model: Scene) -> void:
 	scene_model = p_scene_model
 
 
-## Sets the director for this scene (called by SceneFactory)
-func set_director(p_director) -> void:
-	director = p_director
-
-
 ## Sets the stage view for this scene (called by SceneFactory)
 func set_stage_view(p_stage_view: StageView) -> void:
 	stage_view = p_stage_view
@@ -175,21 +167,18 @@ func cast(name: String) -> ActorController:
 		character = Character.new(name)
 		characters[name] = character
 		
-		# Load character metadata from director
-		if director:
-			director.load_character(character)
-	
 	# Create Actor view instance
-	var actor = Actor.new(name, director)
+	var actor = Actor.new(name)
 	actor.vn_scene = self
 	
+	# Create ActorDirector
+	var actor_director = TheaterActorDirector.new()
+	actor_director.set_scene_model(scene_model)
 	# Create ActorController and link it to the view (MVC)
-	var actor_ctrl = ActorController.new(name, character, actor)
+	var actor_ctrl = ActorController.new(name, character, actor, actor_director, scene_model)
 	actor_ctrl.vn_scene = self  # For action registration
-	actor.controller = actor_ctrl  # View knows its controller
-	
-	# Link Actor to Character model (observer pattern)
-	actor.observe(character)
+	actor_ctrl.plug_signals()
+	actor_director.load_character(character)
 	
 	# Create the actor's scene node immediately (eager creation)
 	# Actors are visual elements, so they should always have their scene representation ready
@@ -203,9 +192,12 @@ func cast(name: String) -> ActorController:
 
 
 ## Observer callback for scene model changes
-func _on_scene_changed(scene_state: Dictionary) -> void:
+func _on_scene_changed() -> void:
+	if not scene_model:
+		return
+	
 	# Update camera observation when plan changes
-	if "current_plan_id" in scene_state and camera_3d:
+	if camera_3d:
 		var camera = scene_model.get_current_camera() if scene_model else null
 		if camera:
 			camera_3d.observe_camera(camera)

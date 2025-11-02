@@ -11,19 +11,12 @@ var config: Dictionary = {}
 ## Current background states (for shader activation)
 var current_states: Dictionary = {}
 
-## Machinist for handling state-based shader effects
-var machinist: Machinist = null
-
 
 func _ready() -> void:
 	# Configure background if config is set
 	if config:
 		_apply_config()
 	
-	# Load shader configuration if background_id is set
-	if background_id != "":
-		_load_shader_config()
-
 
 ## Applies configuration to the background
 func _apply_config() -> void:
@@ -44,19 +37,6 @@ func _create_color_texture(color: Color, size: Vector2 = Vector2(800, 600)) -> T
 	var image = Image.create(int(size.x), int(size.y), false, Image.FORMAT_RGBA8)
 	image.fill(color)
 	return ImageTexture.create_from_image(image)
-
-
-## Loads shader configuration for this background
-func _load_shader_config() -> void:
-	# Construct base directories for background resources
-	var base_dirs = _get_background_base_dirs()
-	
-	if base_dirs.is_empty():
-		return
-	
-	# Create machinist and load configuration
-	machinist = Machinist.new()
-	machinist.load_config(base_dirs)
 
 
 ## Gets base directories for background resources
@@ -81,9 +61,7 @@ func _get_background_base_dirs() -> Array:
 func set_state(key: String, value: Variant) -> void:
 	if current_states.get(key) != value:
 		current_states[key] = value
-		if machinist:
-			machinist.update_shaders(current_states, {"background": self})
-
+		
 
 ## Updates multiple states at once
 func update_states(new_states: Dictionary) -> void:
@@ -93,6 +71,3 @@ func update_states(new_states: Dictionary) -> void:
 			current_states[key] = new_states[key]
 			changed = true
 	
-	if changed and machinist:
-		machinist.update_shaders(current_states, {"background": self})
-

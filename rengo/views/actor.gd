@@ -8,7 +8,6 @@ class_name Actor extends DisplayableNode
 var actor_name: String = ""
 
 
-func _init(p_actor_name: String = "", p_director = null) -> void:
+func _init(p_actor_name: String = "") -> void:
 	super(p_actor_name)
 	actor_name = p_actor_name
-	director = p_director

@@ -152,4 +152,3 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_accept"):
 		title_controller.execute_selected_option()
 		accept_event()
-

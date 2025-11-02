@@ -120,4 +120,3 @@ func update_initial_position() -> void:
 ## Cleanup when node is removed from tree
 func _exit_tree() -> void:
 	stop_observing()
-

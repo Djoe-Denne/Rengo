@@ -9,25 +9,28 @@ var character_acts: Dictionary = {}
 ## Dictionary of loaded character metadata { name: Character }
 var character_metadata: Dictionary = {}
 
-## Dictionary of loaded character layers { name: { layer_name: Layer } }
+## Dictionary of loaded character layers { layer_name: Layer } 
 var character_layers: Dictionary = {}
 
-## Dictionary of loaded character faces { name: { face_name: Face } }
+## Dictionary of loaded character faces { face_name: Face }
 var character_faces: Dictionary = {}
 
-## Dictionary of costumiers per character { name: Costumier }
-var costumiers: Dictionary = {}
+## character costumier
+var costumier: Costumier = null
 
 ## Base asset paths for resolving character resources
 const COMMON_CHARACTERS_PATH = "res://assets/scenes/common/characters/"
 const SCENES_PATH = "res://assets/scenes/"
 
+func _init() -> void:
+	super()
+
 ## Loads a character's from their YAML files
 func load_character(character: Character) -> bool:
 	var name = character.name
 	# Check if already loaded
-	if name in character_metadata:
-		character.load_metadata(character_metadata[name])
+	if character_metadata:
+		character.load_metadata(character_metadata)
 		return true
 	
 	# Get base directories for this character
@@ -43,9 +46,10 @@ func load_character(character: Character) -> bool:
 		push_warning("No character found for: %s" % name)
 		return false
 	
-	character_metadata[name] = character_data.character
+	character_metadata = character_data.character
 
-	character_layers[name] = character_data.layers
+	for layer in character_data.layers:
+		character_layers[layer.id] = layer
 
 	# Load character faces from faces.yaml
 	var faces_data = ResourceRepository.load_yaml(base_dirs, "faces", false)
@@ -53,7 +57,8 @@ func load_character(character: Character) -> bool:
 		push_warning("No faces found for: %s" % name)
 		return false
 	
-	character_faces[name] = faces_data.faces
+	for face in faces_data.faces:
+		character_faces[face.id] = face
 
 	if not _load_character_acts(base_dirs, name):
 		push_warning("Failed to load character acts for: %s" % name)
@@ -75,59 +80,53 @@ func _load_character_acts(base_dirs: Array, name: String) -> bool:
 		return false
 	
 	# Create Act objects from loaded data
-	character_acts[name] = {}
+	character_acts = {}
 	
 	for act_name in acts_data:
 		var act_config = acts_data[act_name]
 		if not act_config.is_empty():
 			var act = Act.new(name, act_name, act_config)
-			character_acts[name][act_name] = act
+			character_acts[act_name] = act
 	
 	return true
 
 
 ## Gets a specific act for a character
 func get_act(name: String, act_name: String) -> Act:
-	if name in character_acts:
-		if act_name in character_acts[name]:
-			return character_acts[name][act_name]
+	if character_acts:
+		if act_name in character_acts:
+			return character_acts[act_name]
 	return null
 
 
-func get_character_metadata(name: String) -> Character:
-	if name in character_metadata:
-		return character_metadata[name]
-	return null
-
-func get_character_layers(character: Character) -> Array:
-	if  not character.name in character_layers:
-		push_warning("No character layers found for: %s" % character.name)
+func get_character_layers() -> Array:
+	if not character_layers:
+		push_warning("No character layers found")
 		return []
 
-	var all_layers = []
-	all_layers.append_array(character_layers[character.name])
-	all_layers.append_array(get_character_faces(character))
-	all_layers.append_array(get_panoplie(character))
+	var all_layers = character_layers.values().duplicate()
+	all_layers.append_array(get_character_faces())
+	all_layers.append_array(get_panoplie())
 	return all_layers
 
-func get_character_faces(character: Character) -> Array:
-	if not character.name in character_faces:
-		push_warning("No character faces found for: %s" % character.name)
+func get_character_faces() -> Array:
+	if not character_faces:
+		push_warning("No character faces found")
 		return []
 
-	return character_faces[character.name]
+	return character_faces.values().duplicate()
 
-func get_panoplie(character: Character) -> Array:
-	if not character.name in costumiers:
+func get_panoplie() -> Array:
+	if not costumier:
+		push_warning("No costumier found")
 		return []
 
 	var all_layers = []
-	var state = character.get_states().duplicate()
+	var state = controller.get_model().get_states().duplicate()
 	if scene_model:
 		state["plan"] = scene_model.current_plan_id
 
-	var costumier = costumiers[character.name]
-	var clothing_layers_dict = costumier.get_layers(character.panoplie, state)
+	var clothing_layers_dict = costumier.get_layers(controller.get_model().panoplie, state)
 	
 	# Convert clothing dictionary to array format
 	for clothing_id in clothing_layers_dict.keys():
@@ -143,10 +142,8 @@ func get_panoplie(character: Character) -> Array:
 	return all_layers
 
 ## Gets the costumier for a character
-func get_costumier(name: String) -> Costumier:
-	if name in costumiers:
-		return costumiers[name]
-	return null
+func get_costumier() -> Costumier:
+	return costumier
 
 
 ## Loads the wardrobe (panoplie.yaml) for a character
@@ -154,21 +151,7 @@ func get_costumier(name: String) -> Costumier:
 func load_wardrobe(name: String) -> bool:
 	# Default implementation does nothing
 	# Subclasses (TheaterActorDirector, MovieActorDirector) should override
-	return false
-
-
-## Loads shader configuration for a character
-## @param name: Name of the character
-## @return: Dictionary with shader configurations or empty dictionary
-func load_shader_config(name: String) -> Dictionary:
-	var base_dirs = get_character_base_dirs(name)
-	
-	if base_dirs.is_empty():
-		return {}
-	
-	# Load shader config using ShaderRepository
-	return ShaderRepository.load_shader_config(base_dirs)
-	
+	return false	
 
 ## Gets the base directories for a character's assets
 ## Returns scene-specific path first (if it exists), then common path
@@ -176,8 +159,8 @@ func get_character_base_dirs(name: String) -> Array:
 	var base_dirs = []
 	
 	# Scene-specific character path (higher priority)
-	if scene_path != "":
-		var scene_char_path = SCENES_PATH + scene_path + "/characters/" + name + "/"
+	if scene_model and scene_model.scene_name != "":
+		var scene_char_path = SCENES_PATH + scene_model.scene_name + "/characters/" + name + "/"
 		if DirAccess.dir_exists_absolute(scene_char_path):
 			base_dirs.append(scene_char_path)
 	
@@ -187,3 +170,6 @@ func get_character_base_dirs(name: String) -> Array:
 		base_dirs.append(common_char_path)
 	
 	return base_dirs
+
+func instruct(_new_states: Dictionary = {}) -> void:
+	pass

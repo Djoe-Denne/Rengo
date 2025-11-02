@@ -2,7 +2,10 @@
 ## Provides the public API for controlling an actor (character + view)
 ## Follows MVC: holds Model (Character) and View (Actor), provides Commands
 class_name ActorController
-extends SceneObject
+extends Controller
+
+## The Scene model (pure data)
+var scene: Scene = null
 
 ## The Character model (pure data)
 var model: Character = null
@@ -13,12 +16,37 @@ var view: Actor = null
 ## Actor name (for convenience)
 var name: String = ""
 
+## Director that handles visual updates for this displayable
+var director: Director = null
 
-func _init(p_name: String, p_model: Character, p_view: Actor) -> void:
+## Machinist that handles shader effects for this displayable
+var machinist: Machinist = null ## TODO: Implement this
+
+func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Director, p_scene: Scene) -> void:
+	scene = p_scene
 	name = p_name
 	model = p_model
 	view = p_view
+	model.set_controller(self)
+	view.set_controller(self)
+	director = p_director
+	director.set_controller(self)
 
+func plug_signals() -> void:
+	model.position_changed.connect(view.on_model_position_changed)
+	model.visible_changed.connect(view.on_model_visibility_changed)
+	model.rotation_changed.connect(view.on_model_rotation_changed)
+	model.scale_changed.connect(view.on_model_scale_changed)
+	model.state_changed.connect(director.instruct)
+	model.outfit_changed.connect(director.instruct)
+	scene.plan_changed.connect(director.on_scene_changed)
+
+
+func get_model() -> Character:
+	return model
+
+func get_view() -> Actor:
+	return view
 
 ## Creates and auto-registers a ShowAction to make this actor visible
 ## Returns the ActionNode for optional chaining
@@ -72,7 +100,6 @@ func look(orientation: String):
 ## Auto-registers the action and returns it for optional chaining
 func wear(clothing_id: String):
 	var WearAction = load("res://rengo/controllers/actions/character/wear_action.gd")
-	var director = view.director if view else null  # Get director from view
 	var action = WearAction.new(self, clothing_id, name, director)  # Action receives the controller
 	return register_action(action)
 
@@ -183,7 +210,10 @@ func update_model_state(key: String, value: Variant) -> void:
 ## Updates multiple states in the model (triggers observer notifications)
 func update_model_states(states: Dictionary) -> void:
 	if model:
-		model.update_states(states)
+		var current_states = model.get_states()
+		for key in states:
+			current_states[key] = states[key]
+		model.update_states(current_states)
 
 
 ## Applies a pure view effect (no model changes)
@@ -191,4 +221,3 @@ func update_model_states(states: Dictionary) -> void:
 func apply_view_effect(effect_callback: Callable) -> void:
 	if view and effect_callback.is_valid():
 		effect_callback.call(view)
-

@@ -105,4 +105,3 @@ func process(delta: float) -> void:
 ## Checks if the scene has finished playing
 func is_finished() -> bool:
 	return not is_playing and action_queue.is_empty() and current_action == null
-

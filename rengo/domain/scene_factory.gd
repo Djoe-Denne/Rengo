@@ -23,12 +23,6 @@ static func create(scene_path: String) -> Node:
 	# Create Scene model from configuration
 	var scene_model = Scene.from_dict(scene_path, scene_config)
 	
-	# Create director based on scene type
-	var director = _create_director(scene_model, scene_path)
-	if not director:
-		push_error("Failed to create director for scene: %s" % scene_path)
-		return null
-	
 	# Create StageView
 	var stage_view = StageView.new()
 	
@@ -38,12 +32,8 @@ static func create(scene_path: String) -> Node:
 	
 	# Set scene model and director
 	vn_scene.set_scene_model(scene_model)
-	vn_scene.set_director(director)
 	vn_scene.set_stage_view(stage_view)
 	
-	# Wire up observers
-	# Director observes scene model for plan changes
-	director.set_scene_model(scene_model)
 	
 	# StageView observes scene model for plan changes
 	stage_view.set_scene_model(scene_model, vn_scene)
@@ -52,27 +42,6 @@ static func create(scene_path: String) -> Node:
 	# (Will be done in VNScene._ready via controller)
 	
 	return vn_scene
-
-
-## Creates the appropriate director based on scene model
-static func _create_director(scene_model: Scene, scene_path: String):
-	var scene_type = scene_model.scene_type
-	
-	var director
-	if scene_type == "theater":
-		var TheaterActorDirector = load("res://rengo/controllers/theater_actor_director.gd")
-		director = TheaterActorDirector.new()
-	elif scene_type == "movie":
-		var MovieActorDirector = load("res://rengo/controllers/movie_actor_director.gd")
-		director = MovieActorDirector.new()
-	else:
-		push_error("Unknown scene type: %s" % scene_type)
-		return null
-	
-	# Prepare the director with the scene path
-	director.prepare(scene_path)
-	
-	return director
 
 
 ## Processes camera references in plans - loads camera definitions and merges with plan-specific data
@@ -140,4 +109,3 @@ static func _load_yaml_file(path: String) -> Dictionary:
 	
 	push_warning("YAML file did not contain a dictionary: %s" % path)
 	return {}
-
