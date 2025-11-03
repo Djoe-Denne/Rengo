@@ -68,7 +68,6 @@ func _setup_viewport() -> void:
 	var material = StandardMaterial3D.new()
 	material.albedo_texture = sub_viewport.get_texture()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 	output_mesh.material_override = material
@@ -97,7 +96,7 @@ func create_scene_node(parent: Node) -> Node:
 
 	# Instruct director to set up initial layers
 	if controller.director and controller.model:
-		controller.director.instruct(controller.model.current_states)
+		controller.director.instruct(controller.model)
 
 	return sprite_container
 

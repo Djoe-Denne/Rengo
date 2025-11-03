@@ -8,7 +8,7 @@ class_name Character extends DisplayableModel
 signal pose_changed(new_pose: String)
 signal expression_changed(new_expression: String)
 signal orientation_changed(new_orientation: String)
-signal outfit_changed(new_outfit: Array)
+signal outfit_changed(model: Character)
 
 ## Character identifier (e.g., "alice", "bob")
 var name: String = ""
@@ -60,7 +60,7 @@ func look(orientation: String) -> void:
 ## Convenience method: Updates outfit state
 func wear(outfit_items: Array) -> void:
 	panoplie = outfit_items
-	outfit_changed.emit(current_states)
+	outfit_changed.emit(self)
 
 ## Override _get_transform_state to include character-specific state
 func _get_transform_state() -> Dictionary:

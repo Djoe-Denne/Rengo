@@ -3,7 +3,7 @@
 
 shaders:
   # When status state is "focused" (e.g., on hover)
-  focused:
+  bedhair:
     - shader: "assets/shaders/glow.gdshader"
       order: 0
       params:

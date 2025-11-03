@@ -40,7 +40,7 @@ func load_shader(shader_path: String) -> Shader:
 ## @param shader_def: Dictionary with shader config (shader path, params, etc.)
 ## @param state: State dictionary for resolving template parameters
 ## @return: Configured ShaderMaterial or null on error
-func create_shader_material(shader_def: Dictionary, state: Dictionary) -> ShaderMaterial:
+func create_shader_material(shader_def: Dictionary, model: DisplayableModel) -> ShaderMaterial:
 	if not "shader" in shader_def:
 		push_warning("Shader definition missing 'shader' path")
 		return null
@@ -63,7 +63,7 @@ func create_shader_material(shader_def: Dictionary, state: Dictionary) -> Shader
 			
 			# Resolve template parameters from state
 			if param_value is String:
-				param_value = _resolve_parameter_value(param_value, state)
+				param_value = _resolve_parameter_value(param_value, model)
 			
 			# Set shader parameter (convert types as needed)
 			_set_shader_param(material, param_name, param_value)
@@ -95,13 +95,13 @@ func load_shader_config(base_dirs: Array) -> Dictionary:
 ## @param value: Parameter value (may contain {placeholder} templates)
 ## @param state: State dictionary for resolution
 ## @return: Resolved value
-func _resolve_parameter_value(value: String, state: Dictionary) -> Variant:
+func _resolve_parameter_value(value: String, model: DisplayableModel) -> Variant:
 	# Use ResourceRepository's template resolution for consistency
-	var resolved = ResourceRepository.resolve_template_path(value, state)
+	var resolved = ResourceRepository.resolve_template_path(value, model.get_states())
 	
 	# If still contains placeholders or is empty, return the original value
 	if resolved == "" or resolved.contains("{"):
-		return value
+		return _resolve_parameter_value_by_model_property(value, model)
 	
 	# Try to parse as color if it looks like a color
 	if resolved.begins_with("#") or resolved.begins_with("("):
@@ -114,6 +114,37 @@ func _resolve_parameter_value(value: String, state: Dictionary) -> Variant:
 		return float(resolved)
 	
 	return resolved
+
+
+## Resolves a parameter value from model properties
+## @param value: Parameter value (may contain @property_name syntax)
+## @param model: Model to resolve parameter value from
+## @return: Resolved value
+func _resolve_parameter_value_by_model_property(value: String, model: DisplayableModel) -> Variant:
+	# Check for @property_name syntax
+	var regex = RegEx.new()
+	regex.compile("@(\\w+)")
+	var match_result = regex.search(value)
+	
+	if not match_result:
+		return value  # No property reference
+	
+	var property_name = match_result.get_string(1)
+	
+	# Use reflection to get property value
+	if property_name in model:
+		var property_value = model.get(property_name)
+		
+		# If the entire value is just @property_name, return the property directly
+		if value == "@" + property_name:
+			return property_value
+		
+		# Otherwise, replace @property_name with the stringified value
+		return value.replace("@" + property_name, str(property_value))
+	
+	# Property not found, return original value
+	push_warning("Property '%s' not found in model" % property_name)
+	return value
 
 
 ## Parses a color from various string formats
@@ -165,4 +196,3 @@ func _set_shader_param(material: ShaderMaterial, param_name: String, value: Vari
 ## Clears the shader cache (useful for hot-reloading during development)
 func clear_cache() -> void:
 	_shader_cache.clear()
-

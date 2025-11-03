@@ -9,26 +9,26 @@ func _init() -> void:
 
 ## Instructs an actor to change states
 ## Creates or updates single sprite setup
-func instruct(new_states: Dictionary = {}) -> void:
+func instruct(displayable_model: DisplayableModel) -> void:
 	if not controller:
 		return
 	
 	# Ensure character is loaded
 	if not character_acts:
-		if not load_character(controller.get_model().name):
-			push_error("Failed to load character: %s" % controller.get_model().name)
+		if not load_character(displayable_model.name):
+			push_error("Failed to load character: %s" % displayable_model.name)
 			return
 	
 	# new_states contains the current states from Character model
-	var current_states = new_states
+	var current_states = displayable_model.get_states()
 	
 	# Get the current pose/act
 	var pose = current_states.get("pose", "idle")
 	var orientation = current_states.get("orientation", "front")
 	
-	var act = get_act(controller.get_model().name, pose)
+	var act = get_act(displayable_model.name, pose)
 	if not act:
-		push_warning("Act '%s' not found for character '%s'" % [pose, controller.get_model().name])
+		push_warning("Act '%s' not found for character '%s'" % [pose, displayable_model.name])
 		return
 	
 	# If sprite_container doesn't exist, create it

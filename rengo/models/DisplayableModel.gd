@@ -5,9 +5,14 @@ extends Transformable
 var controller: Controller = null
 
 ## signals for model changes
-signal state_changed(new_states: Dictionary)
+signal state_changed(model: DisplayableModel)
 ## States of the displayable model
 var current_states: Dictionary = {}
+
+
+## Annotations for the displayable model { annotation_name: Annotation }
+var annotations: Dictionary = {}
+
 
 func _init(p_states: Dictionary = {}) -> void:
 	super._init(Vector3.ZERO, false)  # Initialize Transformable
@@ -18,12 +23,12 @@ func _init(p_states: Dictionary = {}) -> void:
 func set_state(key: String, value: Variant) -> void:
 	if current_states.get(key) != value:
 		current_states[key] = value
-		state_changed.emit(current_states)
+		state_changed.emit(self)
 
 func remove_state(key: String) -> void:
 	if current_states.has(key):
 		current_states.erase(key)
-		state_changed.emit(current_states)
+		state_changed.emit(self)
 
 ## Gets a state value
 func get_state(key: String, default_value: Variant = null) -> Variant:
@@ -42,9 +47,24 @@ func update_states(new_states: Dictionary) -> void:
 			changed = true
 	
 	if changed:
-		state_changed.emit(new_states)
+		state_changed.emit(self)
 
-func on_plan_changed() -> void: state_changed.emit(current_states)
+
+func add_layer_state(p_layer_name: String, p_state: String) -> void:
+	var annotation_name = "layer_" + p_layer_name
+	if not annotation_name in annotations:
+		annotations[annotation_name] = Annotation.new(annotation_name)
+	annotations[annotation_name].add_note(p_state)
+	state_changed.emit(self)
+
+func remove_layer_state(p_layer_name: String, p_state: String) -> void:
+	var annotation_name = "layer_" + p_layer_name
+	if not annotation_name in annotations:
+		return
+	annotations[annotation_name].remove_note(p_state)
+	state_changed.emit(self)
+
+func on_plan_changed() -> void: state_changed.emit(self)
 
 func get_controller() -> Controller:
 	return controller

@@ -22,7 +22,7 @@ var director: Director = null
 ## Machinist that handles shader effects for this displayable
 var machinist: Machinist = null ## TODO: Implement this
 
-func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Director, p_scene: Scene) -> void:
+func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Director, p_machinist: Machinist, p_scene: Scene) -> void:
 	scene = p_scene
 	name = p_name
 	model = p_model
@@ -31,6 +31,8 @@ func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Direct
 	view.set_controller(self)
 	director = p_director
 	director.set_controller(self)
+	machinist = p_machinist
+	machinist.set_controller(self)
 
 func plug_signals() -> void:
 	model.position_changed.connect(view.on_model_position_changed)
@@ -38,6 +40,7 @@ func plug_signals() -> void:
 	model.rotation_changed.connect(view.on_model_rotation_changed)
 	model.scale_changed.connect(view.on_model_scale_changed)
 	model.state_changed.connect(director.instruct)
+	model.state_changed.connect(machinist.update_shaders)
 	model.outfit_changed.connect(director.instruct)
 	scene.plan_changed.connect(director.on_scene_changed)
 

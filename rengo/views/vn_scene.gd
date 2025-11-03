@@ -171,14 +171,18 @@ func cast(name: String) -> ActorController:
 	var actor = Actor.new(name)
 	actor.vn_scene = self
 	
+	# Create Machinist
+	var machinist = Machinist.new()
+
 	# Create ActorDirector
 	var actor_director = TheaterActorDirector.new()
 	actor_director.set_scene_model(scene_model)
 	# Create ActorController and link it to the view (MVC)
-	var actor_ctrl = ActorController.new(name, character, actor, actor_director, scene_model)
+	var actor_ctrl = ActorController.new(name, character, actor, actor_director, machinist, scene_model)
 	actor_ctrl.vn_scene = self  # For action registration
 	actor_ctrl.plug_signals()
 	actor_director.load_character(character)
+	machinist.load_config("")
 	
 	# Create the actor's scene node immediately (eager creation)
 	# Actors are visual elements, so they should always have their scene representation ready

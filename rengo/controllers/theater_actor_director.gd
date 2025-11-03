@@ -10,17 +10,17 @@ func _init() -> void:
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
 ## Creates or updates multi-layer sprite setup using unified template system
-func instruct(new_states: Dictionary = {}) -> void:
+func instruct(displayable_model: DisplayableModel) -> void:
 	if not controller:
 		return
 	
 	# Ensure wardrobe is loaded for clothing layers
 	if not costumier:
-		if not load_wardrobe(controller.get_model().name):
-			push_warning("Failed to load wardrobe for character: %s" % controller.get_model().name)
+		if not load_wardrobe(displayable_model.name):
+			push_warning("Failed to load wardrobe for character: %s" % displayable_model.name)
 	
 	# new_states contains the current states from Character model
-	var current_states = new_states
+	var current_states = displayable_model.get_states()
 	
 	# Update all layers based on current states (body + face + clothing)
 	_update_layers_unified(current_states)

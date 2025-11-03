@@ -7,18 +7,21 @@ render_mode unshaded, blend_mix, depth_draw_opaque, cull_disabled;
 uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float outline_width : hint_range(0.0, 10.0) = 2.0;
 uniform sampler2D screen_texture : hint_screen_texture, repeat_disable, filter_nearest;
+uniform sampler2D albedo_texture : hint_albedo_texture, repeat_disable, filter_nearest;
 
 void fragment() {
-	// Sample the input texture
-	vec4 input_color = texture(screen_texture, SCREEN_UV);
+	vec2 screen_uv = SCREEN_UV;
+	vec2 uv = UV;
 	
-	// Output: show input color where it exists, outline where edges are detected
-	if (input_color.a == 0.0) {
-		ALBEDO = (0.0, 0.0, 0.0);
-		ALPHA = 1.0;
-	} else {
-		ALBEDO = input_color.rgb;
-		ALPHA = input_color.a;
-	}
+    // Test : moitié inférieure de l'écran
+    if (uv.y > 0.5) {
+        ALBEDO = vec3(0.0, 1.0, 0.0); // vert
+        ALPHA = 1.0;
+    } else {
+		vec4 input_color = texture(screen_texture, screen_uv);
+        ALBEDO = input_color.rgb;
+        ALPHA = input_color.a;
+    }
+
 }
 

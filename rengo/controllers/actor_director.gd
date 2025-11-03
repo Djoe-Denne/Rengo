@@ -171,5 +171,5 @@ func get_character_base_dirs(name: String) -> Array:
 	
 	return base_dirs
 
-func instruct(_new_states: Dictionary = {}) -> void:
+func instruct(displayable_model: DisplayableModel) -> void:
 	pass
