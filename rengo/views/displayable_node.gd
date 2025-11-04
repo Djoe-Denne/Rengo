@@ -20,10 +20,8 @@ var input_handler = null  # DisplayableInputHandler
 
 ## SubViewport system for rendering all layers to a single texture
 var sub_viewport: SubViewport = null
-var viewport_camera: Camera3D = null
-var viewport_container: Node3D = null
 var output_mesh: MeshInstance3D = null
-var largest_layer_size: Vector2 = Vector2(10, 10)  # Default size
+var largest_layer_size: Vector2 = Vector2i(10, 10)  # Default size
 
 
 func _init(p_name: String = "") -> void:
@@ -41,29 +39,19 @@ func _setup_viewport() -> void:
 	sub_viewport = SubViewport.new()
 	sub_viewport.name = "SubViewport_" + resource_name
 	sub_viewport.transparent_bg = true
+	sub_viewport.disable_3d = true
 	sub_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	
 
 	sub_viewport.size = Vector2i(int(largest_layer_size.x), int(largest_layer_size.y))
 	
-	# Create viewport container (holds all layer nodes)
-	viewport_container = Node3D.new()
-	viewport_container.name = "ViewportContainer_" + resource_name
-	
-	#Create orthogonal camera for viewport
-	viewport_camera = Camera3D.new()
-	viewport_camera.name = "ViewportCamera_" + resource_name
-	viewport_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	viewport_camera.size = largest_layer_size.y  # Orthogonal size
-	viewport_container.add_child(viewport_camera)
-	
-	
 	output_mesh = MeshInstance3D.new()
 	output_mesh.name = "OutputMesh_" + resource_name
 	output_mesh.mesh = QuadMesh.new()
 	output_mesh.mesh.size = largest_layer_size
-	viewport_container.add_child(output_mesh)
+
+	
 	# Create material with SubViewport texture
 	var material = StandardMaterial3D.new()
 	material.albedo_texture = sub_viewport.get_texture()
@@ -73,9 +61,8 @@ func _setup_viewport() -> void:
 	output_mesh.material_override = material
 	
 	sprite_container.add_child(sub_viewport)
-	sprite_container.add_child(viewport_container)
-	# Position camera to view layers from -Z direction
-	_update_camera_position()
+	sprite_container.add_child(output_mesh)
+
 
 ## Creates the scene node - should be overridden by subclasses
 ## Subclasses should create sprite_container and call parent's method
@@ -101,31 +88,13 @@ func create_scene_node(parent: Node) -> Node:
 	return sprite_container
 
 
-## Updates the camera position to frame the largest layer
-func _update_camera_position() -> void:
-	if not viewport_camera:
-		return
-	
-	# Set orthogonal size to match largest layer height
-	viewport_camera.size = largest_layer_size.y
-	
-	# Position camera on -Z axis at a distance that frames the content
-	# For orthogonal projection, distance doesn't affect framing, but we need
-	# to be far enough back to see layers with positive Z offsets
-	var camera_distance = largest_layer_size.y + 50.0  # Extra distance for z-layering
-	viewport_camera.position = Vector3(0, 0, camera_distance)
-	
-	# Look at origin (where layers are positioned)
-	viewport_camera.look_at(Vector3.ZERO, Vector3.UP)
-
-
 ## Updates viewport size based on largest visible layer
 func _update_viewport_size() -> void:
 	if not sub_viewport:
 		return
 	
 	# Find the largest layer dimensions
-	var new_largest_size = Vector2(10, 10)  # Minimum size
+	var new_largest_size = Vector2i(10, 10)  # Minimum size
 	
 	for layer_name in layers:
 		var layer = layers[layer_name]
@@ -133,25 +102,23 @@ func _update_viewport_size() -> void:
 			continue
 		
 		# Get layer quad size
-		if layer.mesh_instance and layer.mesh_instance.mesh is QuadMesh:
-			var quad_size = (layer.mesh_instance.mesh as QuadMesh).size
-			if quad_size.x * quad_size.y > largest_layer_size.x * largest_layer_size.y:
-				new_largest_size = quad_size
+		var quad_size = layer.postprocess_sub_viewport.get_size()
+		if quad_size.x * quad_size.y > largest_layer_size.x * largest_layer_size.y:
+			new_largest_size = quad_size
 	
 	# Only update if size changed significantly (avoid unnecessary updates)
 	if new_largest_size.x * new_largest_size.y > largest_layer_size.x * largest_layer_size.y:
 		largest_layer_size = new_largest_size
 		
 		# Update SubViewport size
-		sub_viewport.size = Vector2i(int(largest_layer_size.x), int(largest_layer_size.y))
+		sub_viewport.size = largest_layer_size
 
 		# Update output mesh size
-		output_mesh.mesh.size = largest_layer_size
+		output_mesh.mesh.size = Vector2(largest_layer_size.x, largest_layer_size.y)
 
 ## Updates the viewport
 func _update_viewport() -> void:
 	_update_viewport_size()
-	_update_camera_position()
 
 ## Adds a new layer to this displayable node
 ## layer_def contains configuration: { "layer": name, "z": z_index, ... }
@@ -168,14 +135,15 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	if "z" in layer_def:
 		layer.set_z_index(layer_def.z)
 	
-	viewport_container.add_child(layer)
+	sub_viewport.add_child(layer)
+	sub_viewport.add_child(layer.get_composed_sprite())
 	
 	# Store the layer
 	layers[layer_name] = layer
 	
 	# Connect layer signals for interaction handling
 	_connect_layer_signals(layer)
-	_update_viewport()
+
 	return layer
 
 
@@ -198,6 +166,10 @@ func remove_layer(layer_name: String) -> void:
 	# Free the layer
 	layer.queue_free()
 	layers.erase(layer_name)
+	sub_viewport.remove_child(layer)
+
+	_deconnect_layer_signals(layer)
+	#sub_viewport.remove_child(TextureRect) #TODO: Remove this when we have a way to remove the TextureRect
 	_update_viewport()
 
 
@@ -221,7 +193,16 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.connect(_on_layer_hovered)
 	layer.layer_unhovered.connect(_on_layer_unhovered)
 	layer.layer_clicked.connect(_on_layer_clicked)
+	layer.postprocess_sub_viewport_changed.connect(_on_postprocess_sub_viewport_changed)
 
+
+func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
+	if not layer:
+		return
+	layer.layer_hovered.disconnect(_on_layer_hovered)
+	layer.layer_unhovered.disconnect(_on_layer_unhovered)
+	layer.layer_clicked.disconnect(_on_layer_clicked)
+	layer.postprocess_sub_viewport_changed.disconnect(_on_postprocess_sub_viewport_changed)
 
 func on_model_position_changed(new_position: Vector3) -> void:
 	if sprite_container:
@@ -263,6 +244,9 @@ func _on_layer_visibility_changed() -> void:
 			var layer = layers[layer_name]
 			if not layer.is_layer_visible:
 				input_handler.clear_hover_if_layer(layer)
+	_update_viewport()
+
+func _on_postprocess_sub_viewport_changed(new_viewport: SubViewport) -> void:
 	_update_viewport()
 
 ## Gets the controller for this displayable node
