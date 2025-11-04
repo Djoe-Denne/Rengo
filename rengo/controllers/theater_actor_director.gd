@@ -70,6 +70,7 @@ func _update_layers_unified(current_states: Dictionary) -> void:
 			if texture:
 				# Apply texture to DisplayableLayer
 				_apply_texture_to_displayable_layer(layer, texture, layer_def)
+				layer.set_layer_visible(true)
 			else:
 				# Hide layer if texture not found
 				layer.set_layer_visible(false)
@@ -88,7 +89,9 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 	var layer_size = _calculate_layer_size(texture, char_size, layer.layer_name, actor)
 	
 	# Set texture on DisplayableLayer (this also rebuilds collision)
-	layer.set_texture(texture, layer_size)
+	var post_processor = PostProcessorBuilder.take(layer.postprocess_sub_viewport).set_size(layer_size).set_texture(texture).build()
+	layer.set_texture(texture.get_image())
+	layer.commit_postprocess_sub_viewport()
 	
 	# Apply anchor offset if specified
 	if "anchor" in layer_def:

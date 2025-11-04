@@ -1,27 +1,27 @@
 ## DisplayableLayer - Self-contained layer with mesh, texture, and raycast-based collision
 ## Each layer manages its own visibility, input handling, and collision detection
 class_name DisplayableLayer
-extends Node3D
+extends Node2D
 
 ## Custom signals for interaction events
 signal layer_hovered(layer_name: String)
 signal layer_unhovered(layer_name: String)
 signal layer_clicked(layer_name: String, event: InputEvent)
 
+## Signal for when the postprocess sub viewport changes
+signal postprocess_sub_viewport_changed(new_viewport: SubViewport)
+
 ## Layer identifier
 var layer_name: String = ""
 
 ## The visual mesh instance
-var mesh_instance: MeshInstance3D = null
+var postprocess_sub_viewport: SubViewport = null
 
-## Current texture
-var texture: Texture2D = null
+## The composed sprite instance
+var composed_sprite: Sprite2D = null
 
 ## Layer visibility (separate from Node3D.visible for control)
-var is_layer_visible: bool = true
-
-## Z-index for layer ordering
-var z_index: float = 0.0
+var is_layer_visible: bool = false
 
 ## Reference to parent displayable node (for callbacks)
 var parent_displayable = null  # DisplayableNode
@@ -33,72 +33,61 @@ var alpha_threshold: float = 0.5
 var is_mouse_over: bool = false
 
 ## Cached alpha mask for performance
-var alpha_mask: Image = null
-
-## Debug visualization
-var debug_outline: MeshInstance3D = null
-var debug_enabled: bool = false
+var texture_image: Image = null
 
 
 func _init(p_layer_name: String = "") -> void:
 	layer_name = p_layer_name
 	name = "Layer_" + layer_name
-	
-	# Create the mesh instance as a child
-	mesh_instance = MeshInstance3D.new()
-	mesh_instance.name = "Mesh_" + layer_name
-	add_child(mesh_instance)
 
+	composed_sprite = Sprite2D.new()
+	composed_sprite.name = "ComposedSprite_" + layer_name
+	composed_sprite.centered = false
+
+	# Create the mesh instance as a child
+	postprocess_sub_viewport = SubViewport.new()
+	postprocess_sub_viewport.name = "PostprocessSubViewport_" + layer_name
+	postprocess_sub_viewport.transparent_bg = true
+	postprocess_sub_viewport.disable_3d = true
+	postprocess_sub_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
+	postprocess_sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+
+	add_child(postprocess_sub_viewport)
 
 func _ready() -> void:
 	# Input processing now handled by DisplayableNode parent
 	pass
 
-
 ## Sets the texture and updates the quad mesh
-func set_texture(tex: Texture2D, quad_size: Vector2 = Vector2(100, 100)) -> void:
+func set_texture(tex: Image) -> void:
 	if not tex:
 		push_warning("DisplayableLayer: Attempted to set null texture on layer '%s'" % layer_name)
 		return
 	
-	texture = tex
-	
-	# Cache the alpha mask for efficient collision detection
-	alpha_mask = tex.get_image()
-	
-	# Create or update the quad mesh
-	if not mesh_instance.mesh or not mesh_instance.mesh is QuadMesh:
-		var quad_mesh = QuadMesh.new()
-		quad_mesh.size = quad_size
-		mesh_instance.mesh = quad_mesh
-	
-	# Update the quad mesh size if needed
-	if mesh_instance.mesh is QuadMesh:
-		var quad_mesh = mesh_instance.mesh as QuadMesh
-		quad_mesh.size = quad_size
-	
-	# Apply texture to material
-	var material = StandardMaterial3D.new()
-	material.albedo_texture = texture
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	
-	mesh_instance.material_override = material
-	
-	# Refresh debug visualization if enabled
-	if debug_enabled:
-		_create_debug_outline()
+	texture_image = tex
 
+
+func commit_postprocess_sub_viewport() -> void:
+	if not postprocess_sub_viewport:
+		return
+	composed_sprite.texture = postprocess_sub_viewport.get_texture()
+
+	postprocess_sub_viewport_changed.emit(postprocess_sub_viewport)
+
+## Gets the composed sprite
+func get_composed_sprite() -> Sprite2D:
+	return composed_sprite
 
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:
 	is_layer_visible = p_visible
 	
 	# Update Node3D visibility
-	if mesh_instance:
-		mesh_instance.visible = p_visible
-	
+	if p_visible and not postprocess_sub_viewport.get_parent():
+		add_child(postprocess_sub_viewport)
+	elif not p_visible and postprocess_sub_viewport.get_parent() and not p_visible:
+		remove_child(postprocess_sub_viewport)
+
 	# If layer becomes invisible while mouse is over, trigger exit
 	if not p_visible and is_mouse_over:
 		_trigger_mouse_exit()
@@ -141,12 +130,6 @@ func _trigger_mouse_exit() -> void:
 			InteractionHandler.on_hover_exit(controller, layer_name)
 
 
-## Sets the z-index for layer ordering
-func set_z_index(z: float) -> void:
-	z_index = z
-	position.z = z / 100.0  # Convert to actual position (assuming 1cm per z-unit)
-
-
 ## Sets the alpha threshold for collision detection
 func set_alpha_threshold(threshold: float) -> void:
 	alpha_threshold = clamp(threshold, 0.0, 1.0)
@@ -158,73 +141,13 @@ func set_alpha_threshold(threshold: float) -> void:
 
 ## Enables or disables debug visualization of collision area
 func set_debug_enabled(enabled: bool) -> void:
-	debug_enabled = enabled
-	
-	if debug_enabled:
-		_create_debug_outline()
-	else:
-		_remove_debug_outline()
+	pass
 
 
 ## Creates a visual debug outline for the quad bounds
 func _create_debug_outline() -> void:
-	# Remove existing outline if any
-	_remove_debug_outline()
-	
-	if not mesh_instance or not mesh_instance.mesh:
-		return
-	
-	# Get quad size
-	var quad_size = Vector2(100, 100)
-	if mesh_instance.mesh is QuadMesh:
-		quad_size = (mesh_instance.mesh as QuadMesh).size
-	
-	# Create outline mesh
-	debug_outline = MeshInstance3D.new()
-	debug_outline.name = "DebugOutline_" + layer_name
-	add_child(debug_outline)
-	
-	# Create rectangle outline points
-	var half_width = quad_size.x / 2.0
-	var half_height = quad_size.y / 2.0
-	
-	var corners = PackedVector3Array([
-		Vector3(-half_width, -half_height, 0),
-		Vector3(half_width, -half_height, 0),
-		Vector3(half_width, half_height, 0),
-		Vector3(-half_width, half_height, 0)
-	])
-	
-	# Create line mesh from corners
-	var immediate_mesh = ImmediateMesh.new()
-	immediate_mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
-	
-	# Draw the outline
-	for corner in corners:
-		immediate_mesh.surface_add_vertex(corner)
-	# Close the loop
-	immediate_mesh.surface_add_vertex(corners[0])
-	
-	immediate_mesh.surface_end()
-	
-	debug_outline.mesh = immediate_mesh
-	
-	# Create red material for the outline
-	var material = StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(1.0, 0.0, 0.0, 1.0)  # Red
-	material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
-	material.no_depth_test = true  # Always visible
-	material.render_priority = 10  # Render on top
-	
-	debug_outline.material_override = material
-	
-	# Offset slightly toward camera so it's visible over the texture
-	debug_outline.position.z = 0.15
-
+	pass
 
 ## Removes debug outline visualization
 func _remove_debug_outline() -> void:
-	if debug_outline:
-		debug_outline.queue_free()
-		debug_outline = null
+	pass

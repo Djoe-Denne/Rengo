@@ -52,6 +52,15 @@ func _play_story() -> void:
 	# Scene 1: Me wakes up with bed hair
 	me_actor_ctrl.show()
 	me_actor_ctrl.act({"body": "bedhair"})
+	#var body_layer = me_actor_ctrl.view.get_layer("body")
+	#var mesh_instance = MeshInstance3D.new()
+	#mesh_instance.mesh = QuadMesh.new()
+	#mesh_instance.mesh.size = Vector2(100, 100)
+	#mesh_instance.material_override = StandardMaterial3D.new()
+	#mesh_instance.material_override.albedo_texture = body_layer.postprocess_sub_viewport.get_texture()
+	#mesh_instance.material_override.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	#mesh_instance.material_override.cull_mode = BaseMaterial3D.CULL_DISABLED
+	#vn_scene.add_child(mesh_instance)
 	me_actor_ctrl.express("sad")
 	me_actor_ctrl.say("Ugh, I just woke up...")
 	

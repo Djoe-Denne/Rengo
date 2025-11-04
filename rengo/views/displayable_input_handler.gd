@@ -47,8 +47,8 @@ func _input(event: InputEvent) -> void:
 ## Checks all visible layers for mouse intersection using viewport-aware raycasting
 ## Returns topmost hit layer
 func _check_layer_intersections_viewport(main_camera: Camera3D, mouse_pos: Vector2) -> DisplayableLayer:
-	if not displayable_node or not displayable_node.output_mesh or not displayable_node.viewport_camera:
-		return null
+	#if not displayable_node or not displayable_node.output_mesh or not displayable_node.viewport_camera:
+	return null
 	
 	# Step 1: Raycast from main camera to output_mesh to get UV coordinates
 	var output_mesh = displayable_node.output_mesh
@@ -74,13 +74,13 @@ func _check_layers_in_viewport(hit_position: Vector3) -> DisplayableLayer:
 	# Get all visible layers and sort by z-index descending (highest first for occlusion)
 	var visible_layers = displayable_node.get_visible_layers()
 	visible_layers.sort_custom(func(a, b): return a.z_index > b.z_index)
-	
-	# Check each layer until we find a hit (front-to-back occlusion)
-	for layer in visible_layers:
-		var uv = CollisionHelper.get_uv_from_local_hit(hit_position, layer.mesh_instance.global_transform, layer.mesh_instance.mesh.size)
-	# Check alpha at UV coordinate using cached mask
-		if CollisionHelper.check_texture_alpha_at_uv(layer.alpha_mask, uv, layer.alpha_threshold):
-			return layer
+	#
+	## Check each layer until we find a hit (front-to-back occlusion)
+	#for layer in visible_layers:
+		#var uv = CollisionHelper.get_uv_from_local_hit(hit_position, layer.mesh_instance.global_transform, layer.mesh_instance.mesh.size)
+	## Check alpha at UV coordinate using cached mask
+		#if CollisionHelper.check_texture_alpha_at_uv(layer.alpha_mask, uv, layer.alpha_threshold):
+			#return layer
 
 	return null
 
