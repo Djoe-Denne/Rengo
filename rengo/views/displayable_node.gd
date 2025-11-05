@@ -12,6 +12,8 @@ var layers: Dictionary = {}
 ## Container node that holds all layers (typically Node3D)
 var sprite_container: Node3D = null
 
+var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
+
 ## Reference to controller (for interaction callbacks)
 var controller = null  # Controller reference
 
@@ -89,36 +91,31 @@ func create_scene_node(parent: Node) -> Node:
 
 
 ## Updates viewport size based on largest visible layer
-func _update_viewport_size() -> void:
+func _update() -> void:
 	if not sub_viewport:
 		return
 	
 	# Find the largest layer dimensions
-	var new_largest_size = Vector2i(10, 10)  # Minimum size
-	
+	var new_largest_mesh_size = Vector2i(10, 10)  # Minimum size
+	var new_largest_viewport_size = Vector2i(10, 10)  # Minimum size
+
 	for layer_name in layers:
 		var layer = layers[layer_name]
-		if not layer.is_layer_visible:
+		if not layer.is_layer_visible():
 			continue
 		
 		# Get layer quad size
-		var quad_size = layer.postprocess_sub_viewport.get_size()
-		if quad_size.x * quad_size.y > largest_layer_size.x * largest_layer_size.y:
-			new_largest_size = quad_size
-	
-	# Only update if size changed significantly (avoid unnecessary updates)
-	if new_largest_size.x * new_largest_size.y > largest_layer_size.x * largest_layer_size.y:
-		largest_layer_size = new_largest_size
-		
-		# Update SubViewport size
-		sub_viewport.size = largest_layer_size
+		var quad_size = layer.layer_size
+		if quad_size.x * quad_size.y > new_largest_mesh_size.x * new_largest_mesh_size.y:
+			new_largest_mesh_size = quad_size
+			new_largest_viewport_size = Vector2(layer.displayable.postprocess_sub_viewport.size.x * layer.scale.x, layer.displayable.postprocess_sub_viewport.size.y * layer.scale.y)
+			
+	sub_viewport.size.x = new_largest_viewport_size.x
+	sub_viewport.size.y = new_largest_viewport_size.y
 
-		# Update output mesh size
-		output_mesh.mesh.size = Vector2(largest_layer_size.x, largest_layer_size.y)
-
-## Updates the viewport
-func _update_viewport() -> void:
-	_update_viewport_size()
+	# Update output mesh size
+	output_mesh.mesh.size.x = new_largest_mesh_size.x
+	output_mesh.mesh.size.y = new_largest_mesh_size.y
 
 ## Adds a new layer to this displayable node
 ## layer_def contains configuration: { "layer": name, "z": z_index, ... }
@@ -128,15 +125,10 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 		return layers[layer_name]
 	
 	# Create the layer
-	var layer = DisplayableLayer.new(layer_name)
+	var layer = DisplayableLayer.new(layer_name, layer_def)
 	layer.parent_displayable = self
 	
-	# Set z-index if provided
-	if "z" in layer_def:
-		layer.set_z_index(layer_def.z)
-	
 	sub_viewport.add_child(layer)
-	sub_viewport.add_child(layer.get_composed_sprite())
 	
 	# Store the layer
 	layers[layer_name] = layer
@@ -159,18 +151,16 @@ func remove_layer(layer_name: String) -> void:
 	
 	var layer = layers[layer_name]
 	
-	# Remove from sprite container
+	# Free the layer
+	sub_viewport.remove_child(layer)
+	_deconnect_layer_signals(layer)
 	if layer.get_parent():
 		layer.get_parent().remove_child(layer)
-	
-	# Free the layer
 	layer.queue_free()
 	layers.erase(layer_name)
-	sub_viewport.remove_child(layer)
 
-	_deconnect_layer_signals(layer)
 	#sub_viewport.remove_child(TextureRect) #TODO: Remove this when we have a way to remove the TextureRect
-	_update_viewport()
+	_update()
 
 
 ## Gets all visible layers
@@ -178,7 +168,7 @@ func get_visible_layers() -> Array:
 	var visible = []
 	for layer_name in layers:
 		var layer = layers[layer_name]
-		if layer.is_layer_visible:
+		if layer.is_layer_visible():
 			visible.append(layer)
 	return visible
 
@@ -193,7 +183,7 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.connect(_on_layer_hovered)
 	layer.layer_unhovered.connect(_on_layer_unhovered)
 	layer.layer_clicked.connect(_on_layer_clicked)
-	layer.postprocess_sub_viewport_changed.connect(_on_postprocess_sub_viewport_changed)
+	layer.layer_displayable_changed.connect(_on_layer_displayable_changed)
 
 
 func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
@@ -202,23 +192,23 @@ func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.disconnect(_on_layer_hovered)
 	layer.layer_unhovered.disconnect(_on_layer_unhovered)
 	layer.layer_clicked.disconnect(_on_layer_clicked)
-	layer.postprocess_sub_viewport_changed.disconnect(_on_postprocess_sub_viewport_changed)
+	layer.layer_displayable_changed.disconnect(_on_layer_displayable_changed)
 
 func on_model_position_changed(new_position: Vector3) -> void:
-	if sprite_container:
-		sprite_container.position = new_position
+	if output_mesh:
+		output_mesh.position = new_position
 
 func on_model_visibility_changed(new_visible: bool) -> void:
-	if sprite_container:
-		sprite_container.visible = new_visible
+	if output_mesh:
+		output_mesh.visible = new_visible
 
 func on_model_rotation_changed(new_rotation: Vector3) -> void:
-	if sprite_container:
-		sprite_container.rotation_degrees = new_rotation
+	if output_mesh:
+		output_mesh.rotation_degrees = new_rotation
 
 func on_model_scale_changed(new_scale: Vector3) -> void:
-	if sprite_container:
-		sprite_container.scale = new_scale
+	if output_mesh:
+		output_mesh.scale = new_scale
 
 ## Layer signal handlers (for potential custom logic)
 func _on_layer_hovered(_layer_name: String) -> void:
@@ -242,12 +232,12 @@ func _on_layer_visibility_changed() -> void:
 	if input_handler:
 		for layer_name in layers:
 			var layer = layers[layer_name]
-			if not layer.is_layer_visible:
+			if not layer.is_layer_visible():
 				input_handler.clear_hover_if_layer(layer)
-	_update_viewport()
+	_update()
 
-func _on_postprocess_sub_viewport_changed(new_viewport: SubViewport) -> void:
-	_update_viewport()
+func _on_layer_displayable_changed(new_viewport: SubViewport) -> void:
+	_update()
 
 ## Gets the controller for this displayable node
 func get_controller():

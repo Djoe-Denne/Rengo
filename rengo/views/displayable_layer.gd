@@ -7,21 +7,12 @@ extends Node2D
 signal layer_hovered(layer_name: String)
 signal layer_unhovered(layer_name: String)
 signal layer_clicked(layer_name: String, event: InputEvent)
-
-## Signal for when the postprocess sub viewport changes
-signal postprocess_sub_viewport_changed(new_viewport: SubViewport)
+signal layer_displayable_changed(layer_name: String)
 
 ## Layer identifier
 var layer_name: String = ""
 
-## The visual mesh instance
-var postprocess_sub_viewport: SubViewport = null
-
-## The composed sprite instance
-var composed_sprite: Sprite2D = null
-
-## Layer visibility (separate from Node3D.visible for control)
-var is_layer_visible: bool = false
+var layer_size: Vector2 = Vector2(0, 0)
 
 ## Reference to parent displayable node (for callbacks)
 var parent_displayable = null  # DisplayableNode
@@ -35,28 +26,42 @@ var is_mouse_over: bool = false
 ## Cached alpha mask for performance
 var texture_image: Image = null
 
+var displayable: Displayable = null
 
-func _init(p_layer_name: String = "") -> void:
+
+func _init(p_layer_name: String = "", p_layer_def: Dictionary = {}) -> void:
 	layer_name = p_layer_name
 	name = "Layer_" + layer_name
 
-	composed_sprite = Sprite2D.new()
-	composed_sprite.name = "ComposedSprite_" + layer_name
-	composed_sprite.centered = false
+	displayable = Displayable.new(layer_name)
+	
+	# Set the anchor if it exists in the layer definition
+	if "anchor" in p_layer_def:
+		displayable.position.x = p_layer_def.anchor.get("x", 0.0)
+		displayable.position.y = p_layer_def.anchor.get("y", 0.0)
+	if "z" in p_layer_def:
+		displayable.z_index = p_layer_def.z
 
-	# Create the mesh instance as a child
-	postprocess_sub_viewport = SubViewport.new()
-	postprocess_sub_viewport.name = "PostprocessSubViewport_" + layer_name
-	postprocess_sub_viewport.transparent_bg = true
-	postprocess_sub_viewport.disable_3d = true
-	postprocess_sub_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	postprocess_sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	displayable.displayable_changed.connect(_on_displayable_changed)
 
-	add_child(postprocess_sub_viewport)
+	add_child(displayable)
 
 func _ready() -> void:
 	# Input processing now handled by DisplayableNode parent
 	pass
+
+func _on_displayable_changed(displayable: Displayable) -> void:
+	layer_displayable_changed.emit(layer_name)
+
+
+func set_size(p_size: Vector2) -> void:
+	print("===============", "set_size on layer: ", layer_name, " with size: ", p_size, "===============")
+	layer_size = p_size
+	var final_render_size = displayable.postprocess_sub_viewport.size
+	var ratio = Vector2(p_size.x / final_render_size.x, p_size.y / final_render_size.y)
+	print("final_render_size: ", final_render_size)
+	print("ratio: ", ratio)
+	self.scale = ratio
 
 ## Sets the texture and updates the quad mesh
 func set_texture(tex: Image) -> void:
@@ -66,36 +71,16 @@ func set_texture(tex: Image) -> void:
 	
 	texture_image = tex
 
-
-func commit_postprocess_sub_viewport() -> void:
-	if not postprocess_sub_viewport:
-		return
-	composed_sprite.texture = postprocess_sub_viewport.get_texture()
-
-	postprocess_sub_viewport_changed.emit(postprocess_sub_viewport)
-
-## Gets the composed sprite
-func get_composed_sprite() -> Sprite2D:
-	return composed_sprite
-
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:
-	is_layer_visible = p_visible
-	
-	# Update Node3D visibility
-	if p_visible and not postprocess_sub_viewport.get_parent():
-		add_child(postprocess_sub_viewport)
-	elif not p_visible and postprocess_sub_viewport.get_parent() and not p_visible:
-		remove_child(postprocess_sub_viewport)
+	displayable.set_visible(p_visible)
 
-	# If layer becomes invisible while mouse is over, trigger exit
-	if not p_visible and is_mouse_over:
-		_trigger_mouse_exit()
-	
 	# Notify parent to rebuild root collision
 	if parent_displayable and parent_displayable.has_method("_on_layer_visibility_changed"):
 		parent_displayable._on_layer_visibility_changed()
 
+func is_layer_visible() -> bool:
+	return displayable.is_visible()
 
 ## Handles input events for raycast-based collision detection
 func _input(event: InputEvent) -> void:

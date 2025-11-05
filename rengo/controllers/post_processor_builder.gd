@@ -1,16 +1,31 @@
 class_name PostProcessorBuilder
+extends RefCounted
+
+## Signal for when the postprocess sub viewport changes
+signal postprocess_sub_viewport_changed(new_viewport: SubViewport)
 
 var post_processing_viewport: SubViewport = null
 var root_node: Node2D = null
 
 var viewport_name: String = ""
-var size: Vector2 = Vector2(100, 100)
-var texture: Texture2D = null
+var size: Vector2 = Vector2(0, 0)
+var textures: Dictionary = {}
 var material: Material = null
 
-static func take(viewport: SubViewport) -> PostProcessorBuilder:
-	var p = PostProcessorBuilder.new()
-	p.post_processing_viewport = viewport
+func _init(displayable: Displayable) -> void:
+	post_processing_viewport = displayable.postprocess_sub_viewport
+	postprocess_sub_viewport_changed.connect(displayable.commit_postprocess_sub_viewport)
+	if displayable.postprocess_sub_viewport.get_child_count() > 0 and displayable.postprocess_sub_viewport.get_child(0) is Node2D:
+		root_node = displayable.postprocess_sub_viewport.get_child(0)
+	else:
+		root_node = Node2D.new()
+		root_node.name = "RootNode_" + displayable.name
+		displayable.postprocess_sub_viewport.add_child(root_node)
+	
+
+static func take(displayable: Displayable) -> PostProcessorBuilder:
+	var p = PostProcessorBuilder.new(displayable)
+	p._sync_sprites_from_root_node()
 	return p
 
 func set_name(p_viewport_name: String) -> PostProcessorBuilder:
@@ -21,8 +36,13 @@ func set_size(p_size: Vector2) -> PostProcessorBuilder:
 	size = p_size
 	return self
 
-func set_texture(p_texture: Texture2D) -> PostProcessorBuilder:
-	texture = p_texture
+func add_texture(layer_name: String, p_texture: Texture2D) -> PostProcessorBuilder:
+	var sprite_name = "Sprite_" + layer_name
+	if not sprite_name in textures:
+		textures[sprite_name] = Sprite2D.new()
+		textures[sprite_name].name = sprite_name
+		textures[sprite_name].centered = false
+	textures[sprite_name].texture = p_texture
 	return self
 
 func set_material(p_material: Material) -> PostProcessorBuilder:
@@ -30,35 +50,38 @@ func set_material(p_material: Material) -> PostProcessorBuilder:
 	return self
 
 func build() -> SubViewport:
-	if post_processing_viewport.get_child_count() > 0 and post_processing_viewport.get_child(0) is Node2D:
-		root_node = post_processing_viewport.get_child(0)
-		#root_node.queue_free()
-	else:
-		root_node = Node2D.new()
-		root_node.name = "RootNode_" + viewport_name
-		post_processing_viewport.add_child(root_node)
-	root_node = Node2D.new()
-	root_node.name = "RootNode_" + viewport_name
-	post_processing_viewport.add_child(root_node)
+
+	_sync_sprites_to_root_node()
+
 	if viewport_name:
 		post_processing_viewport.name = viewport_name
-	if size:
-		post_processing_viewport.size = Vector2i(int(size.x), int(size.y))
-	post_processing_viewport.transparent_bg = false
-	post_processing_viewport.disable_3d = true
-	post_processing_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	post_processing_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	if size.x > 0 and size.y > 0 and not textures.size() > 0:
+		post_processing_viewport.size.x = size.x
+		post_processing_viewport.size.y = size.y
+	elif size.x == 0 and size.y == 0 and textures.size() > 0:
+		var max_size = Vector2(0, 0)
+		for texture in textures.values():
+			max_size.x = max(max_size.x, texture.texture.get_size().x)
+			max_size.y = max(max_size.y, texture.texture.get_size().y)
+		post_processing_viewport.size.x = max_size.x
+		post_processing_viewport.size.y = max_size.y
+	else:
+		push_error("PostProcessorBuilder: Either textures or size must be set")
+		return null
 
-	var sprite = Sprite2D.new()
-	if texture:
-		sprite.texture = texture
-		sprite.centered = false
-	if size:
-		sprite.scale.x = size.x / texture.get_size().x
-		sprite.scale.y = size.y / texture.get_size().y
 	if material:
-		sprite.material_override = material
+		root_node.material_override = material
 
-	root_node.add_child(sprite)
+	postprocess_sub_viewport_changed.emit()
 
 	return post_processing_viewport
+
+func _sync_sprites_from_root_node() -> void:
+	for root_child in root_node.get_children():
+		if root_child is Sprite2D:
+			textures[root_child.name] = root_child
+
+func _sync_sprites_to_root_node() -> void:
+	for texture in textures.values():
+		if not texture.get_parent():
+			root_node.add_child(texture)

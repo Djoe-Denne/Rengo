@@ -117,7 +117,7 @@ A flexible, builder-pattern-based input handling system with texture-based colli
   - `interaction_area: Area3D` - Texture-based collision
   - `texture: Texture2D` - Current texture
   - `shader_material: ShaderMaterial` - Applied shader
-  - `is_layer_visible: bool` - Visibility state
+  - `is_visible: bool` - Visibility state
   - `z_index: float` - Layer ordering
 - Methods:
   - `set_texture()` - Updates texture and rebuilds collision
