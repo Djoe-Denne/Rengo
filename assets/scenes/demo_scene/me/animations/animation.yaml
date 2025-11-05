@@ -1,0 +1,28 @@
+## Default animation settings for "me" character
+defaults:
+  move:
+    type: transform
+    easing: ease_out
+    duration: 0.5
+  
+  express:
+    type: state_change
+    duration: 0.3
+    parameters:
+      fade_fraction: 0.3
+      target_mode: whole_node  # Prevents body bleed-through during fade
+  
+  pose:
+    type: state_change
+    duration: 0.4
+    parameters:
+      fade_fraction: 0.35
+      target_mode: whole_node  # Prevents body bleed-through during fade
+  
+  wear:
+    type: state_change
+    duration: 0.5
+    parameters:
+      fade_fraction: 0.4
+      target_mode: specific_layers  # Prevents body bleed-through during fade
+

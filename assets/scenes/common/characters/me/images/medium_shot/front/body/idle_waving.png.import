@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://rwinor2ikxwi"
-path="res://.godot/imported/waving.png-d35a170b60b308c5034dce8b58d07375.ctex"
+uid="uid://dmv6bsomt68qb"
+path="res://.godot/imported/idle_waving.png-4710a88bd83b47216958d78e7e634a38.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/body/waving.png"
-dest_files=["res://.godot/imported/waving.png-d35a170b60b308c5034dce8b58d07375.ctex"]
+source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/body/idle_waving.png"
+dest_files=["res://.godot/imported/idle_waving.png-4710a88bd83b47216958d78e7e634a38.ctex"]
 
 [params]
 

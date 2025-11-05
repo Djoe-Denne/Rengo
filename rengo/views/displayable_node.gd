@@ -9,8 +9,7 @@ extends ResourceNode
 ## Dictionary of all layers { layer_name: DisplayableLayer }
 var layers: Dictionary = {}
 
-## Container node that holds all layers (typically Node3D)
-var sprite_container: Node3D = null
+var sprite_container: Displayable = null
 
 var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
 
@@ -108,7 +107,7 @@ func _update() -> void:
 		var quad_size = layer.layer_size
 		if quad_size.x * quad_size.y > new_largest_mesh_size.x * new_largest_mesh_size.y:
 			new_largest_mesh_size = quad_size
-			new_largest_viewport_size = Vector2(layer.displayable.postprocess_sub_viewport.size.x * layer.scale.x, layer.displayable.postprocess_sub_viewport.size.y * layer.scale.y)
+			new_largest_viewport_size = layer.displayable.postprocess_sub_viewport.size
 			
 	sub_viewport.size.x = new_largest_viewport_size.x
 	sub_viewport.size.y = new_largest_viewport_size.y

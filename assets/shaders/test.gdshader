@@ -5,8 +5,10 @@ void vertex() {
 }
 
 void fragment() {
-    COLOR = vec4(UV.x, UV.y, 0.5, 1.0);
+    vec4 tex_color = texture(TEXTURE, UV);
+    COLOR = vec4(1.0 - tex_color.rgb, tex_color.a);
 }
+
 
 //void light() {
 //	// Called for every pixel for every light affecting the CanvasItem.

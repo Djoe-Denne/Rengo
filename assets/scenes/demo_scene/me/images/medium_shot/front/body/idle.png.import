@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2ciq1irkpm47"
-path="res://.godot/imported/waving_bedhair.png-75d0db46495aa75017e7f38f90b5c24b.ctex"
+uid="uid://b55goan24kmgf"
+path="res://.godot/imported/idle.png-a871e151454b90a31d163fceeabf94cd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/scenes/common/characters/me/images/medium_shot/front/body/waving_bedhair.png"
-dest_files=["res://.godot/imported/waving_bedhair.png-75d0db46495aa75017e7f38f90b5c24b.ctex"]
+source_file="res://assets/scenes/demo_scene/me/images/medium_shot/front/body/idle.png"
+dest_files=["res://.godot/imported/idle.png-a871e151454b90a31d163fceeabf94cd.ctex"]
 
 [params]
 
