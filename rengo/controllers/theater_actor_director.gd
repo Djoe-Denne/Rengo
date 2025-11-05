@@ -29,7 +29,7 @@ func instruct(displayable_model: DisplayableModel) -> void:
 ## Updates all layers using unified template system (body + face + clothing)
 func _update_layers_unified(current_states: Dictionary) -> void:
 	var actor = controller.get_view()
-	if not actor.sprite_container:
+	if not actor:
 		return
 	
 	# Prepare state dictionary with plan for template resolution
@@ -65,7 +65,7 @@ func _update_layers_unified(current_states: Dictionary) -> void:
 		var image_path = ResourceRepository.resolve_template_path(image_template, state)
 		
 		# Load and apply texture
-		if image_path != "":
+		if image_path != "" and image_path.hash() != layer.texture_path_hash:
 			var texture = _load_texture(actor, image_path)
 			if texture:
 				# Apply texture to DisplayableLayer
@@ -74,8 +74,9 @@ func _update_layers_unified(current_states: Dictionary) -> void:
 			else:
 				# Hide layer if texture not found
 				layer.set_layer_visible(false)
-		else:
-			layer.set_layer_visible(false)
+	
+	# Update composite viewport after all layers are updated
+	actor._update()
 
 
 ## Applies a texture to a DisplayableLayer and updates its size
@@ -84,37 +85,28 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 		return
 	
 	var actor = controller.get_view()
-	# Calculate quad size based on texture dimensions
+	# Calculate character size in centimeters
 	var char_size = _get_character_size(controller.get_model())
 	
-	# Set texture on DisplayableLayer (this also rebuilds collision)
-	layer.set_texture(texture.get_image())
-	var post_processor = PostProcessorBuilder  \
-							.take(layer.displayable) \
-							.add_texture(layer.layer_name, texture) \
-							.build()
+	# Calculate layer size based on texture and character dimensions
+	var layer_size = _calculate_layer_size(texture, char_size, layer.layer_name, actor)
+	layer.set_size(layer_size)
 	
-	layer.set_size(_calculate_layer_size(texture, char_size, layer.layer_name, actor))
-	# Apply anchor offset if specified
-	if "anchor" in layer_def:
-		var anchor = layer_def.anchor
-		var pixels_per_cm = actor.pixels_per_cm
-		var position = Vector2(anchor.get("x", 0.0) / pixels_per_cm.x, anchor.get("y", 0.0) / pixels_per_cm.y)
-		layer.position = position
-		print("actor: ", controller.get_model().name)
-		print("layer name: ", layer.layer_name)
-		print("position: ", position)
-		print("anchor: ", anchor)
-		print("pixels_per_cm: ", pixels_per_cm)
-		print("layer size: ", layer.layer_size)
-		print("layer scale: ", layer.scale)
+	# Use PostProcessorBuilder to set up the layer's Displayable
+	# Clear shaders to ensure clean state, then set texture and size
+	PostProcessorBuilder.take(layer.displayable) \
+		.set_base_texture(texture) \
+		.set_size(texture.get_size()) \
+		.build()
+	
+	# Set texture for collision detection
+	layer.set_texture(texture)
+	
+	# Set character size on actor for output mesh
+	actor.character_size = char_size
 	
 	# Make layer visible
 	layer.set_layer_visible(true)
-	
-	# Update viewport size based on new layer dimensions
-	if actor.has_method("_update_viewport_size"):
-		actor._update_viewport_size()
 
 
 ## Determines which state key to use for a given layer

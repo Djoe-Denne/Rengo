@@ -1,5 +1,5 @@
 ## DisplayableInputHandler - Centralized input handler for DisplayableNode layers
-## Attaches to sprite_container to coordinate mouse events across layers
+## Attaches to DisplayableNode to coordinate mouse events across layers
 class_name DisplayableInputHandler
 extends Node3D
 

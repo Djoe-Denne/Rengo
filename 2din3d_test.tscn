@@ -7,7 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://do3mxjuvwie7v" path="res://assets/scenes/common/characters/me/images/medium_shot/front/body/idle.png" id="3_uaael"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_exveg"]
-viewport_path = NodePath("displayable/SubViewport")
+viewport_path = NodePath("output_mesh/displayable/SubViewport")
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_04jp4"]
 resource_local_to_scene = true
@@ -25,16 +25,16 @@ shader = ExtResource("2_34b84")
 shader = ExtResource("3_exveg")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_uaael"]
-viewport_path = NodePath("layer_body/displayable/pass1")
+viewport_path = NodePath("output_mesh/layer_body/displayable/pass1")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1ntv2"]
 shader = ExtResource("3_exveg")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_u2b2y"]
-viewport_path = NodePath("layer_face/displayable/pass1")
+viewport_path = NodePath("output_mesh/layer_face/displayable/pass1")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_34b84"]
-viewport_path = NodePath("layer_face/displayable/pass2")
+viewport_path = NodePath("output_mesh/layer_face/displayable/pass2")
 
 [node name="DisplayableNode" type="Node3D"]
 
@@ -42,59 +42,59 @@ viewport_path = NodePath("layer_face/displayable/pass2")
 material_override = SubResource("StandardMaterial3D_04jp4")
 mesh = SubResource("QuadMesh_u2b2y")
 
-[node name="layer_body" type="Node2D" parent="."]
+[node name="layer_body" type="Node2D" parent="output_mesh"]
 
-[node name="displayable" type="Node2D" parent="layer_body"]
+[node name="displayable" type="Node2D" parent="output_mesh/layer_body"]
 
-[node name="pass1" type="SubViewport" parent="layer_body/displayable"]
+[node name="pass1" type="SubViewport" parent="output_mesh/layer_body/displayable"]
 transparent_bg = true
 size = Vector2i(1575, 3150)
 
-[node name="Sprite2D" type="Sprite2D" parent="layer_body/displayable/pass1"]
+[node name="Sprite2D" type="Sprite2D" parent="output_mesh/layer_body/displayable/pass1"]
 material = SubResource("ShaderMaterial_uaael")
 texture = ExtResource("3_uaael")
 centered = false
 
-[node name="pass2" type="SubViewport" parent="layer_body/displayable"]
+[node name="pass2" type="SubViewport" parent="output_mesh/layer_body/displayable"]
 transparent_bg = true
 size = Vector2i(1575, 3150)
 
-[node name="Sprite2D" type="Sprite2D" parent="layer_body/displayable/pass2"]
+[node name="Sprite2D" type="Sprite2D" parent="output_mesh/layer_body/displayable/pass2"]
 material = SubResource("ShaderMaterial_04jp4")
 texture = SubResource("ViewportTexture_uaael")
 centered = false
 
-[node name="layer_face" type="Node2D" parent="."]
+[node name="layer_face" type="Node2D" parent="output_mesh"]
 
-[node name="displayable" type="Node2D" parent="layer_face"]
+[node name="displayable" type="Node2D" parent="output_mesh/layer_face"]
 
-[node name="pass1" type="SubViewport" parent="layer_face/displayable"]
+[node name="pass1" type="SubViewport" parent="output_mesh/layer_face/displayable"]
 transparent_bg = true
 size = Vector2i(399, 327)
 
-[node name="Sprite2D" type="Sprite2D" parent="layer_face/displayable/pass1"]
+[node name="Sprite2D" type="Sprite2D" parent="output_mesh/layer_face/displayable/pass1"]
 material = SubResource("ShaderMaterial_uaael")
 texture = ExtResource("3_1ntv2")
 centered = false
 
-[node name="pass2" type="SubViewport" parent="layer_face/displayable"]
+[node name="pass2" type="SubViewport" parent="output_mesh/layer_face/displayable"]
 transparent_bg = true
-size = Vector2i(399, 327)
+size = Vector2i(420, 370)
 
-[node name="Sprite2D" type="Sprite2D" parent="layer_face/displayable/pass2"]
+[node name="Sprite2D" type="Sprite2D" parent="output_mesh/layer_face/displayable/pass2"]
 material = SubResource("ShaderMaterial_1ntv2")
 texture = SubResource("ViewportTexture_u2b2y")
 centered = false
 
-[node name="displayable" type="Node2D" parent="."]
+[node name="displayable" type="Node2D" parent="output_mesh"]
 
-[node name="SubViewport" type="SubViewport" parent="displayable"]
+[node name="SubViewport" type="SubViewport" parent="output_mesh/displayable"]
 size = Vector2i(1575, 3150)
 
-[node name="body_sprite" type="Sprite2D" parent="displayable/SubViewport"]
+[node name="body_sprite" type="Sprite2D" parent="output_mesh/displayable/SubViewport"]
 texture = ExtResource("1_1bl53")
 centered = false
 
-[node name="face_sprite" type="Sprite2D" parent="displayable/SubViewport"]
+[node name="face_sprite" type="Sprite2D" parent="output_mesh/displayable/SubViewport"]
 position = Vector2(500, 500)
 texture = SubResource("ViewportTexture_34b84")

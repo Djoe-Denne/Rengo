@@ -26,8 +26,8 @@ func apply_to(target: Variant, progress: float, _delta: float) -> void:
 	
 	# Setup from_value on first frame
 	if from_value == null:
-		if "sprite_container" in view and view.sprite_container:
-			from_value = _get_alpha_from_node(view.sprite_container)
+		if "output_mesh" in view and view.output_mesh:
+			from_value = _get_alpha_from_node(view.output_mesh)
 		elif "scene_node" in view and view.scene_node:
 			from_value = _get_alpha_from_node(view.scene_node)
 		else:
@@ -39,8 +39,8 @@ func apply_to(target: Variant, progress: float, _delta: float) -> void:
 	
 	# Apply via controller's view effect
 	target.apply_view_effect(func(v):
-		if "sprite_container" in v and v.sprite_container:
-			_set_alpha_on_node(v.sprite_container, alpha)
+		if "output_mesh" in v and v.output_mesh:
+			_set_alpha_on_node(v.output_mesh, alpha)
 		elif "scene_node" in v and v.scene_node:
 			_set_alpha_on_node(v.scene_node, alpha)
 	)

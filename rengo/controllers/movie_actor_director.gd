@@ -31,51 +31,10 @@ func instruct(displayable_model: DisplayableModel) -> void:
 		push_warning("Act '%s' not found for character '%s'" % [pose, displayable_model.name])
 		return
 	
-	# If sprite_container doesn't exist, create it
-	if not controller.get_view().sprite_container:
-		_create_sprite()
-	
-	# Update the sprite texture
-	_update_sprite(act, orientation)
-
-
-## Creates the sprite for the actor
-func _create_sprite() -> void:
-	var actor = controller.get_view()
-	var sprite = Sprite2D.new()
-	sprite.name = "Actor_" + actor.actor_name
-	sprite.centered = true
-	
-	actor.sprite_container = sprite
-	actor.scene_node = sprite
-
-
-## Updates the sprite texture based on current state
-func _update_sprite(act: Act, orientation: String) -> void:
-	var actor = controller.get_view()
-	var variant = act.get_variant(orientation)
-	
-	# Try to get image path from variant
-	var image_path = ""
-	
-	# Try "image" key first
-	if "image" in variant:
-		image_path = variant.image
-	# Try "images" key with default
-	elif "images" in variant:
-		var images = variant.images
-		if "default" in images:
-			image_path = images.default
-		elif images.size() > 0:
-			image_path = images.values()[0]
-	
-	# Load and set texture
-	if image_path != "":
-		var texture = _load_texture(image_path)
-		if texture and actor.sprite_container:
-			actor.sprite_container.texture = texture
-	else:
-		push_warning("No image found for act %s orientation %s" % [act.act_name, orientation])
+	# Movie mode is currently not supported with new multi-pass architecture
+	# This needs to be updated to use DisplayableNode's system
+	push_warning("MovieActorDirector is not yet updated for the new multi-pass architecture")
+	# TODO: Refactor to use DisplayableNode with single layer or create separate system
 
 
 ## Loads a texture using ImageRepository with base directory resolution

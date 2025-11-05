@@ -11,3 +11,4 @@ var actor_name: String = ""
 func _init(p_actor_name: String = "") -> void:
 	super(p_actor_name)
 	actor_name = p_actor_name
+	# character_size inherited from DisplayableNode

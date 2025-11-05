@@ -26,6 +26,9 @@ var is_mouse_over: bool = false
 ## Cached alpha mask for performance
 var texture_image: Image = null
 
+## texture path hashed for quick comparison
+var texture_path_hash: int = 0
+
 var displayable: Displayable = null
 
 
@@ -35,10 +38,10 @@ func _init(p_layer_name: String = "", p_layer_def: Dictionary = {}) -> void:
 
 	displayable = Displayable.new(layer_name)
 	
-	# Set the anchor if it exists in the layer definition
-	if "anchor" in p_layer_def:
-		displayable.position.x = p_layer_def.anchor.get("x", 0.0)
-		displayable.position.y = p_layer_def.anchor.get("y", 0.0)
+	# Displayable stays at origin, scaling/positioning handled elsewhere
+	displayable.position = Vector2.ZERO
+	displayable.scale = Vector2.ONE
+	
 	if "z" in p_layer_def:
 		displayable.z_index = p_layer_def.z
 
@@ -55,21 +58,22 @@ func _on_displayable_changed(displayable: Displayable) -> void:
 
 
 func set_size(p_size: Vector2) -> void:
-	print("===============", "set_size on layer: ", layer_name, " with size: ", p_size, "===============")
 	layer_size = p_size
-	var final_render_size = displayable.postprocess_sub_viewport.size
-	var ratio = Vector2(p_size.x / final_render_size.x, p_size.y / final_render_size.y)
-	print("final_render_size: ", final_render_size)
-	print("ratio: ", ratio)
-	self.scale = ratio
 
-## Sets the texture and updates the quad mesh
-func set_texture(tex: Image) -> void:
+## Sets the texture and updates the input sprite
+func set_texture(tex: Texture2D) -> void:
 	if not tex:
 		push_warning("DisplayableLayer: Attempted to set null texture on layer '%s'" % layer_name)
 		return
 	
-	texture_image = tex
+	# Store image for collision detection
+	texture_image = tex.get_image()
+	texture_path_hash = tex.get_path().hash()
+	
+	# Set texture on the input sprite (first pass)
+	var input_sprite = displayable.get_input_sprite()
+	if input_sprite:
+		input_sprite.texture = tex
 
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:

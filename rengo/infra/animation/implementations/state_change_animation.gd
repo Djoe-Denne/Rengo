@@ -5,7 +5,7 @@ extends VNAnimationNode
 
 ## Target mode for animation application
 enum TargetMode {
-	WHOLE_NODE,          # Apply to entire sprite_container (prevents layer bleed-through)
+	WHOLE_NODE,          # Apply to entire output_mesh (prevents layer bleed-through)
 	INDIVIDUAL_LAYERS,   # Apply to each layer independently
 	SPECIFIC_LAYERS      # Apply only to specified layers
 }
@@ -96,9 +96,9 @@ func _store_original_alpha(controller: Variant) -> void:
 	
 	match target_mode:
 		TargetMode.WHOLE_NODE:
-			# Store alpha of the entire sprite container
-			if "sprite_container" in view and view.sprite_container:
-				_original_alpha = _get_alpha_from_node(view.sprite_container)
+			# Store alpha of the output mesh
+			if "output_mesh" in view and view.output_mesh:
+				_original_alpha = _get_alpha_from_node(view.output_mesh)
 			elif "scene_node" in view and view.scene_node:
 				_original_alpha = _get_alpha_from_node(view.scene_node)
 			else:
@@ -129,10 +129,10 @@ func _apply_alpha_via_controller(controller: Variant, alpha: float) -> void:
 	# Use controller.apply_view_effect() to manipulate the view
 	match target_mode:
 		TargetMode.WHOLE_NODE:
-			# Apply to entire sprite container (prevents layer bleed-through)
+			# Apply to entire output mesh (prevents layer bleed-through)
 			controller.apply_view_effect(func(view):
-				if "sprite_container" in view and view.sprite_container:
-					_set_alpha_on_node(view.sprite_container, alpha)
+				if "output_mesh" in view and view.output_mesh:
+					_set_alpha_on_node(view.output_mesh, alpha)
 				elif "scene_node" in view and view.scene_node:
 					_set_alpha_on_node(view.scene_node, alpha)
 			)
@@ -167,8 +167,8 @@ func _restore_original_alpha(controller: Variant) -> void:
 			if _original_alpha is float:
 				var original = _original_alpha  # Capture for lambda
 				controller.apply_view_effect(func(view):
-					if "sprite_container" in view and view.sprite_container:
-						_set_alpha_on_node(view.sprite_container, original)
+					if "output_mesh" in view and view.output_mesh:
+						_set_alpha_on_node(view.output_mesh, original)
 					elif "scene_node" in view and view.scene_node:
 						_set_alpha_on_node(view.scene_node, original)
 				)

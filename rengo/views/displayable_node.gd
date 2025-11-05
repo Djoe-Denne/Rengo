@@ -9,8 +9,10 @@ extends ResourceNode
 ## Dictionary of all layers { layer_name: DisplayableLayer }
 var layers: Dictionary = {}
 
-var sprite_container: Displayable = null
+## Character size in centimeters (set by director)
+var character_size: Vector2 = Vector2(60, 170)
 
+## Pixels per cm ratio (calculated from body layer)
 var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
 
 ## Reference to controller (for interaction callbacks)
@@ -19,10 +21,14 @@ var controller = null  # Controller reference
 ## Input handler for centralized mouse event coordination
 var input_handler = null  # DisplayableInputHandler
 
-## SubViewport system for rendering all layers to a single texture
-var sub_viewport: SubViewport = null
+## Displayable for compositing all layers
+var displayable: Displayable = null
+
+## Output mesh showing final composite
 var output_mesh: MeshInstance3D = null
-var largest_layer_size: Vector2 = Vector2i(10, 10)  # Default size
+
+## Dictionary to track sprites in compositing viewport { layer_name: Sprite2D }
+var composite_sprites: Dictionary = {}
 
 
 func _init(p_name: String = "") -> void:
@@ -31,93 +37,108 @@ func _init(p_name: String = "") -> void:
 func set_controller(p_controller: Controller) -> void:
 	controller = p_controller
 
-## Sets up the SubViewport rendering system
+## Sets up the compositing system
 func _setup_viewport() -> void:
-	if sub_viewport:
+	if displayable:
 		return  # Already set up
 	
-	# Create SubViewport
-	sub_viewport = SubViewport.new()
-	sub_viewport.name = "SubViewport_" + resource_name
-	sub_viewport.transparent_bg = true
-	sub_viewport.disable_3d = true
-	sub_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	sub_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Create Displayable for compositing
+	displayable = Displayable.new(resource_name + "_composite")
 	
-
-	sub_viewport.size = Vector2i(int(largest_layer_size.x), int(largest_layer_size.y))
-	
+	# Create output mesh
 	output_mesh = MeshInstance3D.new()
 	output_mesh.name = "OutputMesh_" + resource_name
 	output_mesh.mesh = QuadMesh.new()
-	output_mesh.mesh.size = largest_layer_size
-
+	output_mesh.mesh.size = character_size
 	
-	# Create material with SubViewport texture
+	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()
-	material.albedo_texture = sub_viewport.get_texture()
+	material.albedo_texture = displayable.get_output_texture()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-
+	
 	output_mesh.material_override = material
 	
-	sprite_container.add_child(sub_viewport)
-	sprite_container.add_child(output_mesh)
+	output_mesh.add_child(displayable)
 
 
 ## Creates the scene node - should be overridden by subclasses
-## Subclasses should create sprite_container and call parent's method
 func create_scene_node(parent: Node) -> Node:
-	# Create sprite_container
-	sprite_container = MeshInstance3D.new()
-	sprite_container.name = "SpriteContainer_" + resource_name
-	
-	# Set up SubViewport rendering system
+	# Set up compositing system
 	_setup_viewport()
 	
 	# Create and attach input handler for centralized mouse event coordination
 	_create_input_handler()
 	
-	parent.add_child(sprite_container)
-
+	parent.add_child(output_mesh)
 	scene_node = parent
 
 	# Instruct director to set up initial layers
 	if controller.director and controller.model:
 		controller.director.instruct(controller.model)
 
-	return sprite_container
+	return output_mesh
 
 
-## Updates viewport size based on largest visible layer
+## Updates the composite viewport with all layer outputs
 func _update() -> void:
-	if not sub_viewport:
+	if not displayable:
 		return
 	
-	# Find the largest layer dimensions
-	var new_largest_mesh_size = Vector2i(10, 10)  # Minimum size
-	var new_largest_viewport_size = Vector2i(10, 10)  # Minimum size
-
+	# Find the largest layer to determine viewport size
+	var max_viewport_size = Vector2i(100, 100)  # Minimum size
+	
 	for layer_name in layers:
 		var layer = layers[layer_name]
 		if not layer.is_layer_visible():
 			continue
 		
-		# Get layer quad size
-		var quad_size = layer.layer_size
-		if quad_size.x * quad_size.y > new_largest_mesh_size.x * new_largest_mesh_size.y:
-			new_largest_mesh_size = quad_size
-			new_largest_viewport_size = layer.displayable.postprocess_sub_viewport.size
-			
-	sub_viewport.size.x = new_largest_viewport_size.x
-	sub_viewport.size.y = new_largest_viewport_size.y
-
-	# Update output mesh size
-	output_mesh.mesh.size.x = new_largest_mesh_size.x
-	output_mesh.mesh.size.y = new_largest_mesh_size.y
+		var layer_output_viewport = layer.displayable.get_output_viewport()
+		if layer_output_viewport:
+			var layer_viewport_size = layer_output_viewport.size
+			max_viewport_size.x = max(max_viewport_size.x, layer_viewport_size.x)
+			max_viewport_size.y = max(max_viewport_size.y, layer_viewport_size.y)
+	
+	# Update compositing viewport size
+	displayable.set_pass_size(max_viewport_size)
+	
+	# Update or create sprites for each visible layer
+	for layer_name in layers:
+		var layer = layers[layer_name]
+		
+		if not layer.is_layer_visible():
+			# Hide sprite if layer is invisible
+			if layer_name in composite_sprites:
+				composite_sprites[layer_name].visible = false
+			continue
+		
+		# Get or create sprite for this layer
+		var sprite: Sprite2D
+		if layer_name in composite_sprites:
+			sprite = composite_sprites[layer_name]
+		else:
+			sprite = Sprite2D.new()
+			sprite.name = "Sprite_" + layer_name
+			sprite.centered = false
+			var input_viewport = displayable.get_input_viewport()
+			if input_viewport:
+				input_viewport.add_child(sprite)
+			composite_sprites[layer_name] = sprite
+		
+		# Update sprite with layer's output texture
+		sprite.texture = layer.displayable.get_output_texture()
+		sprite.visible = true
+		
+		# Apply anchor positioning (convert from pixel coordinates)
+		# Anchor is stored in layer_size metadata from theater_actor_director
+		sprite.position = layer.position
+	
+	# Update output mesh size to character size
+	if output_mesh and output_mesh.mesh:
+		output_mesh.mesh.size = character_size
 
 ## Adds a new layer to this displayable node
-## layer_def contains configuration: { "layer": name, "z": z_index, ... }
+## layer_def contains configuration: { "layer": name, "z": z_index, "anchor": {x, y}, ... }
 func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLayer:
 	if layer_name in layers:
 		push_warning("DisplayableNode: Layer '%s' already exists, returning existing" % layer_name)
@@ -127,10 +148,16 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	var layer = DisplayableLayer.new(layer_name, layer_def)
 	layer.parent_displayable = self
 	
-	sub_viewport.add_child(layer)
+	# Add layer as direct child of DisplayableNode (not in viewport)
+	output_mesh.add_child(layer)
 	
 	# Store the layer
 	layers[layer_name] = layer
+	
+	# Store anchor information for compositing
+	if "anchor" in layer_def:
+		var anchor = layer_def.anchor
+		layer.position = Vector2(anchor.get("x", 0.0), anchor.get("y", 0.0))
 	
 	# Connect layer signals for interaction handling
 	_connect_layer_signals(layer)
@@ -150,15 +177,21 @@ func remove_layer(layer_name: String) -> void:
 	
 	var layer = layers[layer_name]
 	
-	# Free the layer
-	sub_viewport.remove_child(layer)
+	# Disconnect signals
 	_deconnect_layer_signals(layer)
+	
+	# Remove composite sprite if exists
+	if layer_name in composite_sprites:
+		var sprite = composite_sprites[layer_name]
+		sprite.queue_free()
+		composite_sprites.erase(layer_name)
+	
+	# Remove and free the layer
 	if layer.get_parent():
 		layer.get_parent().remove_child(layer)
 	layer.queue_free()
 	layers.erase(layer_name)
-
-	#sub_viewport.remove_child(TextureRect) #TODO: Remove this when we have a way to remove the TextureRect
+	
 	_update()
 
 
@@ -243,16 +276,13 @@ func get_controller():
 	return controller
 
 
-## Creates the input handler and attaches it to sprite_container
+## Creates the input handler and attaches it
 func _create_input_handler() -> void:
-	if not sprite_container:
-		return
-	
 	# Load the input handler class
 	var InputHandlerClass = load("res://rengo/views/displayable_input_handler.gd")
 	input_handler = InputHandlerClass.new()
 	input_handler.displayable_node = self
 	input_handler.name = "InputHandler_" + resource_name
 	
-	# Add as child to sprite_container
-	sprite_container.add_child(input_handler)
+	# Add as child
+	output_mesh.add_child(input_handler)

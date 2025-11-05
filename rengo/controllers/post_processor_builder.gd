@@ -1,87 +1,134 @@
+## PostProcessorBuilder - Manages viewport passes for a Displayable
+## Provides fluent API for setting base textures, sizes, and adding shader passes
+## Works incrementally - only updates what changes
 class_name PostProcessorBuilder
 extends RefCounted
 
-## Signal for when the postprocess sub viewport changes
-signal postprocess_sub_viewport_changed(new_viewport: SubViewport)
+## Reference to the Displayable we're building
+var displayable: Displayable = null
 
-var post_processing_viewport: SubViewport = null
-var root_node: Node2D = null
+## Base texture to set on first pass (null means don't change)
+var base_texture: Texture2D = null
+var _update_texture: bool = false
 
-var viewport_name: String = ""
-var size: Vector2 = Vector2(0, 0)
-var textures: Dictionary = {}
-var material: Material = null
+## Viewport size (will be padded by 25%, null means don't change)
+var viewport_size: Vector2i = Vector2i(0, 0)
+var _update_size: bool = false
 
-func _init(displayable: Displayable) -> void:
-	post_processing_viewport = displayable.postprocess_sub_viewport
-	postprocess_sub_viewport_changed.connect(displayable.commit_postprocess_sub_viewport)
-	if displayable.postprocess_sub_viewport.get_child_count() > 0 and displayable.postprocess_sub_viewport.get_child(0) is Node2D:
-		root_node = displayable.postprocess_sub_viewport.get_child(0)
-	else:
-		root_node = Node2D.new()
-		root_node.name = "RootNode_" + displayable.name
-		displayable.postprocess_sub_viewport.add_child(root_node)
-	
+## Shader materials to ensure exist (in order)
+var shader_materials: Array[ShaderMaterial] = []
 
-static func take(displayable: Displayable) -> PostProcessorBuilder:
-	var p = PostProcessorBuilder.new(displayable)
-	p._sync_sprites_from_root_node()
-	return p
+## Whether to clear all shader passes before building
+var _clear_shaders: bool = false
 
-func set_name(p_viewport_name: String) -> PostProcessorBuilder:
-	viewport_name = p_viewport_name
+
+func _init(p_displayable: Displayable) -> void:
+	displayable = p_displayable
+
+
+## Static factory method
+static func take(p_displayable: Displayable) -> PostProcessorBuilder:
+	return PostProcessorBuilder.new(p_displayable)
+
+
+## Sets the base texture on the first pass sprite
+func set_base_texture(texture: Texture2D) -> PostProcessorBuilder:
+	base_texture = texture
+	_update_texture = true
 	return self
 
-func set_size(p_size: Vector2) -> PostProcessorBuilder:
-	size = p_size
+
+## Sets the viewport size (will add 25% padding)
+func set_size(size: Vector2i) -> PostProcessorBuilder:
+	viewport_size = size
+	_update_size = true
 	return self
 
-func add_texture(layer_name: String, p_texture: Texture2D) -> PostProcessorBuilder:
-	var sprite_name = "Sprite_" + layer_name
-	if not sprite_name in textures:
-		textures[sprite_name] = Sprite2D.new()
-		textures[sprite_name].name = sprite_name
-		textures[sprite_name].centered = false
-	textures[sprite_name].texture = p_texture
+
+## Adds a shader material to the list (will be applied in order)
+func add_shader_pass(material: ShaderMaterial) -> PostProcessorBuilder:
+	shader_materials.append(material)
 	return self
 
-func set_material(p_material: Material) -> PostProcessorBuilder:
-	material = p_material
+
+## Clears all shader passes before applying new ones
+func clear_shaders() -> PostProcessorBuilder:
+	_clear_shaders = true
 	return self
 
-func build() -> SubViewport:
 
-	_sync_sprites_to_root_node()
-
-	if viewport_name:
-		post_processing_viewport.name = viewport_name
-	if size.x > 0 and size.y > 0 and not textures.size() > 0:
-		post_processing_viewport.size.x = size.x
-		post_processing_viewport.size.y = size.y
-	elif size.x == 0 and size.y == 0 and textures.size() > 0:
-		var max_size = Vector2(0, 0)
-		for texture in textures.values():
-			max_size.x = max(max_size.x, texture.texture.get_size().x)
-			max_size.y = max(max_size.y, texture.texture.get_size().y)
-		post_processing_viewport.size.x = max_size.x
-		post_processing_viewport.size.y = max_size.y
-	else:
-		push_error("PostProcessorBuilder: Either textures or size must be set")
+## Applies all changes to the Displayable incrementally
+func build() -> Displayable:
+	if not displayable:
+		push_error("PostProcessorBuilder: No displayable set")
 		return null
+	
+	# 1. Update base texture if requested
+	if _update_texture and base_texture:
+		var input_sprite = displayable.get_input_sprite()
+		if input_sprite:
+			input_sprite.texture = base_texture
+	
+	# 2. Update viewport size if requested
+	if _update_size:
+		var padded_size = viewport_size
+		if viewport_size.x > 0 and viewport_size.y > 0:
+			padded_size = Vector2i(
+				int(viewport_size.x * 1.25),
+				int(viewport_size.y * 1.25)
+			)
+		elif _update_texture and base_texture:
+			# If no size specified but texture updated, use texture size + padding
+			var tex_size = base_texture.get_size()
+			padded_size = Vector2i(
+				int(tex_size.x * 1.25),
+				int(tex_size.y * 1.25)
+			)
+		
+		if padded_size.x > 0 and padded_size.y > 0:
+			displayable.set_pass_size(padded_size)
+	
+	# 3. Clear shader passes if requested
+	if _clear_shaders:
+		displayable.clear_shader_passes()
+	
+	# 4. Update shader passes incrementally
+	_update_shader_passes()
+	
+	return displayable
 
-	if material:
-		root_node.material_override = material
 
-	postprocess_sub_viewport_changed.emit()
-
-	return post_processing_viewport
-
-func _sync_sprites_from_root_node() -> void:
-	for root_child in root_node.get_children():
-		if root_child is Sprite2D:
-			textures[root_child.name] = root_child
-
-func _sync_sprites_to_root_node() -> void:
-	for texture in textures.values():
-		if not texture.get_parent():
-			root_node.add_child(texture)
+## Updates shader passes incrementally - only adds/removes what changed
+func _update_shader_passes() -> void:
+	if shader_materials.is_empty():
+		return
+	
+	# Count existing shader passes (excluding first pass which is the base)
+	var existing_count = displayable.get_pass_count() - 1
+	var needed_count = shader_materials.size()
+	
+	# Get the first pass (base texture pass)
+	var current_pass = displayable.input_pass
+	
+	# Update existing passes or add new ones
+	for i in range(shader_materials.size()):
+		if i < existing_count:
+			# Update existing pass material
+			current_pass = current_pass.next
+			if current_pass and current_pass.sprite:
+				current_pass.sprite.material = shader_materials[i]
+		else:
+			# Add new pass
+			current_pass = displayable.add_pass(shader_materials[i])
+	
+	# Remove excess passes
+	if existing_count > needed_count:
+		# Find the last pass we want to keep
+		current_pass = displayable.input_pass
+		for i in range(needed_count):
+			current_pass = current_pass.next
+		
+		# Remove all passes after this one
+		while current_pass and current_pass.next:
+			var to_remove = current_pass.next
+			displayable.remove_pass(to_remove)

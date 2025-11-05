@@ -51,8 +51,8 @@ func update_shaders(model: DisplayableModel) -> void:
 			active_state_keys.append(state_value_str)
 	
 	# 2. Apply shaders to output_mesh (node-level)
-	if view.output_mesh:
-		_update_node_shaders(view.output_mesh, active_state_keys, model)
+	#if view.output_mesh:
+		#_update_node_shaders(view.output_mesh, active_state_keys, model)
 	
 	# 3. Scan annotations for layer-specific states
 	for annotation_name in model.annotations:
@@ -63,47 +63,24 @@ func update_shaders(model: DisplayableModel) -> void:
 		var annotation = model.annotations[annotation_name]
 		var layer = view.get_layer(layer_name)
 		
-		if not layer or not layer.mesh_instance:
+		if not layer:
 			continue
 		
-		# Apply shaders based on annotation notes
-		_update_layer_shaders(layer.mesh_instance, annotation.get_notes(), model)
+		# Apply shaders based on annotation notes using viewport passes
+		_update_layer_shaders(layer, annotation.get_notes(), model)
 
 
 ## Updates shaders for the output mesh (node-level)
 func _update_node_shaders(mesh: MeshInstance3D, shader_keys: Array, model: DisplayableModel) -> void:
-	if not mesh:
-		return
+	push_error("Not implemented")
 	
-	var target_key = "output_mesh"
-	
-	# Remove old shaders from this target
-	if target_key in active_shaders:
-		active_shaders.erase(target_key)
-	
-	# Collect all shader definitions from the active keys
-	var all_shader_defs = []
-	for key in shader_keys:
-		if key in shader_config:
-			var shader_list = shader_config[key]
-			if shader_list is Array:
-				all_shader_defs.append_array(shader_list)
-	
-	# If no shaders to apply, clear the chain
-	if all_shader_defs.is_empty():
-		_clear_shader_chain(mesh)
-		return
-	
-	# Apply shader chain with all collected shaders
-	_apply_shader_chain_3d(target_key, shader_keys, mesh, all_shader_defs, model)
 
-
-## Updates shaders for a specific layer mesh
-func _update_layer_shaders(mesh: MeshInstance3D, notes: Array, model: DisplayableModel) -> void:
-	if not mesh:
+## Updates shaders for a specific layer using viewport passes
+func _update_layer_shaders(layer: DisplayableLayer, notes: Array, model: DisplayableModel) -> void:
+	if not layer or not layer.displayable:
 		return
 	
-	var target_key = str(mesh.get_instance_id())
+	var target_key = str(layer.get_instance_id())
 	
 	# Remove old shaders from this target
 	if target_key in active_shaders:
@@ -117,16 +94,30 @@ func _update_layer_shaders(mesh: MeshInstance3D, notes: Array, model: Displayabl
 			if shader_list is Array:
 				all_shader_defs.append_array(shader_list)
 	
-	# If no shaders to apply, clear the chain
-	if all_shader_defs.is_empty():
-		_clear_shader_chain(mesh)
-		return
+	# Sort shader definitions by order
+	var sorted_defs = all_shader_defs.duplicate()
+	sorted_defs.sort_custom(func(a, b): return a.get("order", 0) < b.get("order", 0))
 	
-	# Apply shader chain with all collected shaders
-	_apply_shader_chain_3d(target_key, notes, mesh, all_shader_defs, model)
+	# Build shader passes using PostProcessorBuilder
+	var builder = PostProcessorBuilder.take(layer.displayable)
+	
+	# If no shaders, clear all shader passes
+	if sorted_defs.is_empty():
+		builder.clear_shaders()
+	else:
+		# Add all shader materials in order
+		for shader_def in sorted_defs:
+			var shader_material = ShaderRepository.create_shader_material(shader_def, model)
+			if shader_material:
+				builder.add_shader_pass(shader_material)
+	
+	builder.build()
+	
+	# Store shader definitions for tracking
+	active_shaders[target_key] = sorted_defs
 
 
-## Applies a shader chain to a 3D mesh (MeshInstance3D)
+## Applies a shader chain to a 3D mesh (MeshInstance3D) - for node-level shaders
 func _apply_shader_chain_3d(target_key: String, _state_name: Variant, mesh_instance: MeshInstance3D, shader_defs: Array, model: DisplayableModel) -> void:
 	if not mesh_instance or not mesh_instance.material_override:
 		return
@@ -152,7 +143,7 @@ func _apply_shader_chain_3d(target_key: String, _state_name: Variant, mesh_insta
 	_rebuild_shader_chain_3d(target_key, mesh_instance)
 
 
-## Rebuilds the complete shader chain for a 3D mesh
+## Rebuilds the complete shader chain for a 3D mesh - for node-level shaders
 func _rebuild_shader_chain_3d(target_key: String, mesh_instance: MeshInstance3D) -> void:
 	if not mesh_instance or not mesh_instance.material_override:
 		return
@@ -180,37 +171,23 @@ func _rebuild_shader_chain_3d(target_key: String, mesh_instance: MeshInstance3D)
 		all_shader_materials[-1].next_pass = null
 
 
-## Removes shaders for a specific target
-func remove_shaders_for_target(target_key: String, mesh: MeshInstance3D) -> void:
-	if not target_key in active_shaders:
+## Removes shaders for a specific layer
+func remove_shaders_for_layer(layer: DisplayableLayer) -> void:
+	if not layer:
 		return
+	
+	var target_key = str(layer.get_instance_id())
 	
 	# Remove the target's shaders
-	active_shaders.erase(target_key)
+	if target_key in active_shaders:
+		active_shaders.erase(target_key)
 	
-	# Clear the shader chain
-	_clear_shader_chain(mesh)
+	# Clear shader passes
+	if layer.displayable:
+		layer.displayable.clear_shader_passes()
 
 
-
-## Clears shader chain from a specific mesh
-func _clear_shader_chain(mesh: MeshInstance3D) -> void:
-	if not mesh or not mesh.material_override:
-		return
-	
-	# Clear the next_pass chain
-	mesh.material_override.next_pass = null
-
-
-## Clears all active shaders from all targets
-func clear_all_shaders(target_nodes: Dictionary) -> void:
-	# Clear shader chains from all nodes
-	for target_key in target_nodes:
-		var node = target_nodes[target_key]
-		if node is MeshInstance3D and node.material_override:
-			node.material_override.next_pass = null
-		elif node is Sprite2D:
-			node.material = null
-	
+## Clears all active shaders
+func clear_all_shaders() -> void:
 	# Clear internal state
 	active_shaders.clear()
