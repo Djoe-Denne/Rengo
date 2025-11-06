@@ -122,7 +122,7 @@ func scale_to_viewport() -> void:
 
 
 ## Observer callback - called when Scene model changes
-func _on_scene_changed() -> void:
+func _on_scene_changed(plan_id: String) -> void:
 	if not scene_model:
 		return
 	

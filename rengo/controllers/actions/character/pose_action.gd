@@ -46,4 +46,3 @@ func execute() -> void:
 		# Instant state change
 		_apply_value(target_value)
 		_is_complete = true
-

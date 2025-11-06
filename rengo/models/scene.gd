@@ -39,7 +39,7 @@ func set_plan(plan_id: String) -> void:
 	
 	if current_plan_id != plan_id:
 		current_plan_id = plan_id
-		plan_changed.emit()
+		plan_changed.emit(plan_id)
 
 
 ## Gets the current Plan object

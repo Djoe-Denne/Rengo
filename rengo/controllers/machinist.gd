@@ -51,8 +51,8 @@ func update_shaders(model: DisplayableModel) -> void:
 			active_state_keys.append(state_value_str)
 	
 	# 2. Apply shaders to output_mesh (node-level)
-	#if view.output_mesh:
-		#_update_node_shaders(view.output_mesh, active_state_keys, model)
+	if view.displayable:
+		_update_displayable_shaders(view.displayable, active_state_keys, model)
 	
 	# 3. Scan annotations for layer-specific states
 	for annotation_name in model.annotations:
@@ -67,20 +67,15 @@ func update_shaders(model: DisplayableModel) -> void:
 			continue
 		
 		# Apply shaders based on annotation notes using viewport passes
-		_update_layer_shaders(layer, annotation.get_notes(), model)
+		_update_displayable_shaders(layer.displayable, annotation.get_notes(), model)
 
 
-## Updates shaders for the output mesh (node-level)
-func _update_node_shaders(mesh: MeshInstance3D, shader_keys: Array, model: DisplayableModel) -> void:
-	push_error("Not implemented")
-	
-
-## Updates shaders for a specific layer using viewport passes
-func _update_layer_shaders(layer: DisplayableLayer, notes: Array, model: DisplayableModel) -> void:
-	if not layer or not layer.displayable:
+## Updates shaders for a specific displayable using viewport passes
+func _update_displayable_shaders(displayable: Displayable, trigger_words: Array, model: DisplayableModel) -> void:
+	if not displayable:
 		return
 	
-	var target_key = str(layer.get_instance_id())
+	var target_key = str(displayable.get_instance_id())
 	
 	# Remove old shaders from this target
 	if target_key in active_shaders:
@@ -88,9 +83,9 @@ func _update_layer_shaders(layer: DisplayableLayer, notes: Array, model: Display
 	
 	# Collect all shader definitions from the annotation notes
 	var all_shader_defs = []
-	for note in notes:
-		if note in shader_config:
-			var shader_list = shader_config[note]
+	for trigger_word in trigger_words:
+		if trigger_word in shader_config:
+			var shader_list = shader_config[trigger_word]
 			if shader_list is Array:
 				all_shader_defs.append_array(shader_list)
 	
@@ -99,7 +94,7 @@ func _update_layer_shaders(layer: DisplayableLayer, notes: Array, model: Display
 	sorted_defs.sort_custom(func(a, b): return a.get("order", 0) < b.get("order", 0))
 	
 	# Build shader passes using PostProcessorBuilder
-	var builder = PostProcessorBuilder.take(layer.displayable)
+	var builder = PostProcessorBuilder.take(displayable)
 	
 	# If no shaders, clear all shader passes
 	if sorted_defs.is_empty():

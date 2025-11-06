@@ -30,8 +30,8 @@ func _ready() -> void:
 	var poke_interaction = InteractionBuilder.builder() \
 									.name("poke") \
 									.add(InputBuilder.hover() \
-										.in_callback(func(ctrl, layer): ctrl.update_model_state("status", "focused")) \
-										.out_callback(func(ctrl, layer): ctrl.update_model_state("status", "")) \
+										.in_callback(func(ctrl, layer): ctrl.get_model().add_layer_state(layer, "focused")) \
+										.out_callback(func(ctrl, layer): ctrl.get_model().remove_layer_state(layer, "focused")) \
 										.build()) \
 									.add(InputBuilder.custom("ok_confirm") \
 										.on_focus(true) \
@@ -40,6 +40,8 @@ func _ready() -> void:
 									.build()
 
 	me_actor_ctrl.interaction(poke_interaction)  # Register interaction
+	me_actor_ctrl.get_model().add_layer_state("face", "focused")
+	me_actor_ctrl.update_model_state("status", "focused")
 
 	# Build the story action queue
 	_play_story()
@@ -70,6 +72,7 @@ func _play_story() -> void:
 	other_actor_ctrl.pose("waving")
 	other_actor_ctrl.express("happy")
 	other_actor_ctrl.say("Good morning!")
+	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
 	
 	# Scene 3: Me cheers up - with animated expression change
 	me_actor_ctrl.express("neutral").over(0.3)  # Smooth expression transition
@@ -89,7 +92,6 @@ func _play_story() -> void:
 	# Scene 6: Me puts on casual outfit - with animated outfit change
 	me_actor_ctrl.wear("casual").over(0.5)  # Fade out, change, fade in
 	me_actor_ctrl.say("Much better!")
-	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
 	
 	# Scene 7: Other changes to jeans - animated
 	other_actor_ctrl.wear("jeans").over(0.5)

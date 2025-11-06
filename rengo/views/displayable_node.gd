@@ -53,7 +53,7 @@ func _setup_viewport() -> void:
 	
 	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()
-	material.albedo_texture = displayable.get_output_texture()
+	material.albedo_texture = displayable.get_output_viewport().get_texture()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	
@@ -86,22 +86,18 @@ func _update() -> void:
 		return
 	
 	# Find the largest layer to determine viewport size
-	var max_viewport_size = Vector2i(100, 100)  # Minimum size
-	
-	for layer_name in layers:
-		var layer = layers[layer_name]
-		if not layer.is_layer_visible():
-			continue
-		
-		var layer_output_viewport = layer.displayable.get_output_viewport()
-		if layer_output_viewport:
-			var layer_viewport_size = layer_output_viewport.size
-			max_viewport_size.x = max(max_viewport_size.x, layer_viewport_size.x)
-			max_viewport_size.y = max(max_viewport_size.y, layer_viewport_size.y)
-	
+	var max_viewport_size = character_size * pixels_per_cm * 1.25
 	# Update compositing viewport size
 	displayable.set_pass_size(max_viewport_size)
+
+	_create_composition()
 	
+	# Update output mesh size to character size
+	if output_mesh and output_mesh.mesh:
+		output_mesh.mesh.size = character_size
+
+
+func _create_composition() -> void:
 	# Update or create sprites for each visible layer
 	for layer_name in layers:
 		var layer = layers[layer_name]
@@ -126,16 +122,13 @@ func _update() -> void:
 			composite_sprites[layer_name] = sprite
 		
 		# Update sprite with layer's output texture
-		sprite.texture = layer.displayable.get_output_texture()
+		sprite.texture = layer.displayable.get_output_viewport().get_texture()
 		sprite.visible = true
 		
 		# Apply anchor positioning (convert from pixel coordinates)
 		# Anchor is stored in layer_size metadata from theater_actor_director
 		sprite.position = layer.position
-	
-	# Update output mesh size to character size
-	if output_mesh and output_mesh.mesh:
-		output_mesh.mesh.size = character_size
+
 
 ## Adds a new layer to this displayable node
 ## layer_def contains configuration: { "layer": name, "z": z_index, "anchor": {x, y}, ... }
@@ -268,7 +261,7 @@ func _on_layer_visibility_changed() -> void:
 				input_handler.clear_hover_if_layer(layer)
 	_update()
 
-func _on_layer_displayable_changed(new_viewport: SubViewport) -> void:
+func _on_layer_displayable_changed(displayable: Displayable) -> void:
 	_update()
 
 ## Gets the controller for this displayable node

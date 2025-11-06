@@ -40,7 +40,7 @@ func plug_signals() -> void:
 	model.rotation_changed.connect(view.on_model_rotation_changed)
 	model.scale_changed.connect(view.on_model_scale_changed)
 	model.state_changed.connect(director.instruct)
-	#model.state_changed.connect(machinist.update_shaders)
+	model.state_changed.connect(machinist.update_shaders)
 	model.outfit_changed.connect(director.instruct)
 	scene.plan_changed.connect(director.on_scene_changed)
 

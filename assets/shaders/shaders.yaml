@@ -3,15 +3,8 @@
 
 shaders:
   # When status state is "focused" (e.g., on hover)
-  bedhair:
-    - shader: "assets/shaders/glow.gdshader"
+  focused:
+    - shader: "assets/shaders/test.gdshader"
       order: 0
-      params:
-        glow_color: "(0.5, 0.5, 1.0, 1.0)"  # Blue glow
-        intensity: 1.0
-    - shader: "assets/shaders/outline.gdshader"
+    - shader: "assets/shaders/test2.gdshader"
       order: 1
-      params:
-        outline_color: "(1.0, 0.0, 0.0, 1.0)"  # Red outline
-        outline_width: 3.0
-

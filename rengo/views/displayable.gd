@@ -13,7 +13,7 @@ var input_pass: Pass = null
 var output_pass: Pass = null
 
 ## Counter for generating unique pass names
-var _pass_counter: int = 1
+var _pass_counter: int = 0
 
 
 func _init(displayable_name: String = "") -> void:
@@ -24,31 +24,30 @@ func _init(displayable_name: String = "") -> void:
 
 
 ## Creates the initial pass (pass1)
-func _create_initial_pass(displayable_name: String) -> void:
-	var viewport = SubViewport.new()
-	viewport.name = "pass1"
-	viewport.transparent_bg = true
-	viewport.disable_3d = true
-	viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	
-	var sprite = Sprite2D.new()
-	sprite.name = "Sprite2D"
-	sprite.centered = false
-	
-	viewport.add_child(sprite)
-	add_child(viewport)
-	
-	# Create the first pass
-	var main_pass = Pass.new(viewport, sprite)
-	input_pass = main_pass
-	output_pass = main_pass
+func _create_initial_pass(_displayable_name: String) -> void:
+	input_pass = add_pass()
+	output_pass = add_pass()
 
 
 ## Adds a new pass at the end of the chain
 ## @param material: Optional shader material to apply to the sprite
 ## @return: The newly created Pass
 func add_pass(material: Material = null) -> Pass:
+	var previous_pass = output_pass.previous if output_pass else input_pass
+	var new_pass = _create_pass(previous_pass, material)
+	
+	if previous_pass:
+		var next_pass = previous_pass.next
+		previous_pass.next = new_pass
+		new_pass.previous = previous_pass
+		new_pass.next = next_pass
+		if next_pass:
+			next_pass.sprite.texture = new_pass.viewport.get_texture()
+		
+	return new_pass
+
+
+func _create_pass(after_pass: Pass, material: Material = null) -> Pass:
 	_pass_counter += 1
 	var pass_name = "pass" + str(_pass_counter)
 	
@@ -59,13 +58,15 @@ func add_pass(material: Material = null) -> Pass:
 	viewport.disable_3d = true
 	viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.size = output_pass.viewport.size  # Match size of previous pass
+	if after_pass:
+		viewport.size = after_pass.viewport.size
 	
-	# Create sprite that shows previous pass
+	# Create sprite that shows the pass we're inserting after
 	var sprite = Sprite2D.new()
 	sprite.name = "Sprite2D"
 	sprite.centered = false
-	sprite.texture = output_pass.viewport.get_texture()
+	if after_pass:
+		sprite.texture = after_pass.viewport.get_texture()
 	
 	# Apply material if provided
 	if material:
@@ -74,13 +75,8 @@ func add_pass(material: Material = null) -> Pass:
 	viewport.add_child(sprite)
 	add_child(viewport)
 	
-	# Create new pass and link it
-	var new_pass = Pass.new(viewport, sprite)
-	new_pass.previous = output_pass
-	output_pass.next = new_pass
-	output_pass = new_pass
-	
-	return new_pass
+	# Create new pass
+	return Pass.new(viewport, sprite)
 
 
 ## Inserts a new pass after the specified pass
@@ -91,34 +87,8 @@ func insert_pass_after(after_pass: Pass, material: Material = null) -> Pass:
 	if not after_pass:
 		push_error("Displayable: Cannot insert pass after null")
 		return null
-	
-	_pass_counter += 1
-	var pass_name = "pass" + str(_pass_counter)
-	
-	# Create new viewport
-	var viewport = SubViewport.new()
-	viewport.name = pass_name
-	viewport.transparent_bg = true
-	viewport.disable_3d = true
-	viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	viewport.size = after_pass.viewport.size
-	
-	# Create sprite that shows the pass we're inserting after
-	var sprite = Sprite2D.new()
-	sprite.name = "Sprite2D"
-	sprite.centered = false
-	sprite.texture = after_pass.viewport.get_texture()
-	
-	# Apply material if provided
-	if material:
-		sprite.material = material
-	
-	viewport.add_child(sprite)
-	add_child(viewport)
-	
-	# Create new pass
-	var new_pass = Pass.new(viewport, sprite)
+
+	var new_pass = _create_pass(after_pass, material)
 	
 	# Insert into linked list
 	new_pass.previous = after_pass
@@ -166,13 +136,6 @@ func remove_pass(pass_to_remove: Pass) -> void:
 	displayable_changed.emit(self)
 
 
-## Gets the output texture (from the last pass)
-func get_output_texture() -> ViewportTexture:
-	if output_pass:
-		return output_pass.viewport.get_texture()
-	return null
-
-
 ## Gets the input sprite (first pass sprite for setting base texture)
 func get_input_sprite() -> Sprite2D:
 	if input_pass:
@@ -205,12 +168,7 @@ func set_pass_size(size: Vector2i) -> void:
 
 ## Gets the number of passes in the chain
 func get_pass_count() -> int:
-	var count = 0
-	var current = input_pass
-	while current:
-		count += 1
-		current = current.next
-	return count
+	return _pass_counter - 2 # -2 for input and output passes
 
 
 ## Clears all passes except the first one
@@ -220,14 +178,14 @@ func clear_shader_passes() -> void:
 	
 	# Remove all passes after the first
 	var current = input_pass.next
-	while current:
+	while current != output_pass:
 		var next_pass = current.next
 		current.viewport.queue_free()
 		current = next_pass
 	
 	# Reset chain to just first pass
-	input_pass.next = null
-	output_pass = input_pass
-	_pass_counter = 1
+	input_pass.next = output_pass
+	output_pass.previous = input_pass
+	_pass_counter = 2
 	
 	displayable_changed.emit(self)

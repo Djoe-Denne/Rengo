@@ -26,8 +26,8 @@ var is_mouse_over: bool = false
 ## Cached alpha mask for performance
 var texture_image: Image = null
 
-## texture path hashed for quick comparison
-var texture_path_hash: int = 0
+## texture path for comparison
+var texture_path: String = ""
 
 var displayable: Displayable = null
 
@@ -54,7 +54,8 @@ func _ready() -> void:
 	pass
 
 func _on_displayable_changed(displayable: Displayable) -> void:
-	layer_displayable_changed.emit(layer_name)
+	print("DisplayableLayer: displayable changed")
+	layer_displayable_changed.emit(displayable)
 
 
 func set_size(p_size: Vector2) -> void:
@@ -68,7 +69,6 @@ func set_texture(tex: Texture2D) -> void:
 	
 	# Store image for collision detection
 	texture_image = tex.get_image()
-	texture_path_hash = tex.get_path().hash()
 	
 	# Set texture on the input sprite (first pass)
 	var input_sprite = displayable.get_input_sprite()

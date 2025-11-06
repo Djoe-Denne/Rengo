@@ -104,7 +104,7 @@ func _update_shader_passes() -> void:
 		return
 	
 	# Count existing shader passes (excluding first pass which is the base)
-	var existing_count = displayable.get_pass_count() - 1
+	var existing_count = displayable.get_pass_count()
 	var needed_count = shader_materials.size()
 	
 	# Get the first pass (base texture pass)
@@ -112,6 +112,7 @@ func _update_shader_passes() -> void:
 	
 	# Update existing passes or add new ones
 	for i in range(shader_materials.size()):
+		# Skip the base pass. usefull for multi sprite displayables like @displayable_node
 		if i < existing_count:
 			# Update existing pass material
 			current_pass = current_pass.next

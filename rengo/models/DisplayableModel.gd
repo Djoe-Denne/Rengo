@@ -64,7 +64,7 @@ func remove_layer_state(p_layer_name: String, p_state: String) -> void:
 	annotations[annotation_name].remove_note(p_state)
 	state_changed.emit(self)
 
-func on_plan_changed() -> void: state_changed.emit(self)
+func on_plan_changed(p_plan_id: String) -> void: state_changed.emit(self)
 
 func get_controller() -> Controller:
 	return controller

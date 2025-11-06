@@ -3,5 +3,5 @@ faces:
     layer: "face"
     image: "images/{plan}/{orientation}/faces/{expression}.png"
     z: 1
-    anchor: {x: 0, y: 45}
+    anchor: {x: 500, y: 500}
 

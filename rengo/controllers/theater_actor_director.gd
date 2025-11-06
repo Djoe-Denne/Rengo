@@ -65,18 +65,15 @@ func _update_layers_unified(current_states: Dictionary) -> void:
 		var image_path = ResourceRepository.resolve_template_path(image_template, state)
 		
 		# Load and apply texture
-		if image_path != "" and image_path.hash() != layer.texture_path_hash:
+		if image_path != "" and image_path != layer.texture_path:
 			var texture = _load_texture(actor, image_path)
 			if texture:
 				# Apply texture to DisplayableLayer
 				_apply_texture_to_displayable_layer(layer, texture, layer_def)
-				layer.set_layer_visible(true)
+				layer.texture_path = image_path
 			else:
 				# Hide layer if texture not found
 				layer.set_layer_visible(false)
-	
-	# Update composite viewport after all layers are updated
-	actor._update()
 
 
 ## Applies a texture to a DisplayableLayer and updates its size

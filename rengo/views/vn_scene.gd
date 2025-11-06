@@ -196,7 +196,7 @@ func cast(name: String) -> ActorController:
 
 
 ## Observer callback for scene model changes
-func _on_scene_changed() -> void:
+func _on_scene_changed(plan_id: String) -> void:
 	if not scene_model:
 		return
 	
