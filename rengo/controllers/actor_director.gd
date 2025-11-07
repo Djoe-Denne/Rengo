@@ -47,7 +47,8 @@ func load_character(character: Character) -> bool:
 		return false
 	
 	character_metadata = character_data.character
-
+	character.load_metadata(character_metadata)
+	
 	for layer in character_data.layers:
 		character_layers[layer.id] = layer
 

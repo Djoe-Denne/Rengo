@@ -47,8 +47,8 @@ func _input(event: InputEvent) -> void:
 ## Checks all visible layers for mouse intersection using viewport-aware raycasting
 ## Returns topmost hit layer
 func _check_layer_intersections_viewport(main_camera: Camera3D, mouse_pos: Vector2) -> DisplayableLayer:
-	#if not displayable_node or not displayable_node.output_mesh or not displayable_node.viewport_camera:
-	return null
+	if not displayable_node or not displayable_node.output_mesh:
+		return null
 	
 	# Step 1: Raycast from main camera to output_mesh to get UV coordinates
 	var output_mesh = displayable_node.output_mesh
@@ -62,14 +62,11 @@ func _check_layer_intersections_viewport(main_camera: Camera3D, mouse_pos: Vecto
 	if not hit_info.hit:
 		return null
 
-	# Step 3: Check layers using viewport camera and viewport coordinates
-	return _check_layers_in_viewport(hit_info.position)
+	var local_hit_position = CollisionHelper.get_uv_from_local_hit(hit_info.position, quad_transform, quad_size)
 
 
-## Checks layers within the SubViewport using viewport-local coordinates
-func _check_layers_in_viewport(hit_position: Vector3) -> DisplayableLayer:
-	if not displayable_node or not displayable_node.viewport_camera:
-		return null
+	print("hit_info: ", hit_info)
+	print("local_hit_position: ", local_hit_position)
 	
 	# Get all visible layers and sort by z-index descending (highest first for occlusion)
 	var visible_layers = displayable_node.get_visible_layers()

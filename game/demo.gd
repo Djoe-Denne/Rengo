@@ -40,7 +40,7 @@ func _ready() -> void:
 									.build()
 
 	me_actor_ctrl.interaction(poke_interaction)  # Register interaction
-	me_actor_ctrl.get_model().add_layer_state("face", "focused")
+	#me_actor_ctrl.get_model().add_layer_state("body", "focused")
 	me_actor_ctrl.update_model_state("status", "focused")
 
 	# Build the story action queue
@@ -48,6 +48,16 @@ func _ready() -> void:
 	
 	# Start playing the scene
 	vn_scene.play()
+
+
+func _input(event: InputEvent) -> void:
+	# Debug: Export all viewport textures on Ctrl+P
+	if event is InputEventKey:
+		if event.pressed and event.keycode == KEY_P and event.ctrl_pressed:
+			print("=== Exporting Viewport Textures (Ctrl+P) ===")
+			var count = ViewportTextureExporter.export_all_viewports(get_tree().root, "user://viewport_debug/")
+			print("=== Export Complete: %d textures saved to user://viewport_debug/ ===" % count)
+			get_viewport().set_input_as_handled()
 
 
 func _play_story() -> void:

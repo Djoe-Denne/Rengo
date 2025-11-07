@@ -6,5 +6,7 @@ shaders:
   focused:
     - shader: "assets/shaders/test.gdshader"
       order: 0
+      padding: 50  # Optional: padding percentage (default: 25)
     - shader: "assets/shaders/test2.gdshader"
       order: 1
+      #padding: 30  # Optional: different shaders can have different padding requirements

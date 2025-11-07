@@ -4,7 +4,7 @@ character:
   inner_dialog_color: "#6B8EFF88"
   size_cm:
     height: 170
-    width: 60
+    width: 80
 
 defaults:
   orientation: "front"

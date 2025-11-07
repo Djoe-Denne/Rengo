@@ -36,16 +36,20 @@ func load_shader(shader_path: String) -> Shader:
 		return null
 
 
-## Creates a ShaderMaterial from a shader definition with parameter resolution
-## @param shader_def: Dictionary with shader config (shader path, params, etc.)
-## @param state: State dictionary for resolving template parameters
+## Creates a ShaderMaterial from a VNShader with parameter resolution
+## @param vn_shader: VNShader with shader config (shader path, params, etc.)
+## @param model: DisplayableModel for resolving template parameters
 ## @return: Configured ShaderMaterial or null on error
-func create_shader_material(shader_def: Dictionary, model: DisplayableModel) -> ShaderMaterial:
-	if not "shader" in shader_def:
+func create_shader_material(vn_shader: VNShader, model: DisplayableModel) -> ShaderMaterial:
+	if not vn_shader:
+		push_warning("VNShader is null")
+		return null
+	
+	var shader_path = vn_shader.get_shader_path()
+	if shader_path == "":
 		push_warning("Shader definition missing 'shader' path")
 		return null
 	
-	var shader_path = shader_def.shader
 	var shader = load_shader(shader_path)
 	
 	if not shader:
@@ -56,24 +60,23 @@ func create_shader_material(shader_def: Dictionary, model: DisplayableModel) -> 
 	material.shader = shader
 	
 	# Apply parameters if provided
-	if "params" in shader_def:
-		var params = shader_def.params
-		for param_name in params:
-			var param_value = params[param_name]
-			
-			# Resolve template parameters from state
-			if param_value is String:
-				param_value = _resolve_parameter_value(param_value, model)
-			
-			# Set shader parameter (convert types as needed)
-			_set_shader_param(material, param_name, param_value)
+	var params = vn_shader.get_params()
+	for param_name in params:
+		var param_value = params[param_name]
+		
+		# Resolve template parameters from state
+		if param_value is String:
+			param_value = _resolve_parameter_value(param_value, model)
+		
+		# Set shader parameter (convert types as needed)
+		_set_shader_param(material, param_name, param_value)
 	
 	return material
 
 
 ## Loads shader configuration from YAML files in base directories
 ## @param base_dirs: Array of base directories to search
-## @return: Dictionary with shader configurations { state_name: [shader_defs] }
+## @return: Dictionary with shader configurations { state_name: Array[VNShader] }
 func load_shader_config(base_dirs: Array) -> Dictionary:
 	if base_dirs.is_empty():
 		return {}
@@ -85,10 +88,25 @@ func load_shader_config(base_dirs: Array) -> Dictionary:
 		return {}
 	
 	# Extract shaders dictionary
+	var raw_shaders = {}
 	if "shaders" in shader_data:
-		return shader_data.shaders
+		raw_shaders = shader_data.shaders
+	else:
+		raw_shaders = shader_data
 	
-	return shader_data
+	# Convert shader definitions to VNShader objects
+	var converted_shaders = {}
+	for state_name in raw_shaders:
+		var shader_list = raw_shaders[state_name]
+		if shader_list is Array:
+			var vn_shader_array: Array[VNShader] = []
+			for shader_def in shader_list:
+				if shader_def is Dictionary:
+					var vn_shader = VNShader.from_dict(shader_def)
+					vn_shader_array.append(vn_shader)
+			converted_shaders[state_name] = vn_shader_array
+	
+	return converted_shaders
 
 
 ## Resolves a parameter value from state (supports template syntax)

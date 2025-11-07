@@ -25,7 +25,6 @@ func instruct(displayable_model: DisplayableModel) -> void:
 	# Update all layers based on current states (body + face + clothing)
 	_update_layers_unified(current_states)
 
-
 ## Updates all layers using unified template system (body + face + clothing)
 func _update_layers_unified(current_states: Dictionary) -> void:
 	var actor = controller.get_view()
@@ -159,7 +158,7 @@ func _create_color_texture(color: Color, size: Vector2 = Vector2(150, 200)) -> T
 ## Gets the character size in centimeters from metadata
 func _get_character_size(model: Character) -> Vector2:
 	if not model:
-		return Vector2(60, 170)  # Default size
+		return Vector2(80, 170)  # Default size
 	
 	# Try to get size from character metadata
 	var metadata = model.metadata
@@ -170,7 +169,8 @@ func _get_character_size(model: Character) -> Vector2:
 			size_cm.get("height", 170)
 		)
 	
-	return Vector2(60, 170)  # Default size
+	push_error("No character size found for character: %s" % model.name)
+	return Vector2(80, 170)
 
 
 ## Calculates the appropriate quad size for a layer based on its texture dimensions

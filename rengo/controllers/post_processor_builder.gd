@@ -16,7 +16,7 @@ var viewport_size: Vector2i = Vector2i(0, 0)
 var _update_size: bool = false
 
 ## Shader materials to ensure exist (in order)
-var shader_materials: Array[ShaderMaterial] = []
+var vn_shaders: Array[VNShader] = []
 
 ## Whether to clear all shader passes before building
 var _clear_shaders: bool = false
@@ -24,6 +24,7 @@ var _clear_shaders: bool = false
 
 func _init(p_displayable: Displayable) -> void:
 	displayable = p_displayable
+	base_texture = p_displayable.get_input_sprite().texture
 
 
 ## Static factory method
@@ -46,8 +47,8 @@ func set_size(size: Vector2i) -> PostProcessorBuilder:
 
 
 ## Adds a shader material to the list (will be applied in order)
-func add_shader_pass(material: ShaderMaterial) -> PostProcessorBuilder:
-	shader_materials.append(material)
+func add_shader_pass(vn_shader: VNShader) -> PostProcessorBuilder:
+	vn_shaders.append(vn_shader)
 	return self
 
 
@@ -65,28 +66,11 @@ func build() -> Displayable:
 	
 	# 1. Update base texture if requested
 	if _update_texture and base_texture:
-		var input_sprite = displayable.get_input_sprite()
-		if input_sprite:
-			input_sprite.texture = base_texture
+		displayable.set_input_sprite_texture(base_texture)
 	
+	var base_size = viewport_size if _update_size else (base_texture.get_size() if base_texture else Vector2i(0, 0))
 	# 2. Update viewport size if requested
-	if _update_size:
-		var padded_size = viewport_size
-		if viewport_size.x > 0 and viewport_size.y > 0:
-			padded_size = Vector2i(
-				int(viewport_size.x * 1.25),
-				int(viewport_size.y * 1.25)
-			)
-		elif _update_texture and base_texture:
-			# If no size specified but texture updated, use texture size + padding
-			var tex_size = base_texture.get_size()
-			padded_size = Vector2i(
-				int(tex_size.x * 1.25),
-				int(tex_size.y * 1.25)
-			)
-		
-		if padded_size.x > 0 and padded_size.y > 0:
-			displayable.set_pass_size(padded_size)
+	displayable.set_max_padding(_find_max_padding_from_vn_shaders())
 	
 	# 3. Clear shader passes if requested
 	if _clear_shaders:
@@ -98,38 +82,44 @@ func build() -> Displayable:
 	return displayable
 
 
+func _find_max_padding_from_vn_shaders() -> float:
+	var max_padding = displayable.get_max_padding()
+	for vn_shader in vn_shaders:
+		max_padding = max(max_padding, vn_shader.get_padding())
+	return max_padding
+
 ## Updates shader passes incrementally - only adds/removes what changed
 func _update_shader_passes() -> void:
-	if shader_materials.is_empty():
+	if vn_shaders.is_empty():
 		return
 	
 	# Count existing shader passes (excluding first pass which is the base)
 	var existing_count = displayable.get_pass_count()
-	var needed_count = shader_materials.size()
+	var needed_count = vn_shaders.size()
 	
 	# Get the first pass (base texture pass)
-	var current_pass = displayable.input_pass
+	var current_pass = displayable.get_input_pass()
 	
 	# Update existing passes or add new ones
-	for i in range(shader_materials.size()):
+	for i in range(vn_shaders.size()):
 		# Skip the base pass. usefull for multi sprite displayables like @displayable_node
 		if i < existing_count:
 			# Update existing pass material
-			current_pass = current_pass.next
-			if current_pass and current_pass.sprite:
-				current_pass.sprite.material = shader_materials[i]
+			current_pass = current_pass.get_next()
+			if current_pass and current_pass.get_sprites().size() > 0:
+				current_pass.get_sprite(0).material = vn_shaders[i].get_shader_material()
 		else:
 			# Add new pass
-			current_pass = displayable.add_pass(shader_materials[i])
+			current_pass = displayable.add_pass(vn_shaders[i].get_shader_material())
 	
 	# Remove excess passes
 	if existing_count > needed_count:
 		# Find the last pass we want to keep
-		current_pass = displayable.input_pass
+		current_pass = displayable.get_input_pass()
 		for i in range(needed_count):
-			current_pass = current_pass.next
+			current_pass = current_pass.get_next()
 		
 		# Remove all passes after this one
-		while current_pass and current_pass.next:
-			var to_remove = current_pass.next
+		while current_pass and current_pass.get_next():
+			var to_remove = current_pass.get_next()
 			displayable.remove_pass(to_remove)

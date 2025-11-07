@@ -27,6 +27,8 @@ var displayable: Displayable = null
 ## Output mesh showing final composite
 var output_mesh: MeshInstance3D = null
 
+var max_padding: float = 0.0
+
 ## Dictionary to track sprites in compositing viewport { layer_name: Sprite2D }
 var composite_sprites: Dictionary = {}
 
@@ -44,6 +46,9 @@ func _setup_viewport() -> void:
 	
 	# Create Displayable for compositing
 	displayable = Displayable.new(resource_name + "_composite")
+	
+	# Connect to padding changes
+	displayable.padding_changed.connect(_on_node_padding_changed)
 	
 	# Create output mesh
 	output_mesh = MeshInstance3D.new()
@@ -80,56 +85,6 @@ func create_scene_node(parent: Node) -> Node:
 	return output_mesh
 
 
-## Updates the composite viewport with all layer outputs
-func _update() -> void:
-	if not displayable:
-		return
-	
-	# Find the largest layer to determine viewport size
-	var max_viewport_size = character_size * pixels_per_cm * 1.25
-	# Update compositing viewport size
-	displayable.set_pass_size(max_viewport_size)
-
-	_create_composition()
-	
-	# Update output mesh size to character size
-	if output_mesh and output_mesh.mesh:
-		output_mesh.mesh.size = character_size
-
-
-func _create_composition() -> void:
-	# Update or create sprites for each visible layer
-	for layer_name in layers:
-		var layer = layers[layer_name]
-		
-		if not layer.is_layer_visible():
-			# Hide sprite if layer is invisible
-			if layer_name in composite_sprites:
-				composite_sprites[layer_name].visible = false
-			continue
-		
-		# Get or create sprite for this layer
-		var sprite: Sprite2D
-		if layer_name in composite_sprites:
-			sprite = composite_sprites[layer_name]
-		else:
-			sprite = Sprite2D.new()
-			sprite.name = "Sprite_" + layer_name
-			sprite.centered = false
-			var input_viewport = displayable.get_input_viewport()
-			if input_viewport:
-				input_viewport.add_child(sprite)
-			composite_sprites[layer_name] = sprite
-		
-		# Update sprite with layer's output texture
-		sprite.texture = layer.displayable.get_output_viewport().get_texture()
-		sprite.visible = true
-		
-		# Apply anchor positioning (convert from pixel coordinates)
-		# Anchor is stored in layer_size metadata from theater_actor_director
-		sprite.position = layer.position
-
-
 ## Adds a new layer to this displayable node
 ## layer_def contains configuration: { "layer": name, "z": z_index, "anchor": {x, y}, ... }
 func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLayer:
@@ -155,6 +110,7 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	# Connect layer signals for interaction handling
 	_connect_layer_signals(layer)
 
+	displayable.add_input_sprite(layer.get_output_sprite())
 	return layer
 
 
@@ -185,7 +141,7 @@ func remove_layer(layer_name: String) -> void:
 	layer.queue_free()
 	layers.erase(layer_name)
 	
-	_update()
+	## TODO: displayable.remove_input_sprite(layer.displayable.create_output_sprite())
 
 
 ## Gets all visible layers
@@ -202,6 +158,8 @@ func get_visible_layers() -> Array:
 func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	if not layer:
 		return
+
+	print("DisplayableNode: connecting layer signals for layer '%s'" % layer.layer_name)
 	
 	# Connect layer signals for potential custom handling
 	# (The layer itself handles direct InteractionHandler calls in its signal handlers)
@@ -209,16 +167,21 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_unhovered.connect(_on_layer_unhovered)
 	layer.layer_clicked.connect(_on_layer_clicked)
 	layer.layer_displayable_changed.connect(_on_layer_displayable_changed)
+	layer.layer_padding_changed.connect(_on_layer_padding_changed)
 
 
 func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
 	if not layer:
 		return
+	
+	print("DisplayableNode: deconnecting layer signals for layer '%s'" % layer.layer_name)
 	layer.layer_hovered.disconnect(_on_layer_hovered)
 	layer.layer_unhovered.disconnect(_on_layer_unhovered)
 	layer.layer_clicked.disconnect(_on_layer_clicked)
 	layer.layer_displayable_changed.disconnect(_on_layer_displayable_changed)
+	layer.layer_padding_changed.disconnect(_on_layer_padding_changed)
 
+	
 func on_model_position_changed(new_position: Vector3) -> void:
 	if output_mesh:
 		output_mesh.position = new_position
@@ -259,14 +222,42 @@ func _on_layer_visibility_changed() -> void:
 			var layer = layers[layer_name]
 			if not layer.is_layer_visible():
 				input_handler.clear_hover_if_layer(layer)
-	_update()
 
-func _on_layer_displayable_changed(displayable: Displayable) -> void:
-	_update()
+func _on_layer_displayable_changed(_changed_displayable: Displayable) -> void:
+	# todo: get biggest sprite and adapt viewport siz
+	displayable.force_update()
 
 ## Gets the controller for this displayable node
 func get_controller():
 	return controller
+
+
+## Handles padding changes from node displayable or layer displayables
+func _on_layer_padding_changed(_displayable: Displayable, _new_padding: float) -> void:
+	if not output_mesh or not output_mesh.mesh or max_padding >= _displayable.get_max_padding():
+		return
+	
+	max_padding = _displayable.get_max_padding()
+	
+	# Update output_mesh size with padding
+	output_mesh.mesh.size = character_size * (1.0 + (max_padding / 100.0))
+	displayable.force_update()
+
+## Handles padding changes from node displayable or layer displayables
+func _on_node_padding_changed(_displayable: Displayable, _new_padding: float) -> void:
+	if not output_mesh or not output_mesh.mesh or max_padding >= _displayable.get_max_padding():
+		return
+	
+	max_padding = _displayable.get_max_padding()
+
+	for layer in layers.values():
+		var layer_position = layer.position
+		var layer_offset = layer_position * (max_padding / 100.0)
+		layer.set_offset(layer_offset)
+	
+	# Update output_mesh size with padding
+	output_mesh.mesh.size = character_size * (1.0 + (max_padding / 100.0))
+	displayable.force_update()
 
 
 ## Creates the input handler and attaches it
