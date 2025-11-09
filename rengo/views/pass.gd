@@ -65,6 +65,7 @@ func get_output_texture() -> TransformableTexture:
 	_output_texture = TransformableTexture.new(_viewport.get_texture(), Vector2.ZERO)
 	return _output_texture
 
+
 func clear() -> void:
 	_textures.clear()
 	clear_viewport()
@@ -86,23 +87,40 @@ func _compute_viewport_size() -> void:
 			viewport_size.y = texture.get_texture().get_size().y
 	_viewport.size = viewport_size * _padding_multiplier
 
+func clickables_at_uv(uv: Vector2) -> Array:
+	var result: Array = []
+	var children: Array = _viewport.get_children().filter(func(child): return child is Sprite2D).map(func(child): return child as Sprite2D)
+	for child in children:
+		if CollisionHelper.is_hover_non_transparent(_viewport.size, _get_padding(), child, uv):
+			var sprite: Sprite2D = child
+			if sprite.has_meta("source"):
+				result.append(child.get_meta("source"))
+			else:
+				result.append(true)
+	return result
+
 func recompose() -> void:
 	# clear viewport
 	clear_viewport()
-	var padding = (_viewport.size - Vector2i(_viewport.size / _padding_multiplier)) / 2.0
+	var padding = _get_padding() / 2.0
 	# add textures to viewport
 	for texture in _textures:
-		var sprite = Sprite2D.new()
-		sprite.texture = texture.get_texture()
-		sprite.position = texture.get_position() + padding
-		sprite.centered = false
+		var sprite = _create_sprite(texture, padding)
 		if _shader:
 			sprite.material = _shader.get_shader_material()
 		_viewport.add_child(sprite)
 	
-	print("Pass: recomposing : ", name)
-	print("Pass: padding multiplier: ", _padding_multiplier)
-	print("Pass: padding: ", padding)
-	print("Pass: viewport size: ", _viewport.size)
 	if _next:
 		_next.recompose()
+
+func _get_padding() -> Vector2:
+	return (_viewport.size - Vector2i(_viewport.size / _padding_multiplier))
+
+func _create_sprite(texture: TransformableTexture, padding: Vector2) -> Sprite2D:
+	var sprite = Sprite2D.new()
+	sprite.texture = texture.get_texture()
+	sprite.position = texture.get_position() + padding
+	sprite.centered = false
+	if texture.get_source() and texture.get_source() is DisplayableLayer:
+		sprite.set_meta("source", texture.get_source().get_path())
+	return sprite

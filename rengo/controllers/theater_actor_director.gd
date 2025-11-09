@@ -91,7 +91,7 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 		.add_base_texture(TransformableTexture.new(texture, Vector2.ZERO))
 	
 	# Set character size on actor for output mesh
-	actor.character_size = char_size
+	actor.base_size = char_size
 	
 	# Make layer visible
 	layer.set_layer_visible(true)

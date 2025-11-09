@@ -9,8 +9,8 @@ extends ResourceNode
 ## Dictionary of all layers { layer_name: DisplayableLayer }
 var layers: Dictionary[String, DisplayableLayer] = {}
 
-## Character size in centimeters (set by director)
-var character_size: Vector2 = Vector2(60, 170)
+## Base size in centimeters (set by director)
+var base_size: Vector2 = Vector2(100, 100)
 
 ## Pixels per cm ratio (calculated from body layer)
 var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
@@ -44,7 +44,6 @@ func _init(p_name: String = "") -> void:
 	output_mesh = MeshInstance3D.new()
 	output_mesh.name = "OutputMesh_" + resource_name
 	output_mesh.mesh = QuadMesh.new()
-	output_mesh.mesh.size = character_size
 	
 	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()
@@ -53,8 +52,9 @@ func _init(p_name: String = "") -> void:
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	
 	output_mesh.material_override = material
-	
-	output_mesh.add_child(displayable)
+
+	add_child(output_mesh)
+	add_child(displayable)
 	
 func set_controller(p_controller: Controller) -> void:
 	controller = p_controller
@@ -65,14 +65,14 @@ func create_scene_node(parent: Node) -> Node:
 	# Create and attach input handler for centralized mouse event coordination
 	_create_input_handler()
 	
-	parent.add_child(output_mesh)
+	parent.add_child(self)
 	scene_node = parent
 
 	# Instruct director to set up initial layers
 	if controller.director and controller.model:
 		controller.director.instruct(controller.model)
 
-	return output_mesh
+	return self
 
 
 ## Adds a new layer to this displayable node
@@ -87,7 +87,7 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	layer.parent_displayable = self
 	
 	# Add layer as direct child of DisplayableNode (not in viewport)
-	output_mesh.add_child(layer)
+	add_child(layer)
 	
 	# Store the layer
 	layers[layer_name] = layer
@@ -111,35 +111,25 @@ func get_layer(layer_name: String) -> DisplayableLayer:
 func get_layers() -> Array[DisplayableLayer]:
 	return layers.values()
 
-## Removes a layer
-func remove_layer(layer_name: String) -> void:
-	if not layer_name in layers:
-		return
-	
-	var layer = layers[layer_name]
-	
-	# Disconnect signals
-	_deconnect_layer_signals(layer)
-	
-	# Remove composite sprite if exists
-	if layer_name in composite_sprites:
-		var sprite = composite_sprites[layer_name]
-		sprite.queue_free()
-		composite_sprites.erase(layer_name)
-	
-	# Remove and free the layer
-	if layer.get_parent():
-		layer.get_parent().remove_child(layer)
-	layer.queue_free()
-	layers.erase(layer_name)
-	
+func get_layers_at_uv(uv: Vector2) -> Array[DisplayableLayer]:
+	var layers_at_uv: Array[DisplayableLayer] = []
+
+	var clickables = displayable.clickables_at_uv(uv)
+	for clickable in clickables:
+		if clickable is NodePath:
+			var layer = get_node(clickable) as DisplayableLayer
+			print("DisplayableNode: layer at uv: ", layer.layer_name)
+			layers_at_uv.append(layer)
+
+	return layers_at_uv
+
 
 func recompose() -> void:
 	for layer in layers.values():
 		layer.recompose()
 	displayable.recompose()
 
-	output_mesh.mesh.size = character_size * displayable.get_padding_multiplier()
+	output_mesh.mesh.size = base_size * displayable.get_padding_multiplier()
 
 ## Gets all visible layers
 func get_visible_layers() -> Array:

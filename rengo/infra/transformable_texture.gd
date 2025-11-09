@@ -3,6 +3,7 @@ extends RefCounted
 
 var _position: Vector2 = Vector2.ZERO
 var _texture: Texture2D = null
+var _source = null
 
 func _init(p_texture: Texture2D, p_position: Vector2 = Vector2.ZERO) -> void:
 	_texture = p_texture
@@ -19,3 +20,9 @@ func get_texture() -> Texture2D:
 
 func set_texture(p_texture: Texture2D) -> void:
 	_texture = p_texture
+
+func get_source() -> Node:
+	return _source
+
+func set_source(p_source: Node) -> void:
+	_source = p_source

@@ -53,9 +53,11 @@ func get_output_pass() -> Pass:
 func get_pass_count() -> int:
 	return _pass_counter - 2 # -2 for _input_pass and _output_pass
 
-
 func get_padding_multiplier() -> float:
 	return _input_pass.get_padding_multiplier()
+
+func clickables_at_uv(uv: Vector2) -> Array:
+	return _input_pass.clickables_at_uv(uv)
 
 ## Clears all passes except the first one
 func clear_shader_passes() -> void:

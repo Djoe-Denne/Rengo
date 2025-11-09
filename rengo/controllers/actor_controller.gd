@@ -13,9 +13,6 @@ var model: Character = null
 ## The Actor view (pure display)
 var view: Actor = null
 
-## Actor name (for convenience)
-var name: String = ""
-
 ## Director that handles visual updates for this displayable
 var director: Director = null
 

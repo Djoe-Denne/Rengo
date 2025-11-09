@@ -84,7 +84,11 @@ func is_layer_visible() -> bool:
 func get_output_texture() -> TransformableTexture:
 	var texture = displayable.get_output_pass().get_output_texture()
 	texture.set_position(position)
+	texture.set_source(self)
 	return texture
+
+func clickables_at_uv(uv: Vector2) -> Array:
+	return displayable.clickables_at_uv(uv)
 
 func recompose() -> void:
 	displayable.recompose()

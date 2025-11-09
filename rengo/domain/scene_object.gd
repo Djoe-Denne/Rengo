@@ -2,7 +2,7 @@
 ## Provides auto-registration of ActionNodes to the scene controller
 ## Classes that implement this can automatically register actions without manual ctrl.action() calls
 class_name SceneObject
-extends RefCounted
+extends Node
 
 ## Reference to the parent VNScene (should be set by subclasses)
 var vn_scene: Node = null
