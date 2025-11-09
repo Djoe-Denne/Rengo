@@ -8,3 +8,6 @@ func get_model() -> DisplayableModel:
 func get_view() -> DisplayableNode:
 	push_error("get_view() must be implemented by subclass")
 	return null
+
+func handle_changes() -> void:
+	push_error("handle_changes() must be implemented by subclass")

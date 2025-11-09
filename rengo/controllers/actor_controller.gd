@@ -39,11 +39,29 @@ func plug_signals() -> void:
 	model.visible_changed.connect(view.on_model_visibility_changed)
 	model.rotation_changed.connect(view.on_model_rotation_changed)
 	model.scale_changed.connect(view.on_model_scale_changed)
-	model.state_changed.connect(director.instruct)
-	model.state_changed.connect(machinist.update_shaders)
-	model.outfit_changed.connect(director.instruct)
-	scene.plan_changed.connect(director.on_scene_changed)
+	model.outfit_changed.connect(_on_outfit_changed)
+	model.state_changed.connect(_on_model_state_changed)
+	scene.plan_changed.connect(_on_scene_plan_changed)
 
+func handle_changes() -> void:
+	for layer in view.get_layers():
+		director.handle_displayable(layer.displayable)
+		machinist.handle_displayable(layer.displayable)
+		layer.displayable.to_builder().build()
+	
+	director.handle_displayable(view.displayable)
+	machinist.handle_displayable(view.displayable)
+	view.displayable.to_builder().build()
+	view.recompose()
+
+func _on_model_state_changed(_model: DisplayableModel) -> void:
+	handle_changes()
+
+func _on_scene_plan_changed(plan_id: String) -> void:
+	handle_changes()
+
+func _on_outfit_changed(_model: DisplayableModel) -> void:
+	handle_changes()
 
 func get_model() -> Character:
 	return model

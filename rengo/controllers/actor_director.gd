@@ -69,7 +69,22 @@ func load_character(character: Character) -> bool:
 		push_warning("Failed to create costumier for: %s" % name)
 		return false
 
+	_create_displayable_layers()
+
 	return true
+
+func _create_displayable_layers() -> void:
+	var actor = controller.get_view()
+	if not actor:
+		return
+	
+	var all_layers = get_character_layers()
+	for layer_def in all_layers:
+		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
+		if layer_name == "":
+			continue
+		
+		actor.add_layer(layer_name, layer_def)
 
 
 func _load_character_acts(base_dirs: Array, name: String) -> bool:	

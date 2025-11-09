@@ -7,8 +7,7 @@ extends Node2D
 signal layer_hovered(layer_name: String)
 signal layer_unhovered(layer_name: String)
 signal layer_clicked(layer_name: String, event: InputEvent)
-signal layer_displayable_changed(layer_name: String)
-signal layer_padding_changed(displayable: Displayable, new_padding: float)
+
 
 ## Layer identifier
 var layer_name: String = ""
@@ -34,9 +33,6 @@ var displayable: Displayable = null
 
 var layer_definition: Dictionary = {}
 
-var _offset: Vector2 = Vector2.ZERO
-
-
 func _init(p_layer_name: String = "", p_layer_definition: Dictionary = {}) -> void:
 	layer_name = p_layer_name
 	name = "Layer_" + layer_name
@@ -51,8 +47,8 @@ func _init(p_layer_name: String = "", p_layer_definition: Dictionary = {}) -> vo
 	if "z" in layer_definition:
 		displayable.z_index = layer_definition.z
 
-	displayable.displayable_changed.connect(_on_displayable_changed)
-	displayable.padding_changed.connect(_on_padding_changed)
+	#displayable.displayable_changed.connect(_on_displayable_changed)
+	#displayable.padding_changed.connect(_on_padding_changed)
 
 	add_child(displayable)
 
@@ -60,15 +56,6 @@ func _ready() -> void:
 	# Input processing now handled by DisplayableNode parent
 	pass
 
-func _on_displayable_changed(displayable: Displayable) -> void:
-	print("DisplayableLayer: displayable changed")
-	layer_displayable_changed.emit(displayable)
-
-
-func _on_padding_changed(displayable: Displayable, new_padding: float) -> void:
-	print("DisplayableLayer: padding changed")
-	displayable.get_output_sprite().position = position + Vector2(new_padding, new_padding)
-	layer_padding_changed.emit(displayable, new_padding)
 
 func set_size(p_size: Vector2) -> void:
 	layer_size = p_size
@@ -82,10 +69,6 @@ func set_texture(tex: Texture2D) -> void:
 	# Store image for collision detection
 	texture_image = tex.get_image()
 	
-	# Set texture on the input sprite (first pass)
-	var input_sprite = displayable.get_input_sprite()
-	if input_sprite:
-		input_sprite.texture = tex
 
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:
@@ -98,15 +81,13 @@ func set_layer_visible(p_visible: bool) -> void:
 func is_layer_visible() -> bool:
 	return displayable.is_visible()
 
-func get_output_sprite() -> Sprite2D:
-	var sprite = displayable.get_output_sprite()
-	sprite.name = "Sprite2D_" + layer_name
-	sprite.position = position + _offset
-	return sprite
+func get_output_texture() -> TransformableTexture:
+	var texture = displayable.get_output_pass().get_output_texture()
+	texture.set_position(position)
+	return texture
 
-func set_offset(p_offset: Vector2) -> void:
-	_offset = p_offset
-	get_output_sprite().position = position + _offset
+func recompose() -> void:
+	displayable.recompose()
 
 ## Handles input events for raycast-based collision detection
 func _input(event: InputEvent) -> void:

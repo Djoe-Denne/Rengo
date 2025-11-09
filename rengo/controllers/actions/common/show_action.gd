@@ -57,3 +57,4 @@ func _process_action(_delta: float) -> void:
 func on_complete() -> void:
 	if controller and controller.has_method("update_model_visible"):
 		controller.update_model_visible(true)
+		controller.handle_changes()

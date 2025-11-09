@@ -93,7 +93,8 @@ static func _export_viewport_texture(viewport: SubViewport, output_dir: String) 
 		push_error("ViewportTextureExporter: Failed to save '%s' (error %d)" % [output_path, err])
 		return false
 	
-	print("ViewportTextureExporter: Exported '%s' (%dx%d) -> %s" % [
+	print("ViewportTextureExporter: Exported texture '%s' from viewport '%s' (%dx%d) -> %s" % [
+		texture,
 		viewport.name,
 		image.get_width(),
 		image.get_height(),
@@ -123,4 +124,3 @@ static func _sanitize_filename(path: String) -> String:
 	sanitized = sanitized.replace("|", "_")
 	
 	return sanitized
-

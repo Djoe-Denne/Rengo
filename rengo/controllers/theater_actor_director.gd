@@ -10,8 +10,12 @@ func _init() -> void:
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
 ## Creates or updates multi-layer sprite setup using unified template system
-func instruct(displayable_model: DisplayableModel) -> void:
+func handle_displayable(displayable: Displayable) -> void:
 	if not controller:
+		return
+
+	var displayable_model = controller.get_model()
+	if not displayable_model:
 		return
 	
 	# Ensure wardrobe is loaded for clothing layers
@@ -20,63 +24,55 @@ func instruct(displayable_model: DisplayableModel) -> void:
 			push_warning("Failed to load wardrobe for character: %s" % displayable_model.name)
 	
 	# new_states contains the current states from Character model
-	var current_states = displayable_model.get_states()
-	
-	# Update all layers based on current states (body + face + clothing)
-	_update_layers_unified(current_states)
+	var current_states = displayable_model.get_states().duplicate()
 
-## Updates all layers using unified template system (body + face + clothing)
-func _update_layers_unified(current_states: Dictionary) -> void:
+	if scene_model:
+		current_states["plan"] = scene_model.current_plan_id
+
+	# Update all layers based on current states (body + face + clothing)
+	if displayable.get_parent() and displayable.get_parent() is DisplayableLayer:
+		var layer = displayable.get_parent()
+		_update_layers_unified(layer, current_states)
+	else:
+		_compose_displayable(displayable)
+
+func _compose_displayable(displayable: Displayable) -> void:
 	var actor = controller.get_view()
 	if not actor:
 		return
 	
-	# Prepare state dictionary with plan for template resolution
-	var state = current_states.duplicate()
-	if scene_model:
-		state["plan"] = scene_model.current_plan_id
+	var layers = actor.get_visible_layers()
+
+	displayable.to_builder().clear_base_textures().clear_shaders()
+	for layer in layers:
+		var texture = layer.get_output_texture()
+		displayable.to_builder().add_base_texture(texture)
+
+## Updates all layers using unified template system (body + face + clothing)
+func _update_layers_unified(layer: DisplayableLayer, current_states: Dictionary) -> void:
+	var actor = controller.get_view()
+	if not actor:
+		return
 	
-	# Collect all layer definitions
-	var all_layers = get_character_layers()
+	var layer_def = layer.layer_definition
+	# Resolve template path
+	var image_template = layer_def.get("image", "")
+	var image_path = ResourceRepository.resolve_template_path(image_template, current_states)
 	
-	# Ensure all layers exist as DisplayableLayer instances
-	for layer_def in all_layers:
-		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
-		if layer_name == "":
-			continue
-		
-		# Create layer if it doesn't exist (using DisplayableNode's add_layer)
-		if not layer_name in actor.layers:
-			actor.add_layer(layer_name, layer_def)
-	
-	# Update all layers with resolved textures
-	for layer_def in all_layers:
-		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
-		if layer_name == "" or not layer_name in actor.layers:
-			continue
-		
-		var layer = actor.get_layer(layer_name)
-		if not layer:
-			continue
-		
-		# Resolve template path
-		var image_template = layer_def.get("image", "")
-		var image_path = ResourceRepository.resolve_template_path(image_template, state)
-		
-		# Load and apply texture
-		if image_path != "" and image_path != layer.texture_path:
-			var texture = _load_texture(actor, image_path)
-			if texture:
-				# Apply texture to DisplayableLayer
-				_apply_texture_to_displayable_layer(layer, texture, layer_def)
-				layer.texture_path = image_path
-			else:
-				# Hide layer if texture not found
-				layer.set_layer_visible(false)
+	# Load and apply texture
+	if image_path != "" and image_path != layer.texture_path:
+		var texture = _load_texture(actor, image_path)
+		if texture:
+			# Apply texture to DisplayableLayer
+			_apply_texture_to_displayable_layer(layer, texture)
+			layer.texture_path = image_path
+		else:
+			# Hide layer if texture not found
+			layer.set_layer_visible(false)
 
 
 ## Applies a texture to a DisplayableLayer and updates its size
-func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Texture2D, layer_def: Dictionary) -> void:
+func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Texture2D) -> void:
 	if not layer or not texture:
 		return
 	
@@ -90,31 +86,15 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 	
 	# Use PostProcessorBuilder to set up the layer's Displayable
 	# Clear shaders to ensure clean state, then set texture and size
-	PostProcessorBuilder.take(layer.displayable) \
-		.set_base_texture(texture) \
-		.set_size(texture.get_size()) \
-		.build()
-	
-	# Set texture for collision detection
-	layer.set_texture(texture)
+	layer.displayable.to_builder() \
+		.clear_base_textures() \
+		.add_base_texture(TransformableTexture.new(texture, Vector2.ZERO))
 	
 	# Set character size on actor for output mesh
 	actor.character_size = char_size
 	
 	# Make layer visible
 	layer.set_layer_visible(true)
-
-
-## Determines which state key to use for a given layer
-func _get_state_key_for_layer(current_states: Dictionary, layer_name: String) -> String:
-	# Map layer names to state keys
-	var layer_to_state = {
-		"body": "body",
-		"face": "expression",
-	}
-	
-	var state_name = layer_to_state.get(layer_name, layer_name)
-	return current_states.get(state_name, "default")
 
 
 ## Loads a texture using ImageRepository with base directory resolution

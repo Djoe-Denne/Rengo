@@ -7,7 +7,7 @@ extends ResourceNode
 
 
 ## Dictionary of all layers { layer_name: DisplayableLayer }
-var layers: Dictionary = {}
+var layers: Dictionary[String, DisplayableLayer] = {}
 
 ## Character size in centimeters (set by director)
 var character_size: Vector2 = Vector2(60, 170)
@@ -32,23 +32,13 @@ var max_padding: float = 0.0
 ## Dictionary to track sprites in compositing viewport { layer_name: Sprite2D }
 var composite_sprites: Dictionary = {}
 
-
 func _init(p_name: String = "") -> void:
 	super(p_name)
-
-func set_controller(p_controller: Controller) -> void:
-	controller = p_controller
-
-## Sets up the compositing system
-func _setup_viewport() -> void:
-	if displayable:
-		return  # Already set up
-	
 	# Create Displayable for compositing
 	displayable = Displayable.new(resource_name + "_composite")
 	
 	# Connect to padding changes
-	displayable.padding_changed.connect(_on_node_padding_changed)
+	#displayable.padding_changed.connect(_on_node_padding_changed)
 	
 	# Create output mesh
 	output_mesh = MeshInstance3D.new()
@@ -58,19 +48,19 @@ func _setup_viewport() -> void:
 	
 	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()
-	material.albedo_texture = displayable.get_output_viewport().get_texture()
+	material.albedo_texture = displayable.get_output_pass().get_output_texture().get_texture()
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	
 	output_mesh.material_override = material
 	
 	output_mesh.add_child(displayable)
-
+	
+func set_controller(p_controller: Controller) -> void:
+	controller = p_controller
 
 ## Creates the scene node - should be overridden by subclasses
 func create_scene_node(parent: Node) -> Node:
-	# Set up compositing system
-	_setup_viewport()
 	
 	# Create and attach input handler for centralized mouse event coordination
 	_create_input_handler()
@@ -110,14 +100,16 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	# Connect layer signals for interaction handling
 	_connect_layer_signals(layer)
 
-	displayable.add_input_sprite(layer.get_output_sprite())
+	#displayable.add_input_sprite(layer.get_output_sprite())
 	return layer
 
 
 ## Gets a layer by name
 func get_layer(layer_name: String) -> DisplayableLayer:
 	return layers.get(layer_name, null)
-
+	
+func get_layers() -> Array[DisplayableLayer]:
+	return layers.values()
 
 ## Removes a layer
 func remove_layer(layer_name: String) -> void:
@@ -141,8 +133,13 @@ func remove_layer(layer_name: String) -> void:
 	layer.queue_free()
 	layers.erase(layer_name)
 	
-	## TODO: displayable.remove_input_sprite(layer.displayable.create_output_sprite())
 
+func recompose() -> void:
+	for layer in layers.values():
+		layer.recompose()
+	displayable.recompose()
+
+	output_mesh.mesh.size = character_size * displayable.get_padding_multiplier()
 
 ## Gets all visible layers
 func get_visible_layers() -> Array:
@@ -166,8 +163,6 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.connect(_on_layer_hovered)
 	layer.layer_unhovered.connect(_on_layer_unhovered)
 	layer.layer_clicked.connect(_on_layer_clicked)
-	layer.layer_displayable_changed.connect(_on_layer_displayable_changed)
-	layer.layer_padding_changed.connect(_on_layer_padding_changed)
 
 
 func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
@@ -178,8 +173,6 @@ func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.disconnect(_on_layer_hovered)
 	layer.layer_unhovered.disconnect(_on_layer_unhovered)
 	layer.layer_clicked.disconnect(_on_layer_clicked)
-	layer.layer_displayable_changed.disconnect(_on_layer_displayable_changed)
-	layer.layer_padding_changed.disconnect(_on_layer_padding_changed)
 
 	
 func on_model_position_changed(new_position: Vector3) -> void:
@@ -223,41 +216,9 @@ func _on_layer_visibility_changed() -> void:
 			if not layer.is_layer_visible():
 				input_handler.clear_hover_if_layer(layer)
 
-func _on_layer_displayable_changed(_changed_displayable: Displayable) -> void:
-	# todo: get biggest sprite and adapt viewport siz
-	displayable.force_update()
-
 ## Gets the controller for this displayable node
 func get_controller():
 	return controller
-
-
-## Handles padding changes from node displayable or layer displayables
-func _on_layer_padding_changed(_displayable: Displayable, _new_padding: float) -> void:
-	if not output_mesh or not output_mesh.mesh or max_padding >= _displayable.get_max_padding():
-		return
-	
-	max_padding = _displayable.get_max_padding()
-	
-	# Update output_mesh size with padding
-	output_mesh.mesh.size = character_size * (1.0 + (max_padding / 100.0))
-	displayable.force_update()
-
-## Handles padding changes from node displayable or layer displayables
-func _on_node_padding_changed(_displayable: Displayable, _new_padding: float) -> void:
-	if not output_mesh or not output_mesh.mesh or max_padding >= _displayable.get_max_padding():
-		return
-	
-	max_padding = _displayable.get_max_padding()
-
-	for layer in layers.values():
-		var layer_position = layer.position
-		var layer_offset = layer_position * (max_padding / 100.0)
-		layer.set_offset(layer_offset)
-	
-	# Update output_mesh size with padding
-	output_mesh.mesh.size = character_size * (1.0 + (max_padding / 100.0))
-	displayable.force_update()
 
 
 ## Creates the input handler and attaches it

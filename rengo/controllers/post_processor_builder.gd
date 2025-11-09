@@ -8,23 +8,21 @@ extends RefCounted
 var displayable: Displayable = null
 
 ## Base texture to set on first pass (null means don't change)
-var base_texture: Texture2D = null
-var _update_texture: bool = false
-
-## Viewport size (will be padded by 25%, null means don't change)
-var viewport_size: Vector2i = Vector2i(0, 0)
-var _update_size: bool = false
+var base_textures: Array[TransformableTexture] = []
 
 ## Shader materials to ensure exist (in order)
 var vn_shaders: Array[VNShader] = []
 
 ## Whether to clear all shader passes before building
-var _clear_shaders: bool = false
-
 
 func _init(p_displayable: Displayable) -> void:
 	displayable = p_displayable
-	base_texture = p_displayable.get_input_sprite().texture
+	base_textures = p_displayable.get_input_pass().get_textures().duplicate()
+	var current_pass = p_displayable.get_input_pass()
+	while current_pass:
+		if current_pass.get_shader():
+			vn_shaders.append(current_pass.get_shader())
+		current_pass = current_pass.get_next()
 
 
 ## Static factory method
@@ -32,19 +30,15 @@ static func take(p_displayable: Displayable) -> PostProcessorBuilder:
 	return PostProcessorBuilder.new(p_displayable)
 
 
-## Sets the base texture on the first pass sprite
-func set_base_texture(texture: Texture2D) -> PostProcessorBuilder:
-	base_texture = texture
-	_update_texture = true
+## Adds a base texture to the list
+func add_base_texture(texture: TransformableTexture) -> PostProcessorBuilder:
+	base_textures.append(texture)
 	return self
 
-
-## Sets the viewport size (will add 25% padding)
-func set_size(size: Vector2i) -> PostProcessorBuilder:
-	viewport_size = size
-	_update_size = true
+## Clears all base textures
+func clear_base_textures() -> PostProcessorBuilder:
+	base_textures.clear()
 	return self
-
 
 ## Adds a shader material to the list (will be applied in order)
 func add_shader_pass(vn_shader: VNShader) -> PostProcessorBuilder:
@@ -54,7 +48,7 @@ func add_shader_pass(vn_shader: VNShader) -> PostProcessorBuilder:
 
 ## Clears all shader passes before applying new ones
 func clear_shaders() -> PostProcessorBuilder:
-	_clear_shaders = true
+	vn_shaders.clear()
 	return self
 
 
@@ -63,63 +57,61 @@ func build() -> Displayable:
 	if not displayable:
 		push_error("PostProcessorBuilder: No displayable set")
 		return null
-	
+	if vn_shaders.is_empty() and base_textures.is_empty():
+		return displayable
+
+	print("PostProcessorBuilder: ======================================")
+	print("PostProcessorBuilder: building displayable: ", displayable.name)
+
+	print("PostProcessorBuilder: ======================================")
+	displayable.clear()
+	var input_pass = displayable.get_input_pass()
+
+	var max_padding = _find_max_padding_from_vn_shaders()
+
+	input_pass.set_padding_multiplier(max_padding)
 	# 1. Update base texture if requested
-	if _update_texture and base_texture:
-		displayable.set_input_sprite_texture(base_texture)
-	
-	var base_size = viewport_size if _update_size else (base_texture.get_size() if base_texture else Vector2i(0, 0))
-	# 2. Update viewport size if requested
-	displayable.set_max_padding(_find_max_padding_from_vn_shaders())
-	
-	# 3. Clear shader passes if requested
-	if _clear_shaders:
-		displayable.clear_shader_passes()
-	
+	if not base_textures.is_empty():
+		for base_texture in base_textures:
+			print("PostProcessorBuilder: adding base texture: ", base_texture.get_texture().get_size())
+			input_pass.add_texture(base_texture)
+
+	print("PostProcessorBuilder: -------------------------------------")
 	# 4. Update shader passes incrementally
-	_update_shader_passes()
-	
+	_build_passes()
+	print("PostProcessorBuilder: -------------------------------------")
+
+	print("PostProcessorBuilder: displayable viewport size: ", displayable.get_output_pass().get_output_texture().get_texture().get_size())
+
+	print("PostProcessorBuilder: ======================================")
+
 	return displayable
 
 
 func _find_max_padding_from_vn_shaders() -> float:
-	var max_padding = displayable.get_max_padding()
+	var max_padding = 0.0
 	for vn_shader in vn_shaders:
 		max_padding = max(max_padding, vn_shader.get_padding())
-	return max_padding
+	return 1.0 + max_padding / 100.0
 
 ## Updates shader passes incrementally - only adds/removes what changed
-func _update_shader_passes() -> void:
-	if vn_shaders.is_empty():
-		return
-	
-	# Count existing shader passes (excluding first pass which is the base)
-	var existing_count = displayable.get_pass_count()
-	var needed_count = vn_shaders.size()
-	
+func _build_passes() -> void:	
 	# Get the first pass (base texture pass)
 	var current_pass = displayable.get_input_pass()
-	
+	var pass_count = 0
 	# Update existing passes or add new ones
-	for i in range(vn_shaders.size()):
-		# Skip the base pass. usefull for multi sprite displayables like @displayable_node
-		if i < existing_count:
-			# Update existing pass material
-			current_pass = current_pass.get_next()
-			if current_pass and current_pass.get_sprites().size() > 0:
-				current_pass.get_sprite(0).material = vn_shaders[i].get_shader_material()
-		else:
-			# Add new pass
-			current_pass = displayable.add_pass(vn_shaders[i].get_shader_material())
-	
-	# Remove excess passes
-	if existing_count > needed_count:
-		# Find the last pass we want to keep
-		current_pass = displayable.get_input_pass()
-		for i in range(needed_count):
-			current_pass = current_pass.get_next()
+	for shader in vn_shaders:
+		# Add new pass
+		var new_pass = Pass.new(displayable, shader)
+		new_pass.name = "pass_" + str(pass_count)
 		
-		# Remove all passes after this one
-		while current_pass and current_pass.get_next():
-			var to_remove = current_pass.get_next()
-			displayable.remove_pass(to_remove)
+		print("PostProcessorBuilder: added shader ", new_pass.name,": ", shader.shader_path)
+		pass_count += 1
+		new_pass.set_previous(current_pass)
+		current_pass = new_pass
+
+	
+	# Update the output pass
+	var output_pass = displayable.get_output_pass()
+	output_pass.name = "output_pass"
+	output_pass.set_previous(current_pass)
