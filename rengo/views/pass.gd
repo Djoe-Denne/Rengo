@@ -1,6 +1,6 @@
 ## Pass - Single node in the viewport pass chain (doubly-linked list)
 class_name Pass
-extends Node2D
+extends Node
 
 var _shader: VNShader = null
 var _viewport: SubViewport
@@ -9,6 +9,7 @@ var _padding_multiplier: float = 1.0
 var _previous: Pass = null
 var _next: Pass = null
 var _output_texture: TransformableTexture = null
+var _scale: Vector2 = Vector2.ONE
 
 func _init(displayable: Displayable, p_shader: VNShader = null) -> void:
 	_shader = p_shader
@@ -63,8 +64,14 @@ func set_padding_multiplier(p_padding_multiplier: float) -> void:
 
 func get_output_texture() -> TransformableTexture:
 	_output_texture = TransformableTexture.new(_viewport.get_texture(), Vector2.ZERO)
+	_output_texture.set_scale(_scale)
 	return _output_texture
 
+func get_scale() -> Vector2:
+	return _scale
+
+func set_scale(p_scale: Vector2) -> void:
+	_scale = p_scale
 
 func clear() -> void:
 	_textures.clear()
@@ -73,7 +80,8 @@ func clear() -> void:
 	_padding_multiplier = 1.0
 	_previous = null
 	_next = null
-	
+	_scale = Vector2.ONE
+
 func clear_viewport() -> void:
 	while _viewport.get_child_count() != 0:
 		_viewport.remove_child(_viewport.get_child(_viewport.get_child_count()-1))
@@ -120,6 +128,7 @@ func _create_sprite(texture: TransformableTexture, padding: Vector2) -> Sprite2D
 	var sprite = Sprite2D.new()
 	sprite.texture = texture.get_texture()
 	sprite.position = texture.get_position() + padding
+	sprite.scale = texture.get_scale()
 	sprite.centered = false
 	if texture.get_source() and texture.get_source() is DisplayableLayer:
 		sprite.set_meta("source", texture.get_source().get_path())

@@ -4,24 +4,17 @@ class_name DisplayableLayer
 extends Node2D
 
 ## Custom signals for interaction events
-signal layer_hovered(layer_name: String)
-signal layer_unhovered(layer_name: String)
-signal layer_clicked(layer_name: String, event: InputEvent)
+signal layer_hovered(layer: DisplayableLayer)
+signal layer_unhovered(layer: DisplayableLayer)
+signal layer_clicked(layer: DisplayableLayer, event: InputEvent)
+signal layer_visibility_changed(layer: DisplayableLayer)
+signal layer_changed(layer: DisplayableLayer)
 
 
 ## Layer identifier
 var layer_name: String = ""
 
 var layer_size: Vector2 = Vector2(0, 0)
-
-## Reference to parent displayable node (for callbacks)
-var parent_displayable = null  # DisplayableNode
-
-## Alpha threshold for collision detection (configurable per layer)
-var alpha_threshold: float = 0.5
-
-## Track mouse hover state
-var is_mouse_over: bool = false
 
 ## Cached alpha mask for performance
 var texture_image: Image = null
@@ -45,7 +38,7 @@ func _init(p_layer_name: String = "", p_layer_definition: Dictionary = {}) -> vo
 	displayable.scale = Vector2.ONE
 	
 	if "z" in layer_definition:
-		displayable.z_index = layer_definition.z
+		z_index = layer_definition.z
 
 	#displayable.displayable_changed.connect(_on_displayable_changed)
 	#displayable.padding_changed.connect(_on_padding_changed)
@@ -73,10 +66,7 @@ func set_texture(tex: Texture2D) -> void:
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:
 	displayable.set_visible(p_visible)
-
-	# Notify parent to rebuild root collision
-	if parent_displayable and parent_displayable.has_method("_on_layer_visibility_changed"):
-		parent_displayable._on_layer_visibility_changed()
+	layer_visibility_changed.emit(self)
 
 func is_layer_visible() -> bool:
 	return displayable.is_visible()
@@ -92,58 +82,17 @@ func clickables_at_uv(uv: Vector2) -> Array:
 
 func recompose() -> void:
 	displayable.recompose()
-
-## Handles input events for raycast-based collision detection
-func _input(event: InputEvent) -> void:
-	# Only process clicks - mouse motion is handled by DisplayableNode
-	if event is InputEventMouseButton:
-		if event.pressed and is_mouse_over:
-			layer_clicked.emit(layer_name, event)
-			get_viewport().set_input_as_handled()
+	layer_changed.emit(self)
 
 
 ## Triggers mouse enter event
 func _trigger_mouse_enter() -> void:
-	is_mouse_over = true
-	layer_hovered.emit(layer_name)
-	
-	# Notify InteractionHandler
-	if parent_displayable and parent_displayable.has_method("get_controller"):
-		var controller = parent_displayable.get_controller()
-		if controller:
-			InteractionHandler.on_hover_enter(controller, layer_name)
+	print("DisplayableLayer: _trigger_mouse_enter: ", layer_name)
+	layer_hovered.emit(self)
 
 
 ## Triggers mouse exit event
 func _trigger_mouse_exit() -> void:
-	is_mouse_over = false
-	layer_unhovered.emit(layer_name)
+	print("DisplayableLayer: _trigger_mouse_exit: ", layer_name)
+	layer_unhovered.emit(self)
 	
-	# Notify InteractionHandler
-	if parent_displayable and parent_displayable.has_method("get_controller"):
-		var controller = parent_displayable.get_controller()
-		if controller:
-			InteractionHandler.on_hover_exit(controller, layer_name)
-
-
-## Sets the alpha threshold for collision detection
-func set_alpha_threshold(threshold: float) -> void:
-	alpha_threshold = clamp(threshold, 0.0, 1.0)
-
-
-## ============================================================================
-## DEBUG VISUALIZATION
-## ============================================================================
-
-## Enables or disables debug visualization of collision area
-func set_debug_enabled(enabled: bool) -> void:
-	pass
-
-
-## Creates a visual debug outline for the quad bounds
-func _create_debug_outline() -> void:
-	pass
-
-## Removes debug outline visualization
-func _remove_debug_outline() -> void:
-	pass

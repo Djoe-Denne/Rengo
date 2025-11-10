@@ -60,10 +60,6 @@ func build() -> Displayable:
 	if vn_shaders.is_empty() and base_textures.is_empty():
 		return displayable
 
-	print("PostProcessorBuilder: ======================================")
-	print("PostProcessorBuilder: building displayable: ", displayable.name)
-
-	print("PostProcessorBuilder: ======================================")
 	displayable.clear()
 	var input_pass = displayable.get_input_pass()
 
@@ -73,17 +69,10 @@ func build() -> Displayable:
 	# 1. Update base texture if requested
 	if not base_textures.is_empty():
 		for base_texture in base_textures:
-			print("PostProcessorBuilder: adding base texture: ", base_texture.get_texture().get_size())
 			input_pass.add_texture(base_texture)
 
-	print("PostProcessorBuilder: -------------------------------------")
 	# 4. Update shader passes incrementally
 	_build_passes()
-	print("PostProcessorBuilder: -------------------------------------")
-
-	print("PostProcessorBuilder: displayable viewport size: ", displayable.get_output_pass().get_output_texture().get_texture().get_size())
-
-	print("PostProcessorBuilder: ======================================")
 
 	return displayable
 
@@ -104,8 +93,6 @@ func _build_passes() -> void:
 		# Add new pass
 		var new_pass = Pass.new(displayable, shader)
 		new_pass.name = "pass_" + str(pass_count)
-		
-		print("PostProcessorBuilder: added shader ", new_pass.name,": ", shader.shader_path)
 		pass_count += 1
 		new_pass.set_previous(current_pass)
 		current_pass = new_pass

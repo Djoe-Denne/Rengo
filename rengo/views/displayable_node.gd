@@ -84,7 +84,6 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	
 	# Create the layer
 	var layer = DisplayableLayer.new(layer_name, layer_def)
-	layer.parent_displayable = self
 	
 	# Add layer as direct child of DisplayableNode (not in viewport)
 	add_child(layer)
@@ -118,18 +117,20 @@ func get_layers_at_uv(uv: Vector2) -> Array[DisplayableLayer]:
 	for clickable in clickables:
 		if clickable is NodePath:
 			var layer = get_node(clickable) as DisplayableLayer
-			print("DisplayableNode: layer at uv: ", layer.layer_name)
 			layers_at_uv.append(layer)
 
 	return layers_at_uv
 
 
-func recompose() -> void:
+func recompose(recompose_all: bool = true) -> void:
+	var padding_multiplier = displayable.get_padding_multiplier()
 	for layer in layers.values():
-		layer.recompose()
+		if recompose_all:
+			layer.recompose()
+		padding_multiplier = max(padding_multiplier, layer.displayable.get_padding_multiplier())
 	displayable.recompose()
 
-	output_mesh.mesh.size = base_size * displayable.get_padding_multiplier()
+	output_mesh.mesh.size = base_size * padding_multiplier
 
 ## Gets all visible layers
 func get_visible_layers() -> Array:
@@ -153,7 +154,8 @@ func _connect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.connect(_on_layer_hovered)
 	layer.layer_unhovered.connect(_on_layer_unhovered)
 	layer.layer_clicked.connect(_on_layer_clicked)
-
+	layer.layer_visibility_changed.connect(_on_layer_visibility_changed)
+	layer.layer_changed.connect(_on_layer_changed)
 
 func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
 	if not layer:
@@ -163,8 +165,9 @@ func _deconnect_layer_signals(layer: DisplayableLayer) -> void:
 	layer.layer_hovered.disconnect(_on_layer_hovered)
 	layer.layer_unhovered.disconnect(_on_layer_unhovered)
 	layer.layer_clicked.disconnect(_on_layer_clicked)
+	layer.layer_visibility_changed.disconnect(_on_layer_visibility_changed)
+	layer.layer_changed.disconnect(_on_layer_changed)
 
-	
 func on_model_position_changed(new_position: Vector3) -> void:
 	if output_mesh:
 		output_mesh.position = new_position
@@ -182,29 +185,22 @@ func on_model_scale_changed(new_scale: Vector3) -> void:
 		output_mesh.scale = new_scale
 
 ## Layer signal handlers (for potential custom logic)
-func _on_layer_hovered(_layer_name: String) -> void:
-	# Layer already notified InteractionHandler, this is for custom logic
-	pass
+func _on_layer_hovered(layer: DisplayableLayer) -> void:
+	InteractionHandler.on_hover_enter(controller, layer.layer_name)
 
+func _on_layer_unhovered(layer: DisplayableLayer) -> void:
+	InteractionHandler.on_hover_exit(controller, layer.layer_name)
 
-func _on_layer_unhovered(_layer_name: String) -> void:
-	# Layer already notified InteractionHandler, this is for custom logic
-	pass
-
-
-func _on_layer_clicked(_layer_name: String, _event: InputEvent) -> void:
-	# Custom click handling if needed
+func _on_layer_clicked(layer: DisplayableLayer, event: InputEvent) -> void:
 	pass
 
 
 ## Called when a layer's visibility changes (kept for compatibility)
-func _on_layer_visibility_changed() -> void:
-	# Clear hover state if the layer that became invisible was hovered
-	if input_handler:
-		for layer_name in layers:
-			var layer = layers[layer_name]
-			if not layer.is_layer_visible():
-				input_handler.clear_hover_if_layer(layer)
+func _on_layer_visibility_changed(layer: DisplayableLayer) -> void:
+	pass
+
+func _on_layer_changed(layer: DisplayableLayer) -> void:
+	recompose(false)
 
 ## Gets the controller for this displayable node
 func get_controller():

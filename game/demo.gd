@@ -41,7 +41,7 @@ func _ready() -> void:
 
 	me_actor_ctrl.interaction(poke_interaction)  # Register interaction
 	#me_actor_ctrl.get_model().add_layer_state("body", "focused")
-	me_actor_ctrl.update_model_state("status", "focused")
+	#me_actor_ctrl.update_model_state("status", "focused")
 
 	# Build the story action queue
 	_play_story()
@@ -64,6 +64,7 @@ func _play_story() -> void:
 	# Scene 1: Me wakes up with bed hair
 	me_actor_ctrl.act({"body": "bedhair"})
 	me_actor_ctrl.show()
+	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
 	#var body_layer = me_actor_ctrl.view.get_layer("body")
 	#var mesh_instance = MeshInstance3D.new()
 	#mesh_instance.mesh = QuadMesh.new()
@@ -82,7 +83,6 @@ func _play_story() -> void:
 	other_actor_ctrl.pose("waving")
 	other_actor_ctrl.express("happy")
 	other_actor_ctrl.say("Good morning!")
-	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
 	
 	# Scene 3: Me cheers up - with animated expression change
 	me_actor_ctrl.express("neutral").over(0.3)  # Smooth expression transition

@@ -13,14 +13,14 @@ var params: Dictionary = {}
 var order: int = 0
 
 ## Padding percentage (0-100+)
-var padding: float = 25.0
+var padding: float = 0.0
 
 ## Shader material (cached)
 var shader_material: ShaderMaterial = null
 
 
 ## Constructor
-func _init(p_shader_path: String = "", p_params: Dictionary = {}, p_order: int = 0, p_padding: float = 25.0) -> void:
+func _init(p_shader_path: String = "", p_params: Dictionary = {}, p_order: int = 0, p_padding: float = 0.0) -> void:
 	shader_path = p_shader_path
 	params = p_params
 	order = p_order

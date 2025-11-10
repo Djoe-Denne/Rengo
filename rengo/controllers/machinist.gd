@@ -34,15 +34,10 @@ func handle_displayable(displayable: Displayable) -> void:
 	if displayable.get_parent() and displayable.get_parent() is DisplayableLayer:
 		var layer = displayable.get_parent()
 		var active_shaders = get_active_shaders_on_layers(layer)
-		if active_shaders.is_empty():
-			return
 		update_displayable_shaders(displayable, active_shaders)
 	else:
 		var active_shaders = get_active_shaders_on_node()
-		if active_shaders.is_empty():
-			return
 		update_displayable_shaders(displayable, active_shaders)
-
 
 ## Updates shaders based on current states
 func get_active_shaders_on_node() -> Array[VNShader]:
@@ -65,8 +60,7 @@ func get_active_shaders_on_node() -> Array[VNShader]:
 			var shader_list = shader_config[state_value_str]
 			if shader_list is Array:
 				for vn_shader in shader_list:
-					if vn_shader is VNShader:
-						active_shaders.append(vn_shader)
+					active_shaders.append(vn_shader)
 	
 	return active_shaders
 
@@ -93,24 +87,28 @@ func get_active_shaders_on_layers(layer: DisplayableLayer) -> Array[VNShader]:
 		var notes = annotation.get_notes()
 		for note in notes:
 			if note in shader_config:
-				active_shaders.append(shader_config[note])
+				var shader_list = shader_config[note]
+				if shader_list is Array:
+					for vn_shader in shader_list:
+						active_shaders.append(vn_shader)
 
 	return active_shaders
 
 ## Updates shaders for a specific displayable using viewport passes
 func update_displayable_shaders(displayable: Displayable, active_shaders: Array[VNShader]) -> void:
-	if not displayable or active_shaders.is_empty():
+	if not displayable:
 		return
 	
 	# Sort VNShader objects by order
 	var sorted_shaders = active_shaders.duplicate()
 	sorted_shaders.sort_custom(func(a: VNShader, b: VNShader): return a.get_order() < b.get_order())
 	
-	displayable.to_builder().clear_shaders()
+	var builder = displayable.to_builder()
+	builder.clear_shaders()
 	# Add all VNShader objects in order
 	for vn_shader in sorted_shaders:
 		var shader_material = vn_shader.get_shader_material()
 		if not shader_material:
 			shader_material = ShaderRepository.create_shader_material(vn_shader, controller.get_model())
 			vn_shader.set_shader_material(shader_material)
-		displayable.to_builder().add_shader_pass(vn_shader)
+		builder.add_shader_pass(vn_shader)
