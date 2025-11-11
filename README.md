@@ -27,7 +27,7 @@ Unlike traditional visual novel engines, GENPY uses pure GDScript code instead o
 Base class for all scene resources (characters, backgrounds, cameras, etc.)
 
 **Key Properties:**
-- `resource_name: String` - Unique identifier
+- `name: String` - Unique identifier
 - `position: Vector3` - Normalized position (x, y in [0-1], z for depth)
 - `visible: bool` - Visibility state
 - `scene_node: Node` - Reference to the Godot node in scene tree
@@ -256,7 +256,7 @@ class ClickHandler:
         return event.type == "click" and event.pressed
     
     func handle(resource, event):
-        print("Character clicked: ", resource.resource_name)
+        print("Character clicked: ", resource.name)
         print("Position: ", event.position)
 
 # Add to a character

@@ -37,7 +37,7 @@ Successfully refactored the VN engine architecture to follow proper MVC pattern 
 
 **`scripts/domain/resource_node.gd`**
 - REMOVED: `position` and `visible` properties (now live in models)
-- KEPT: `scene_node`, `resource_name` (view-specific)
+- KEPT: `scene_node`, `name` (view-specific)
 - Methods `update_position()` and `update_visibility()` now must be overridden by subclasses
 - Pure view coordination - no state properties
 

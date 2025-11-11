@@ -10,6 +10,7 @@ signal layer_clicked(layer: DisplayableLayer, event: InputEvent)
 signal layer_visibility_changed(layer: DisplayableLayer)
 signal layer_changed(layer: DisplayableLayer)
 
+var hovered: bool = false
 
 ## Layer identifier
 var layer_name: String = ""
@@ -25,6 +26,7 @@ var texture_path: String = ""
 var displayable: Displayable = null
 
 var layer_definition: Dictionary = {}
+
 
 func _init(p_layer_name: String = "", p_layer_definition: Dictionary = {}) -> void:
 	layer_name = p_layer_name
@@ -71,28 +73,24 @@ func set_layer_visible(p_visible: bool) -> void:
 func is_layer_visible() -> bool:
 	return displayable.is_visible()
 
+func is_hovered() -> bool:
+	return hovered
+
+func set_hovered(p_hovered: bool) -> void:
+	if hovered == p_hovered:
+		return
+	hovered = p_hovered
+	if p_hovered:
+		layer_hovered.emit(self)
+	else:
+		layer_unhovered.emit(self)
+
 func get_output_texture() -> TransformableTexture:
 	var texture = displayable.get_output_pass().get_output_texture()
 	texture.set_position(position)
 	texture.set_source(self)
 	return texture
 
-func clickables_at_uv(uv: Vector2) -> Array:
-	return displayable.clickables_at_uv(uv)
-
 func recompose() -> void:
 	displayable.recompose()
 	layer_changed.emit(self)
-
-
-## Triggers mouse enter event
-func _trigger_mouse_enter() -> void:
-	print("DisplayableLayer: _trigger_mouse_enter: ", layer_name)
-	layer_hovered.emit(self)
-
-
-## Triggers mouse exit event
-func _trigger_mouse_exit() -> void:
-	print("DisplayableLayer: _trigger_mouse_exit: ", layer_name)
-	layer_unhovered.emit(self)
-	

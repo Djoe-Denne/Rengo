@@ -43,86 +43,10 @@ static func raycast_to_quad(camera: Camera3D, mouse_pos: Vector2, quad_transform
 	}
 
 
-## Checks if the texture alpha at given UV coordinate exceeds the threshold
-## uv: Vector2 in 0-1 range
-## threshold: Alpha value threshold (0.0-1.0)
-## Returns true if alpha > threshold
-static func check_texture_alpha_at_uv(texture: Image, viewport_mouse_pos: Vector2, threshold: float = 0.5) -> bool:
-	if not texture:
-		push_warning("CollisionHelper: texture is null")
-		return false
-	
-	# Convert viewport mouse position to UV
-	var uv = viewport_mouse_pos
-	# Clamp UV to valid range
-	uv.x = clamp(uv.x, 0.0, 1.0)
-	uv.y = clamp(uv.y, 0.0, 1.0)
-	
-	# Convert UV to pixel coordinates
-	var texture_size = texture.get_size()
-	var pixel_x = int(uv.x * texture_size.x)
-	var pixel_y = int(uv.y * texture_size.y)
-	
-	# Clamp to valid pixel range (prevent edge case overflow)
-	pixel_x = clamp(pixel_x, 0, texture_size.x - 1)
-	pixel_y = clamp(pixel_y, 0, texture_size.y - 1)
-	
-	# Get pixel color and check alpha
-	var pixel_color = texture.get_pixel(pixel_x, pixel_y)
-	
-	return pixel_color.a > threshold
-
-
-## Converts a 3D world hit position to UV coordinates in quad space
-## This is a utility function if you already have the hit position from another raycast
-static func get_uv_from_world_hit(hit_position: Vector3, quad_transform: Transform3D, quad_size: Vector2) -> Vector2:
-	# Convert world position to local quad space
-	var local_hit = get_local_from_world_hit(hit_position, quad_transform, quad_size)
-	
-	# Convert local position to UV coordinates (0-1 range)
-	var uv = Vector2(
-		(local_hit.x / quad_size.x) + 0.5,
-		(-local_hit.y / quad_size.y) + 0.5
-	)
-	
-	return uv
-
-
-static func get_local_from_world_hit(hit_position: Vector3, quad_transform: Transform3D, quad_size: Vector2) -> Vector3:
-	# Convert world position to local quad space
-	return quad_transform.affine_inverse() * hit_position
-
-
-static func is_hover_non_transparent(viewport_size: Vector2, padding: Vector2, child: Sprite2D, uv: Vector2) -> bool:
-	if not child:
-		push_warning("CollisionHelper: child is null")
-		return false
-	
-	var texture = child.get_texture()
+static func is_hover_non_transparent(texture: Texture2D, coords: Vector2) -> bool:
 	if not texture:
 		push_warning("CollisionHelper: texture is null")
 		return false
 
-
-	var coords: Vector2 = (viewport_size - padding) * uv
-	# Get texture dimensions
-	var texture_size = texture.get_size()
-	var sprite_rect = Rect2(child.position - padding/2, texture_size)
-
-	# Check if position is within sprite bounds
-	if not sprite_rect.has_point(coords):
-		return false
-	
-	# Convert viewport position to texture pixel coordinates
-	var texture_pos = coords - sprite_rect.position
-	var pixel_x = int(texture_pos.x)
-	var pixel_y = int(texture_pos.y)
-	
-	# Clamp to valid pixel range
-	pixel_x = clamp(pixel_x, 0, int(texture_size.x) - 1)
-	pixel_y = clamp(pixel_y, 0, int(texture_size.y) - 1)
-
-	# Get pixel color and check alpha
-	var pixel_color = texture.get_image().get_pixel(pixel_x, pixel_y)
-	
-	return pixel_color.a > 0.5
+	var image = texture.get_image()
+	return image.get_pixel(int(coords.x), int(coords.y)).a > 0.5

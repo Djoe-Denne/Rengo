@@ -5,9 +5,6 @@
 class_name ResourceNode
 extends SceneObject
 
-## Unique identifier for this resource
-var resource_name: String = ""
-
 ## Reference to the actual Godot node in the scene tree
 var scene_node: Node = null
 
@@ -16,7 +13,7 @@ var registered_interactions: Dictionary = {}
 
 
 func _init(p_name: String = "") -> void:
-	resource_name = p_name
+	name = p_name
 
 
 ## Creates and auto-registers a ShowAction to make this resource visible

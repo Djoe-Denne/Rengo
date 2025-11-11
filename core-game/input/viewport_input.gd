@@ -1,4 +1,4 @@
-
+class_name ViewportInput
 extends Node3D
 
 # Used for checking if the mouse is inside the Area3D.
@@ -8,11 +8,15 @@ var last_event_pos2D = null
 # The time of the last event in seconds since engine start.
 var last_event_time: float = -1.0
 
+var active = false
+
+var node_displayable_node = null
 var node_viewport = null
 var node_quad = null
 var node_area = null
 
-func _init(p_node_viewport: SubViewport, p_node_quad: MeshInstance3D, p_node_area: Area3D):
+func _init(p_node_displayable_node: DisplayableNode, p_node_viewport: SubViewport, p_node_quad: MeshInstance3D, p_node_area: Area3D):
+	node_displayable_node = p_node_displayable_node
 	node_viewport = p_node_viewport
 	node_quad = p_node_quad
 	node_area = p_node_area
@@ -22,15 +26,27 @@ func _ready():
 	node_area.mouse_exited.connect(_mouse_exited_area)
 	node_area.input_event.connect(_mouse_input_event)
 
+func set_active(p_active: bool) -> void:
+	active = p_active
+
+func is_active() -> bool:
+	return active
+
 func _mouse_entered_area():
+	if not is_active():
+		return
 	is_mouse_inside = true
 
 
 func _mouse_exited_area():
+	if not is_active():
+		return
 	is_mouse_inside = false
 
 
 func _unhandled_input(event):
+	if not is_active():
+		return
 	# Check if the event is a non-mouse/non-touch event
 	for mouse_event in [InputEventMouseButton, InputEventMouseMotion, InputEventScreenDrag, InputEventScreenTouch]:
 		if is_instance_of(event, mouse_event):
@@ -41,6 +57,8 @@ func _unhandled_input(event):
 
 
 func _mouse_input_event(_camera: Camera3D, event: InputEvent, event_position: Vector3, _normal: Vector3, _shape_idx: int):
+	if not is_active():
+		return
 	# Get mesh size to detect edges and make conversions. This code only support PlaneMesh and QuadMesh.
 	var quad_mesh_size = node_quad.mesh.size
 

@@ -62,9 +62,6 @@ func set_padding_multiplier(p_padding_multiplier: float) -> void:
 	for texture in textures:
 		texture.set_scale(Vector2(1.0 + p_padding_multiplier / 100.0, 1.0 + p_padding_multiplier / 100.0))
 
-func clickables_at_uv(uv: Vector2) -> Array:
-	return _input_pass.clickables_at_uv(uv)
-
 ## Clears all passes except the first one
 func clear_shader_passes() -> void:
 	if not _input_pass:

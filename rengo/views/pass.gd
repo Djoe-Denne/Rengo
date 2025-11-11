@@ -33,6 +33,9 @@ func get_texture(p_index: int) -> TransformableTexture:
 		return null
 	return _textures[p_index]
 
+func get_sub_viewport() -> SubViewport:
+	return _viewport
+
 func get_previous() -> Pass:
 	return _previous
 
@@ -95,18 +98,6 @@ func _compute_viewport_size() -> void:
 			viewport_size.y = texture.get_texture().get_size().y
 	_viewport.size = viewport_size * _padding_multiplier
 
-func clickables_at_uv(uv: Vector2) -> Array:
-	var result: Array = []
-	var children: Array = _viewport.get_children().filter(func(child): return child is Sprite2D).map(func(child): return child as Sprite2D)
-	for child in children:
-		if CollisionHelper.is_hover_non_transparent(_viewport.size, _get_padding(), child, uv):
-			var sprite: Sprite2D = child
-			if sprite.has_meta("source"):
-				result.append(child.get_meta("source"))
-			else:
-				result.append(true)
-	return result
-
 func recompose() -> void:
 	# clear viewport
 	clear_viewport()
@@ -125,11 +116,7 @@ func _get_padding() -> Vector2:
 	return (_viewport.size - Vector2i(_viewport.size / _padding_multiplier))
 
 func _create_sprite(texture: TransformableTexture, padding: Vector2) -> Sprite2D:
-	var sprite = Sprite2D.new()
-	sprite.texture = texture.get_texture()
-	sprite.position = texture.get_position() + padding
+	var sprite = VNSprite.new(texture, texture.get_position() + padding)
 	sprite.scale = texture.get_scale()
 	sprite.centered = false
-	if texture.get_source() and texture.get_source() is DisplayableLayer:
-		sprite.set_meta("source", texture.get_source().get_path())
 	return sprite

@@ -36,9 +36,9 @@ func set_scene_model(p_scene_model: Scene) -> void:
 
 ## Adds a resource to the scene
 func add_resource(resource) -> void:  # ResourceNode
-	if resource.resource_name in resources:
-		push_warning("Resource '%s' already exists, replacing it" % resource.resource_name)
-	resources[resource.resource_name] = resource
+	if resource.name in resources:
+		push_warning("Resource '%s' already exists, replacing it" % resource.name)
+	resources[resource.name] = resource
 	resource.vn_scene = scene_node
 
 

@@ -19,7 +19,7 @@ func _init(p_name: String = "camera") -> void:
 ## Creates a Camera2D node
 func create_scene_node(parent: Node) -> Node:
 	var camera = Camera2D.new()
-	camera.name = "VNCamera_" + resource_name
+	camera.name = "VNCamera_" + name
 	camera.enabled = true
 	
 	parent.add_child(camera)
