@@ -9,6 +9,8 @@ extends ResourceNode
 ## Dictionary of all layers { layer_name: DisplayableLayer }
 var layers: Dictionary[String, DisplayableLayer] = {}
 
+var root_layers: Array[DisplayableLayer] = []
+
 ## Base size in centimeters (set by director)
 var base_size: Vector2 = Vector2(100, 100)
 
@@ -75,7 +77,7 @@ func create_scene_node(parent: Node) -> Node:
 
 
 ## Adds a new layer to this displayable node
-## layer_def contains configuration: { "layer": name, "z": z_index, "anchor": {x, y}, ... }
+## layer_def contains configuration: { "layer": name, "z": z_index, "anchor": {x, y}, "parent": parent_name, ... }
 func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLayer:
 	if layer_name in layers:
 		push_warning("DisplayableNode: Layer '%s' already exists, returning existing" % layer_name)
@@ -84,17 +86,32 @@ func add_layer(layer_name: String, layer_def: Dictionary = {}) -> DisplayableLay
 	# Create the layer
 	var layer = DisplayableLayer.new(layer_name, layer_def)
 	
-	# Add layer as direct child of DisplayableNode (not in viewport)
-	add_child(layer)
-	
-	# Store the layer
+	# Store the layer in flat dictionary for easy lookup
 	layers[layer_name] = layer
 	
-	# Store anchor information for compositing
+	# Store anchor information for compositing (relative to parent if any)
 	if "anchor" in layer_def:
 		var anchor = layer_def.anchor
 		layer.position = Vector2(anchor.get("x", 0.0), anchor.get("y", 0.0))
 	
+	# Handle parent-child relationship
+	if "parent" in layer_def:
+		var parent_name = layer_def.parent
+		var parent_layer = get_layer(parent_name)
+		if parent_layer:
+			# Add layer as child of parent in scene tree
+			parent_layer.add_child(layer)
+			# Add to parent's child list
+			parent_layer.add_child_layer(layer)
+		else:
+			push_warning("DisplayableNode: Parent layer '%s' not found for layer '%s', adding as root" % [parent_name, layer_name])
+			# Add as direct child if parent not found
+			add_child(layer)
+			root_layers.append(layer)
+	else:
+		# Add layer as direct child of DisplayableNode (root layer)
+		add_child(layer)
+		root_layers.append(layer)
 	# Connect layer signals for interaction handling
 	_connect_layer_signals(layer)
 
@@ -108,6 +125,14 @@ func get_layer(layer_name: String) -> DisplayableLayer:
 	
 func get_layers() -> Array[DisplayableLayer]:
 	return layers.values()
+
+## Gets only root layers (layers without parent)
+func get_root_layers() -> Array[DisplayableLayer]:
+	var root_layers: Array[DisplayableLayer] = []
+	for layer in layers.values():
+		if layer.parent_layer == null:
+			root_layers.append(layer)
+	return root_layers
 
 ## Gets all visible layers
 func get_visible_layers() -> Array:
@@ -127,7 +152,8 @@ func recompose(recompose_all: bool = true) -> void:
 	for layer in layers.values():
 		if recompose_all:
 			layer.recompose()
-		padding_multiplier = max(padding_multiplier, layer.displayable.get_padding_multiplier())
+		if layer in root_layers:
+			padding_multiplier = max(padding_multiplier, layer.displayable.get_padding_multiplier())
 	displayable.recompose()
 
 	output_mesh.mesh.size = base_size * padding_multiplier

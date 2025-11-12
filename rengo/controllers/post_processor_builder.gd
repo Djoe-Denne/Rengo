@@ -8,10 +8,12 @@ extends RefCounted
 var displayable: Displayable = null
 
 ## Base texture to set on first pass (null means don't change)
-var base_textures: Array[TransformableTexture] = []
+var base_textures: Array[VNTexture] = []
 
 ## Shader materials to ensure exist (in order)
 var vn_shaders: Array[VNShader] = []
+
+var is_padding_included: bool = true
 
 ## Whether to clear all shader passes before building
 
@@ -31,7 +33,7 @@ static func take(p_displayable: Displayable) -> PostProcessorBuilder:
 
 
 ## Adds a base texture to the list
-func add_base_texture(texture: TransformableTexture) -> PostProcessorBuilder:
+func add_base_texture(texture: VNTexture) -> PostProcessorBuilder:
 	base_textures.append(texture)
 	return self
 
@@ -51,6 +53,10 @@ func clear_shaders() -> PostProcessorBuilder:
 	vn_shaders.clear()
 	return self
 
+
+func dont_include_padding() -> PostProcessorBuilder:
+	is_padding_included = false
+	return self
 
 ## Applies all changes to the Displayable incrementally
 func build() -> Displayable:
@@ -78,6 +84,8 @@ func build() -> Displayable:
 
 
 func _find_max_padding_from_vn_shaders() -> float:
+	if not is_padding_included:
+		return 1.0
 	var max_padding = 0.0
 	for vn_shader in vn_shaders:
 		max_padding = max(max_padding, vn_shader.get_padding())

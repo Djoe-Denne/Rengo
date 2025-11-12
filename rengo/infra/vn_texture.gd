@@ -1,10 +1,12 @@
-class_name TransformableTexture
+class_name VNTexture
 extends RefCounted
 
 var _position: Vector2 = Vector2.ZERO
 var _texture: Texture2D = null
 var _source = null
 var _scale: Vector2 = Vector2.ONE
+var _children: Array[VNTexture] = []
+var _padding: Vector2 = Vector2.ZERO
 
 func _init(p_texture: Texture2D, p_position: Vector2 = Vector2.ZERO) -> void:
 	_texture = p_texture
@@ -33,3 +35,19 @@ func get_scale() -> Vector2:
 
 func set_scale(p_scale: Vector2) -> void:
 	_scale = p_scale
+
+func add_child_texture(child: VNTexture) -> void:
+	if child and not child in _children:
+		_children.append(child)
+
+func get_children() -> Array[VNTexture]:
+	return _children
+
+func has_children() -> bool:
+	return _children.size() > 0
+
+func get_padding() -> Vector2:
+	return _padding
+
+func set_padding(p_padding: Vector2) -> void:
+	_padding = p_padding

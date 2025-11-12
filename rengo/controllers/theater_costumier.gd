@@ -57,16 +57,23 @@ func get_layers(panoplie: Array, state: Dictionary) -> Dictionary:
 		var image_path = clothing.get("image", "")
 		var z = clothing.get("z", 1)
 		var anchor = clothing.get("anchor", {"x": 0, "y": 0})
+		var parent = clothing.get("parent", "")
 		
 		# Use ResourceRepository for unified template resolution
 		image_path = ResourceRepository.resolve_template_path(image_path, state)
 		
 		# Add layer data
-		layers[clothing_id] = {
+		var layer_data = {
 			"image": image_path,
 			"z": z,
 			"anchor": anchor
 		}
+		
+		# Include parent field if specified
+		if parent != "":
+			layer_data["parent"] = parent
+		
+		layers[clothing_id] = layer_data
 	
 	return layers
 

@@ -1,7 +1,8 @@
 faces:
   - id: "face"
     layer: "face"
+    parent: "body"
     image: "images/{plan}/{orientation}/faces/{expression}.png"
     z: 1
-    anchor: {x: 500, y: 500}
+    anchor: {x: 100, y: 500}
 

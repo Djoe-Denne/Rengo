@@ -64,7 +64,7 @@ func _play_story() -> void:
 	# Scene 1: Me wakes up with bed hair
 	me_actor_ctrl.act({"body": "bedhair"})
 	me_actor_ctrl.show()
-	me_actor_ctrl.interact("poke").on("casual").on("face").on("body")
+	me_actor_ctrl.interact("poke").on("body").on("face")
 	#var body_layer = me_actor_ctrl.view.get_layer("body")
 	#var mesh_instance = MeshInstance3D.new()
 	#mesh_instance.mesh = QuadMesh.new()

@@ -17,6 +17,12 @@ var layer_name: String = ""
 
 var layer_size: Vector2 = Vector2(0, 0)
 
+## Parent layer (null if root layer)
+var parent_layer: DisplayableLayer = null
+
+## Child layers
+var child_layers: Array[DisplayableLayer] = []
+
 ## Cached alpha mask for performance
 var texture_image: Image = null
 
@@ -85,10 +91,28 @@ func set_hovered(p_hovered: bool) -> void:
 	else:
 		layer_unhovered.emit(self)
 
-func get_output_texture() -> TransformableTexture:
+func set_parent_layer(parent: DisplayableLayer) -> void:
+	parent_layer = parent
+
+func add_child_layer(child: DisplayableLayer) -> void:
+	if child and not child in child_layers:
+		child_layers.append(child)
+		child.set_parent_layer(self)
+
+func get_child_layers() -> Array[DisplayableLayer]:
+	return child_layers
+
+func get_output_texture() -> VNTexture:
 	var texture = displayable.get_output_pass().get_output_texture()
 	texture.set_position(position)
 	texture.set_source(self)
+	
+	# Add child textures to create hierarchy
+	for child_layer in child_layers:
+		if child_layer.is_layer_visible():
+			var child_texture = child_layer.get_output_texture()
+			texture.add_child_texture(child_texture)
+	
 	return texture
 
 func recompose() -> void:

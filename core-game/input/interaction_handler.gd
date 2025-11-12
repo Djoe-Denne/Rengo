@@ -153,6 +153,7 @@ func on_hover_exit(controller, layer_name = null) -> void:
 	
 	# Get all active interactions for this controller
 	if not controller in _active_interactions:
+		print("InteractionHandler.on_hover_exit: no active interactions for controller: ", controller)
 		return
 	
 	for interaction_name in _active_interactions[controller]:
@@ -166,7 +167,6 @@ func on_hover_exit(controller, layer_name = null) -> void:
 		_focused_resources[controller] = _focused_resources.get(controller, 0) - 1
 
 		if _focused_resources[controller] < 0:
-			push_error("InteractionHandler: Controller %s has negative focused resources" % controller)
 			_focused_resources[controller] = 0
 
 		if interaction.is_root_active_on() and _focused_resources[controller] != 0:
@@ -177,7 +177,6 @@ func on_hover_exit(controller, layer_name = null) -> void:
 		for input in hover_inputs:
 			# Call out_callback with layer parameter
 			if input.out_callback.is_valid():
-				print("InteractionHandler.on_hover_exit: calling out_callback for layer: ", layer_name)
 				input.out_callback.call(controller, layer_name)
 
 

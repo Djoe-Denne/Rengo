@@ -79,12 +79,60 @@ func _create_displayable_layers() -> void:
 		return
 	
 	var all_layers = get_character_layers()
+	
+	# Sort layers to ensure parent layers are created before child layers
+	all_layers = _sort_layers_by_hierarchy(all_layers)
+	
 	for layer_def in all_layers:
 		var layer_name = layer_def.get("layer", layer_def.get("id", ""))
 		if layer_name == "":
 			continue
 		
 		actor.add_layer(layer_name, layer_def)
+
+## Sorts layers so that parent layers come before child layers
+func _sort_layers_by_hierarchy(layers: Array) -> Array:
+	var sorted_layers = []
+	var remaining_layers = layers.duplicate()
+	var max_iterations = layers.size() * 2  # Prevent infinite loops
+	var iteration = 0
+	
+	while remaining_layers.size() > 0 and iteration < max_iterations:
+		iteration += 1
+		var added_this_iteration = []
+		
+		for layer_def in remaining_layers:
+			var parent_name = layer_def.get("parent", "")
+			
+			# If no parent, it's a root layer - add it
+			if parent_name == "":
+				sorted_layers.append(layer_def)
+				added_this_iteration.append(layer_def)
+				continue
+			
+			# Check if parent has already been added
+			var parent_added = false
+			for sorted_layer in sorted_layers:
+				var sorted_layer_name = sorted_layer.get("layer", sorted_layer.get("id", ""))
+				if sorted_layer_name == parent_name:
+					parent_added = true
+					break
+			
+			# If parent is added, we can add this layer
+			if parent_added:
+				sorted_layers.append(layer_def)
+				added_this_iteration.append(layer_def)
+		
+		# Remove added layers from remaining
+		for added_layer in added_this_iteration:
+			remaining_layers.erase(added_layer)
+	
+	# If any layers remain, they have missing parents - add them anyway
+	if remaining_layers.size() > 0:
+		push_warning("Some layers have missing parent references, adding them as root layers")
+		sorted_layers.append_array(remaining_layers)
+	
+	return sorted_layers
 
 
 func _load_character_acts(base_dirs: Array, name: String) -> bool:	
@@ -147,13 +195,19 @@ func get_panoplie() -> Array:
 	# Convert clothing dictionary to array format
 	for clothing_id in clothing_layers_dict.keys():
 		var clothing_layer = clothing_layers_dict[clothing_id]
-		all_layers.append({
+		var layer_dict = {
 			"id": clothing_id,
 			"layer": clothing_id,
 			"image": clothing_layer.image,
 			"z": clothing_layer.z,
 			"anchor": clothing_layer.get("anchor", {"x": 0, "y": 0})
-		})
+		}
+		
+		# Include parent field if specified
+		if "parent" in clothing_layer:
+			layer_dict["parent"] = clothing_layer.parent
+		
+		all_layers.append(layer_dict)
 
 	return all_layers
 

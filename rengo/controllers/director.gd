@@ -21,11 +21,7 @@ func set_scene_model(p_scene_model: Scene) -> void:
 	scene_model = p_scene_model
 	
 
-## Observer callback - called when Scene model changes
-func on_scene_changed(plan_id: String) -> void:
-	instruct(controller.get_model())
-
 ## Instructs a displayable to change its appearance/state
 ## Must be implemented by subclasses
-func instruct(displayable_model: DisplayableModel) -> void:
+func handle_displayable(displayable: Displayable) -> void:
 	push_error("instruct() must be implemented by subclass")

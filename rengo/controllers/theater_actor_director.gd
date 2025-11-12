@@ -41,12 +41,33 @@ func _compose_displayable(displayable: Displayable) -> void:
 	if not actor:
 		return
 	
-	var layers = actor.get_visible_layers()
-
+	# Get only root layers (layers without parent)
+	var root_layers = actor.get_root_layers()
+	
 	displayable.to_builder().clear_base_textures().clear_shaders()
-	for layer in layers:
-		var texture = layer.get_output_texture()
-		displayable.to_builder().add_base_texture(texture)
+	
+	# Build hierarchical texture structure for each root layer
+	for layer in root_layers:
+		if layer.is_layer_visible():
+			var texture = _build_texture_hierarchy(layer)
+			displayable.to_builder().add_base_texture(texture)
+
+## Builds hierarchical texture structure recursively
+## Returns a VNTexture with all child textures properly nested
+func _build_texture_hierarchy(layer: DisplayableLayer) -> VNTexture:
+	# Get the layer's output texture
+	var texture = layer.displayable.get_output_pass().get_output_texture()
+	texture.set_position(layer.position)
+	texture.set_source(layer)
+	texture.set_padding(layer.displayable.get_input_pass().get_padding())
+	
+	# Recursively add child textures
+	for child_layer in layer.get_child_layers():
+		if child_layer.is_layer_visible():
+			var child_texture = _build_texture_hierarchy(child_layer)
+			texture.add_child_texture(child_texture)
+	
+	return texture
 
 ## Updates all layers using unified template system (body + face + clothing)
 func _update_layers_unified(layer: DisplayableLayer, current_states: Dictionary) -> void:
@@ -88,7 +109,7 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 	# Clear shaders to ensure clean state, then set texture and size
 	layer.displayable.to_builder() \
 		.clear_base_textures() \
-		.add_base_texture(TransformableTexture.new(texture, Vector2.ZERO))
+		.add_base_texture(VNTexture.new(texture, Vector2.ZERO))
 	
 	# Set character size on actor for output mesh
 	actor.base_size = char_size
