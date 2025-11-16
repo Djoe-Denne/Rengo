@@ -49,6 +49,14 @@ static func from_dict(shader_def: Dictionary) -> VNShader:
 	
 	return shader
 
+func duplicate() -> VNShader:
+	var new_shader = VNShader.new()
+	new_shader.shader_path = shader_path
+	new_shader.params = params
+	new_shader.order = order
+	new_shader.padding = padding
+	return new_shader
+
 
 ## Getters
 func get_shader_path() -> String:

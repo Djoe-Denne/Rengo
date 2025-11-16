@@ -2,8 +2,8 @@
 ## Handles shader loading, caching, and ShaderMaterial creation with parameter binding
 extends Node
 
-## Cache of loaded shaders { shader_path: Shader }
-var _shader_cache: Dictionary = {}
+## Cache of loaded shader materials { <hash of: shader_path + key>: ShaderMaterial }
+var _material_cache: Dictionary = {}
 
 
 ## Loads a shader from the given path and caches it
@@ -12,10 +12,6 @@ var _shader_cache: Dictionary = {}
 func load_shader(shader_path: String) -> Shader:
 	if shader_path == "":
 		return null
-	
-	# Check cache first
-	if shader_path in _shader_cache:
-		return _shader_cache[shader_path]
 	
 	# Resolve path (support both absolute and relative paths)
 	var full_path = shader_path
@@ -29,7 +25,6 @@ func load_shader(shader_path: String) -> Shader:
 	
 	var shader = load(full_path)
 	if shader is Shader:
-		_shader_cache[shader_path] = shader
 		return shader
 	else:
 		push_error("Failed to load shader: %s" % full_path)
@@ -40,7 +35,7 @@ func load_shader(shader_path: String) -> Shader:
 ## @param vn_shader: VNShader with shader config (shader path, params, etc.)
 ## @param model: DisplayableModel for resolving template parameters
 ## @return: Configured ShaderMaterial or null on error
-func create_shader_material(vn_shader: VNShader, model: DisplayableModel) -> ShaderMaterial:
+func load_shader_material(vn_shader: VNShader, model: DisplayableModel, key: String = "") -> ShaderMaterial:
 	if not vn_shader:
 		push_warning("VNShader is null")
 		return null
@@ -49,16 +44,29 @@ func create_shader_material(vn_shader: VNShader, model: DisplayableModel) -> Sha
 	if shader_path == "":
 		push_warning("Shader definition missing 'shader' path")
 		return null
-	
-	var shader = load_shader(shader_path)
-	
-	if not shader:
-		return null
-	
-	# Create ShaderMaterial
-	var material = ShaderMaterial.new()
-	material.shader = shader
-	
+
+	var material = null
+	var cache_key = "%s|%s" % [shader_path, key]
+	if not cache_key in _material_cache:
+		
+		var shader = load_shader(shader_path)
+		
+		if not shader:
+			return null
+		
+		# Create ShaderMaterial
+		material = ShaderMaterial.new()
+		material.shader = shader
+		
+		_material_cache[cache_key] = material
+	else:
+		material = _material_cache[cache_key]
+
+	set_shader_parameters(material, vn_shader, model)
+	return material
+
+
+func set_shader_parameters(material: ShaderMaterial, vn_shader: VNShader, model: DisplayableModel) -> void:
 	# Apply parameters if provided
 	var params = vn_shader.get_params()
 	for param_name in params:
@@ -71,8 +79,6 @@ func create_shader_material(vn_shader: VNShader, model: DisplayableModel) -> Sha
 		# Set shader parameter (convert types as needed)
 		_set_shader_param(material, param_name, param_value)
 	
-	return material
-
 
 ## Loads shader configuration from YAML files in base directories
 ## @param base_dirs: Array of base directories to search
@@ -213,4 +219,4 @@ func _set_shader_param(material: ShaderMaterial, param_name: String, value: Vari
 
 ## Clears the shader cache (useful for hot-reloading during development)
 func clear_cache() -> void:
-	_shader_cache.clear()
+	_material_cache.clear()

@@ -4,9 +4,15 @@
 shaders:
   # When status state is "focused" (e.g., on hover)
   focused:
-    - shader: "assets/shaders/test.gdshader"
+    - shader: "assets/shaders/bloom_1.gdshader"
       order: 0
-      padding: 50  # Optional: padding percentage (default: 25)
-    - shader: "assets/shaders/test2.gdshader"
+      padding: 10  # Optional: padding percentage (default: 25)
+    - shader: "assets/shaders/bloom_2.gdshader"
       order: 1
-      #padding: 30  # Optional: different shaders can have different padding requirements
+      padding: 0  # Optional: padding percentage (default: 25)
+    - shader: "assets/shaders/bloom_3.gdshader"
+      order: 2
+      padding: 0  # Optional: padding percentage (default: 25)
+    - shader: "assets/shaders/bloom_4.gdshader"
+      order: 3
+      padding: 0  # Optional: padding percentage (default: 25)

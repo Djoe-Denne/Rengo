@@ -176,8 +176,7 @@ func _create_output_mesh() -> void:
 	var area = Area3D.new()
 	area.name = "Area3D_" + name
 	collision_shape = CollisionShape3D.new()
-	collision_shape.debug_color = Color.RED
-	collision_shape.debug_fill = true
+	collision_shape.debug_color = Color.TRANSPARENT
 	collision_shape.shape = ConvexPolygonShape3D.new()
 
 	area.add_child(collision_shape)

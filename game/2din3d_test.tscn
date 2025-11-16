@@ -1,11 +1,12 @@
-[gd_scene load_steps=17 format=3 uid="uid://b8oi4gnjjrruu"]
+[gd_scene load_steps=23 format=3 uid="uid://b8oi4gnjjrruu"]
 
-[ext_resource type="Script" path="res://game/test_viewport_input.gd" id="1_641gf"]
-[ext_resource type="Shader" uid="uid://bpxfpcvi8bedi" path="res://assets/shaders/test.gdshader" id="2_34b84"]
-[ext_resource type="Shader" uid="uid://0rfmsckbtjgn" path="res://assets/shaders/test2.gdshader" id="3_exveg"]
+[ext_resource type="Shader" uid="uid://cwy2bbba0nqki" path="res://assets/shaders/bloom_1.gdshader" id="1_641gf"]
+[ext_resource type="Shader" uid="uid://cyrfm0jqjtp3r" path="res://assets/shaders/bloom_2.gdshader" id="3_nlkye"]
 [ext_resource type="Texture2D" uid="uid://do3mxjuvwie7v" path="res://assets/scenes/common/characters/me/images/medium_shot/front/body/idle.png" id="3_uaael"]
-[ext_resource type="Script" uid="uid://m12oxk8krt7t" path="res://game/test_clickable_viewport_sprite.gd" id="6_nlkye"]
-[ext_resource type="Texture2D" uid="uid://d0hm6ag37oxrs" path="res://assets/scenes/common/characters/me/images/medium_shot/front/faces/happy.png" id="7_0hbgp"]
+[ext_resource type="Shader" uid="uid://crrd02frlf6f1" path="res://assets/shaders/bloom_3.gdshader" id="4_0hbgp"]
+[ext_resource type="Shader" uid="uid://bj466tnb3cx0i" path="res://game/2din3d_test.tres" id="5_641gf"]
+[ext_resource type="Shader" uid="uid://cokv2i3s4gwm" path="res://assets/shaders/bloom_4.gdshader" id="5_fmtw7"]
+[ext_resource type="Texture2D" uid="uid://d0hm6ag37oxrs" path="res://assets/scenes/common/characters/other/images/medium_shot/front/faces/happy.png" id="7_0hbgp"]
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_exveg"]
 viewport_path = NodePath("Node3D/displayable/SubViewport")
@@ -23,22 +24,57 @@ data = PackedVector3Array(0.5, -1, 0, -0.5, -1, 0, 0.5, 1, 0, -0.5, -1, 0, -0.5,
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_uaael"]
 resource_local_to_scene = true
-shader = ExtResource("2_34b84")
+shader = ExtResource("1_641gf")
+shader_parameter/edge_threshold = 0.1
+shader_parameter/expand_radius = 3000.0
+shader_parameter/glow_color = Color(1, 0.8, 0.3, 1)
+shader_parameter/glow_falloff = 2.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_04jp4"]
-shader = ExtResource("3_exveg")
+shader = ExtResource("3_nlkye")
+shader_parameter/BASE_TEXTURE = ExtResource("3_uaael")
+shader_parameter/blur_amount = 8.0
+shader_parameter/blur_quality = 7.0
+shader_parameter/outward_bias = 0.3
 
-[sub_resource type="ViewportTexture" id="ViewportTexture_uaael"]
+[sub_resource type="ViewportTexture" id="ViewportTexture_0hbgp"]
 viewport_path = NodePath("Node3D/layer_body/displayable/pass1")
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_eo4jx"]
+shader = ExtResource("4_0hbgp")
+shader_parameter/BASE_TEXTURE = ExtResource("3_uaael")
+shader_parameter/blur_amount = 8.0
+shader_parameter/blur_quality = 7.0
+shader_parameter/outward_bias = 0.3
+shader_parameter/time_offset = 0.0
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_shx36"]
+viewport_path = NodePath("Node3D/layer_body/displayable/pass2")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_p8v5d"]
+shader = ExtResource("5_fmtw7")
+shader_parameter/BASE_TEXTURE = ExtResource("3_uaael")
+shader_parameter/bloom_intensity = 1.0
+shader_parameter/pulse_speed = 3.0
+shader_parameter/wave_speed = 5.0
+shader_parameter/wave_amplitude = 0.1
+shader_parameter/noise_strength = 0.3
+shader_parameter/radial_wave_speed = 4.0
+shader_parameter/flicker_amount = 0.15
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_2st6l"]
+viewport_path = NodePath("Node3D/layer_body/displayable/pass3")
+
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_1ntv2"]
-shader = ExtResource("3_exveg")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_u2b2y"]
 viewport_path = NodePath("Node3D/layer_face/displayable/pass1")
 
 [sub_resource type="ViewportTexture" id="ViewportTexture_1ntv2"]
-viewport_path = NodePath("Node3D/layer_body/displayable/pass2")
+viewport_path = NodePath("Node3D/layer_body/displayable/pass4")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_nlkye"]
+shader = ExtResource("5_641gf")
 
 [node name="node" type="Node3D"]
 
@@ -63,6 +99,7 @@ debug_color = Color(0.78431374, 0, 0.30588236, 1)
 [node name="displayable" type="Node2D" parent="Node3D/layer_body"]
 
 [node name="pass1" type="SubViewport" parent="Node3D/layer_body/displayable"]
+transparent_bg = true
 size = Vector2i(1575, 3150)
 
 [node name="Sprite2D" type="Sprite2D" parent="Node3D/layer_body/displayable/pass1"]
@@ -76,7 +113,25 @@ size = Vector2i(1575, 3150)
 
 [node name="Sprite2D" type="Sprite2D" parent="Node3D/layer_body/displayable/pass2"]
 material = SubResource("ShaderMaterial_04jp4")
-texture = SubResource("ViewportTexture_uaael")
+texture = SubResource("ViewportTexture_0hbgp")
+centered = false
+
+[node name="pass3" type="SubViewport" parent="Node3D/layer_body/displayable"]
+transparent_bg = true
+size = Vector2i(1575, 3150)
+
+[node name="Sprite2D" type="Sprite2D" parent="Node3D/layer_body/displayable/pass3"]
+material = SubResource("ShaderMaterial_eo4jx")
+texture = SubResource("ViewportTexture_shx36")
+centered = false
+
+[node name="pass4" type="SubViewport" parent="Node3D/layer_body/displayable"]
+transparent_bg = true
+size = Vector2i(1575, 3150)
+
+[node name="Sprite2D" type="Sprite2D" parent="Node3D/layer_body/displayable/pass4"]
+material = SubResource("ShaderMaterial_p8v5d")
+texture = SubResource("ViewportTexture_2st6l")
 centered = false
 
 [node name="layer_face" type="Node2D" parent="Node3D"]
@@ -115,11 +170,9 @@ size = Vector2i(1575, 3155)
 scale = Vector2(1.3, 1.3)
 texture = SubResource("ViewportTexture_1ntv2")
 centered = false
-script = ExtResource("6_nlkye")
 
 [node name="face_sprite" type="Sprite2D" parent="Node3D/displayable/SubViewport/body_sprite"]
+material = SubResource("ShaderMaterial_nlkye")
 texture = ExtResource("7_0hbgp")
-script = ExtResource("6_nlkye")
 
 [node name="Node3D2" type="Node3D" parent="Node3D"]
-script = ExtResource("1_641gf")

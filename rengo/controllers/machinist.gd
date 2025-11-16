@@ -19,6 +19,7 @@ func set_controller(p_controller: Controller) -> void:
 var shader_config: Dictionary = {}
 
 const SHADER_CONFIG_PATH = "res://assets/shaders/"
+const LOG_PREFIX := "[Machinist]"
 
 
 ## Loads shader configuration from base directories
@@ -33,9 +34,11 @@ func handle_displayable(displayable: Displayable) -> void:
 	
 	if displayable.get_parent() and displayable.get_parent() is DisplayableLayer:
 		var layer = displayable.get_parent()
+		push_warning("Applying shaders to layer '%s'" % layer.layer_name)
 		var active_shaders = get_active_shaders_on_layers(layer)
 		update_displayable_shaders(displayable, active_shaders)
 	else:
+		push_warning("Applying shaders to node '%s'" % displayable.name)
 		var active_shaders = get_active_shaders_on_node()
 		update_displayable_shaders(displayable, active_shaders)
 
@@ -60,7 +63,7 @@ func get_active_shaders_on_node() -> Array[VNShader]:
 			var shader_list = shader_config[state_value_str]
 			if shader_list is Array:
 				for vn_shader in shader_list:
-					active_shaders.append(vn_shader)
+					active_shaders.append(vn_shader.duplicate())
 	
 	return active_shaders
 
@@ -90,13 +93,14 @@ func get_active_shaders_on_layers(layer: DisplayableLayer) -> Array[VNShader]:
 				var shader_list = shader_config[note]
 				if shader_list is Array:
 					for vn_shader in shader_list:
-						active_shaders.append(vn_shader)
+						active_shaders.append(vn_shader.duplicate())
 
 	return active_shaders
 
 ## Updates shaders for a specific displayable using viewport passes
 func update_displayable_shaders(displayable: Displayable, active_shaders: Array[VNShader]) -> void:
 	if not displayable:
+		push_warning("Skipping shader update: displayable is null")
 		return
 	
 	# Sort VNShader objects by order
@@ -104,11 +108,48 @@ func update_displayable_shaders(displayable: Displayable, active_shaders: Array[
 	sorted_shaders.sort_custom(func(a: VNShader, b: VNShader): return a.get_order() < b.get_order())
 	
 	var builder = displayable.to_builder()
+	if not builder:
+		push_warning("Displayable '%s' has no builder; skipping shader update" % displayable.name)
+		return
 	builder.clear_shaders()
+
+	var base_texture = _get_base_texture(displayable)
+
 	# Add all VNShader objects in order
 	for vn_shader in sorted_shaders:
-		var shader_material = vn_shader.get_shader_material()
-		if not shader_material:
-			shader_material = ShaderRepository.create_shader_material(vn_shader, controller.get_model())
-			vn_shader.set_shader_material(shader_material)
+		vn_shader.set_shader_material(ShaderRepository.load_shader_material(vn_shader, controller.get_model(), displayable.name))
+		if base_texture:
+			if _shader_supports_base_texture(vn_shader):
+				vn_shader.get_shader_material().set_shader_parameter("BASE_TEXTURE", base_texture)		
 		builder.add_shader_pass(vn_shader)
+
+
+func _get_base_texture(displayable: Displayable) -> Texture2D:
+	if not displayable:
+		push_warning("Cannot resolve base texture: displayable is null")
+		return null
+	var input_pass = displayable.get_input_pass()
+	if not input_pass:
+		push_warning("Displayable '%s' has no input pass" % displayable.name)
+		return null
+
+	var output_texture = input_pass.get_output_texture()
+	if output_texture and output_texture is VNTexture:
+		var viewport_texture = output_texture.get_texture()
+		if viewport_texture:
+			return viewport_texture
+
+	return null
+
+
+func _shader_supports_base_texture(vn_shader: VNShader) -> bool:
+	if vn_shader and vn_shader.get_params().has("BASE_TEXTURE"):
+		return true
+	if not vn_shader.get_shader_material() or not vn_shader.get_shader_material().shader:
+		return false
+	var param_list = vn_shader.get_shader_material().shader.get_shader_uniform_list()
+	for param_dict in param_list:
+		if typeof(param_dict) == TYPE_DICTIONARY and param_dict.has("name"):
+			if str(param_dict["name"]) == "BASE_TEXTURE":
+				return true
+	return false
