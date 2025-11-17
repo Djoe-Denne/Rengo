@@ -26,7 +26,7 @@ var input_handler: ViewportInput = null
 var displayable: Displayable = null
 
 ## Output mesh showing final composite
-@onready var output_mesh: MeshInstance3D = $OutputMesh
+var output_mesh: MeshInstance3D = null
 
 var collision_shape: CollisionShape3D = null
 
@@ -44,6 +44,7 @@ func _ready() -> void:
 	#displayable.padding_changed.connect(_on_node_padding_changed)
 	
 	# Create output mesh
+	create_output_mesh()
 	build_output_mesh()
 
 	add_child(displayable)
@@ -147,6 +148,14 @@ func recompose(recompose_all: bool = true) -> void:
 	output_mesh.mesh.size = base_size * padding_multiplier
 	collision_shape.shape = output_mesh.mesh.create_convex_shape()
 	
+func create_output_mesh() -> void:
+	output_mesh = MeshInstance3D.new()
+	output_mesh.name = "OutputMesh_" + name
+	output_mesh.mesh = QuadMesh.new()
+	output_mesh.mesh.size = base_size
+	add_child(output_mesh)
+
+
 func build_output_mesh() -> void:
 	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()

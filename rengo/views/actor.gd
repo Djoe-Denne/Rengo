@@ -7,6 +7,9 @@ class_name Actor extends DisplayableNode
 ## The character name this actor represents
 @export var actor_name: String = ""
 
+## Default gizmo texture for actor editor billboard
+@export var gizmo_texture: Texture2D = preload("res://assets/dev/gizmo/actor/idle.png")
+
 
 func _ready() -> void:
 	super._ready()

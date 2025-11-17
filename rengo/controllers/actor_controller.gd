@@ -68,7 +68,7 @@ func get_view() -> Actor:
 
 ## Creates and auto-registers a ShowAction to make this actor visible
 ## Returns the ActionNode for optional chaining
-func show():
+func enter():
 	var ShowAction = load("res://rengo/controllers/actions/common/show_action.gd")
 	var action = ShowAction.new(self)  # Action receives the controller
 	return register_action(action)
@@ -76,7 +76,7 @@ func show():
 
 ## Creates and auto-registers a HideAction to make this actor invisible
 ## Returns the ActionNode for optional chaining
-func hide():
+func leave():
 	var HideAction = load("res://rengo/controllers/actions/common/hide_action.gd")
 	var action = HideAction.new(self)  # Action receives the controller
 	return register_action(action)
@@ -140,7 +140,7 @@ func move():
 
 ## Creates a RotateAction for rotation transformation
 ## Auto-registers the action and returns it for chaining
-func rotate():
+func rotation():
 	var RotateAction = load("res://rengo/controllers/actions/transform/rotate_action.gd")
 	var action = RotateAction.new(self)  # Action receives the controller
 	return register_action(action)
@@ -148,7 +148,7 @@ func rotate():
 
 ## Creates a ScaleAction for scale transformation
 ## Auto-registers the action and returns it for chaining
-func scale():
+func scaling():
 	var ScaleAction = load("res://rengo/controllers/actions/transform/scale_action.gd")
 	var action = ScaleAction.new(self)  # Action receives the controller
 	return register_action(action)

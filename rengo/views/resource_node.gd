@@ -12,7 +12,7 @@ var registered_interactions: Dictionary = {}
 
 ## Creates and auto-registers a ShowAction to make this resource visible
 ## Returns the ActionNode for optional chaining
-func show():
+func enter():
 	var ShowAction = load("res://rengo/controllers/actions/common/show_action.gd")
 	var action = ShowAction.new(self)
 	return register_action(action)
@@ -20,7 +20,7 @@ func show():
 
 ## Creates and auto-registers a HideAction to make this resource invisible
 ## Returns the ActionNode for optional chaining
-func hide():
+func leave():
 	var HideAction = load("res://rengo/controllers/actions/common/hide_action.gd")
 	var action = HideAction.new(self)
 	return register_action(action)
@@ -46,4 +46,3 @@ func register_interaction(interaction) -> void:  # InteractionDefinition
 	
 	# Store the interaction
 	registered_interactions[interaction.name] = interaction
-

@@ -14,7 +14,7 @@ extends Camera3D
 @export var focal_default: float = 50.0
 @export var aperture: float = 2.8
 @export var shutter_speed: float = 50.0
-@export var sensor_size: String = "fullframe"
+@export var sensor_size: String = "fullframe"  # "fullframe", "apsc", "micro43", "super35", "super16"
 
 ## Background Configuration
 @export_group("Background")
@@ -119,6 +119,9 @@ func _update_from_model() -> void:
 	# Make it the current camera
 	current = true
 
+func update_from_editor() -> void:
+	var t_fov = Camera3DHelper.calculate_fov(focal_default, sensor_size, ratio)
+
 
 ## Updates camera position based on mouse position
 func _update_camera_from_mouse() -> void:
@@ -172,3 +175,10 @@ func update_initial_position() -> void:
 ## Cleanup when node is removed from tree
 func _exit_tree() -> void:
 	stop_observing()
+
+func _notification(what):
+	print(Engine.is_editor_hint())
+	if what == NOTIFICATION_READY and Engine.is_editor_hint():
+		update_from_editor()
+	elif what == NOTIFICATION_EDITOR_PROPERTY_CHANGED and Engine.is_editor_hint():
+		update_from_editor()
