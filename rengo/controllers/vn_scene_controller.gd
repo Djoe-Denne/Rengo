@@ -18,21 +18,12 @@ var is_playing: bool = false
 ## Reference to the actual VNScene node
 var scene_node: Node = null
 
-## Reference to the Scene model (owns the model)
-var scene_model: Scene = null
-
 ## Reference to the DialogModel (for SayAction and other dialog actions)
 var dialog_model: DialogModel = null
 
 
 func _init(p_scene_node: Node = null) -> void:
 	scene_node = p_scene_node
-
-
-## Sets the scene model
-func set_scene_model(p_scene_model: Scene) -> void:
-	scene_model = p_scene_model
-
 
 ## Adds a resource to the scene
 func add_resource(resource) -> void:  # ResourceNode

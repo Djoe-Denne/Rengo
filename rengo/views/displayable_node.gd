@@ -12,12 +12,12 @@ var layers: Dictionary[String, DisplayableLayer] = {}
 var root_layers: Array[DisplayableLayer] = []
 
 ## Base size in centimeters (set by director)
-var base_size: Vector2 = Vector2(100, 100)
+@export var base_size: Vector2 = Vector2(100, 100)
 
-var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
+@export var pixels_per_cm: Vector2 = Vector2(1.0, 1.0)
 
 ## Reference to controller (for interaction callbacks)
-var controller = null  # Controller reference
+var controller: Controller = null  # Controller reference
 
 ## Input handler for centralized mouse event coordination
 var input_handler: ViewportInput = null
@@ -26,7 +26,7 @@ var input_handler: ViewportInput = null
 var displayable: Displayable = null
 
 ## Output mesh showing final composite
-var output_mesh: MeshInstance3D = null
+@onready var output_mesh: MeshInstance3D = $OutputMesh
 
 var collision_shape: CollisionShape3D = null
 
@@ -35,8 +35,8 @@ var max_padding: float = 0.0
 ## Dictionary to track sprites in compositing viewport { layer_name: Sprite2D }
 var composite_sprites: Dictionary = {}
 
-func _init(p_name: String = "") -> void:
-	super(p_name)
+
+func _ready() -> void:
 	# Create Displayable for compositing
 	displayable = Displayable.new(name + "_composite")
 	
@@ -44,7 +44,7 @@ func _init(p_name: String = "") -> void:
 	#displayable.padding_changed.connect(_on_node_padding_changed)
 	
 	# Create output mesh
-	_create_output_mesh()
+	build_output_mesh()
 
 	add_child(displayable)
 
@@ -62,18 +62,6 @@ func deactivate_input_handler() -> void:
 
 func set_controller(p_controller: Controller) -> void:
 	controller = p_controller
-
-## Creates the scene node - should be overridden by subclasses
-func create_scene_node(parent: Node) -> Node:
-	
-	parent.add_child(self)
-	scene_node = parent
-
-	# Instruct director to set up initial layers
-	if controller.director and controller.model:
-		controller.director.instruct(controller.model)
-
-	return self
 
 
 ## Adds a new layer to this displayable node
@@ -158,12 +146,8 @@ func recompose(recompose_all: bool = true) -> void:
 
 	output_mesh.mesh.size = base_size * padding_multiplier
 	collision_shape.shape = output_mesh.mesh.create_convex_shape()
-
-func _create_output_mesh() -> void:
-	output_mesh = MeshInstance3D.new()
-	output_mesh.name = "OutputMesh_" + name
-	output_mesh.mesh = QuadMesh.new()
 	
+func build_output_mesh() -> void:
 	# Create material with Displayable texture
 	var material = StandardMaterial3D.new()
 	material.albedo_texture = displayable.get_output_pass().get_output_texture().get_texture()
@@ -182,7 +166,6 @@ func _create_output_mesh() -> void:
 	area.add_child(collision_shape)
 
 	output_mesh.add_child(area)
-	add_child(output_mesh)
 
 ## Creates the input handler and attaches it
 func _create_input_handler() -> void:

@@ -28,6 +28,13 @@ var history: Array = []
 ## List of observers (DialogLayerView) watching this dialog
 var _observers: Array = []
 
+## static instance of DialogModel
+static var instance: DialogModel = null
+
+static func get_instance() -> DialogModel:
+	if not instance:
+		instance = DialogModel.new()
+	return instance
 
 func _init() -> void:
 	pass
@@ -119,4 +126,3 @@ func _notify_observers() -> void:
 	for observer in _observers:
 		if observer.is_valid():
 			observer.call(dialog_state)
-

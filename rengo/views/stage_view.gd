@@ -1,79 +1,35 @@
 ## StageView - Pure view component for rendering backgrounds
 ## Observes Scene model and updates display when plan changes
 class_name StageView
-extends RefCounted
+extends Node3D
 
 ## The actual background mesh in the scene (3D)
 var background_sprite: MeshInstance3D = null
 
 ## Reference to the Scene model (for observing)
-var scene_model: Scene = null
-
-## Reference to the parent VNScene node
-var vn_scene: Node = null
-
-## Reference to a controller (MVC: view knows its controller)
-## Currently StageView doesn't have a dedicated controller, but this is here
-## for future extensibility if background interactions are needed
-var controller = null
+@onready var scene_model: Scene = Scene.get_instance()
 
 ## Distance of background from camera (in centimeters)
 const BACKGROUND_DISTANCE = 1000.0
 
+static var instance: StageView = null
+
+static func get_instance() -> StageView:
+	if not instance:
+		StageView.new()
+	return instance
 
 func _init() -> void:
-	pass
-
-
-## Sets the scene model and subscribes to changes
-func set_scene_model(p_scene_model: Scene, p_vn_scene: Node) -> void:
-	scene_model = p_scene_model
-	vn_scene = p_vn_scene
-	
-	# Subscribe to scene changes
-	if scene_model:
-		scene_model.plan_changed.connect(_on_scene_changed)
-
+	instance = self
 
 ## Creates the initial background mesh (3D quad)
-func create_background_node(parent: Node) -> MeshInstance3D:
-	if not scene_model:
-		push_error("StageView: Scene model not set")
-		return null
-	
-	var plan = scene_model.get_current_plan()
-	if not plan:
-		push_warning("StageView: No current plan available")
-		return null
-	
-	# Get default background from plan
-	var bg_config = plan.get_default_background()
-	if bg_config.is_empty():
-		push_warning("StageView: No backgrounds in plan '%s'" % scene_model.current_plan_id)
-		return null
-	
-	# Get camera for calculating background size
-	var camera = scene_model.get_current_camera()
-	if not camera:
-		push_error("StageView: No camera in scene model")
-		return null
-	
-	# Calculate the size needed to fill the frame at the background distance
-	var fov = camera.get_fov()
-	var quad_size = Camera3DHelper.calculate_quad_size_at_distance(BACKGROUND_DISTANCE, fov, camera.ratio)
-	
-	# Apply overscan to account for camera movement (mouse control)
-	# Calculate separate overscan for width and height based on FOV coverage
-	var overscan_factors = _calculate_overscan_factors(quad_size, camera)
-	quad_size.x *= overscan_factors.x
-	quad_size.y *= overscan_factors.y
+func _ready() -> void:
 	
 	# Create 3D quad mesh for background
 	background_sprite = MeshInstance3D.new()
 	background_sprite.name = "Background"
 	
 	var quad_mesh = QuadMesh.new()
-	quad_mesh.size = quad_size
 	background_sprite.mesh = quad_mesh
 	
 	# Create material
@@ -82,17 +38,8 @@ func create_background_node(parent: Node) -> MeshInstance3D:
 	material.cull_mode = BaseMaterial3D.CULL_BACK
 	background_sprite.material_override = material
 	
-	# Position background behind the action (relative to camera position)
-	var camera_pos = camera.position
-	background_sprite.position = Vector3(camera_pos.x, camera_pos.y, camera_pos.z - BACKGROUND_DISTANCE)
+	add_child(background_sprite)
 	
-	parent.add_child(background_sprite)
-	
-	# Set initial background texture
-	update_background(bg_config)
-	
-	return background_sprite
-
 
 ## Updates the background texture based on configuration
 func update_background(bg_config: Dictionary) -> void:
@@ -106,12 +53,16 @@ func update_background(bg_config: Dictionary) -> void:
 			var texture = load(image_path)
 			background_sprite.material_override.albedo_texture = texture
 		else:
-			push_warning("StageView: Background image not found: %s" % image_path)
+			push_error("StageView: Background image not found: %s" % image_path)
 	elif "color" in bg_config:
 		# Create colored background
 		var color_data = bg_config.color
 		var color = Color(color_data[0], color_data[1], color_data[2])
 		background_sprite.material_override.albedo_color = color
+	
+	
+	# Update background size for new camera FOV
+	_update_background_size()
 
 
 ## Scales the background (deprecated for 3D - camera handles projection)
@@ -122,7 +73,7 @@ func scale_to_viewport() -> void:
 
 
 ## Observer callback - called when Scene model changes
-func _on_scene_changed(plan_id: String) -> void:
+func on_scene_changed(plan_id: String) -> void:
 	if not scene_model:
 		return
 	
@@ -133,17 +84,17 @@ func _on_scene_changed(plan_id: String) -> void:
 		if not bg_config.is_empty():
 			update_background(bg_config)
 		
-		# Update background size for new camera FOV
-		_update_background_size()
 
 
 ## Updates background size based on current camera FOV
 func _update_background_size() -> void:
 	if not background_sprite or not scene_model:
+		push_error("StageView: No background sprite or scene model")
 		return
 	
 	var camera = scene_model.get_current_camera()
 	if not camera:
+		push_error("StageView: No camera in scene model")
 		return
 	
 	# Recalculate size for new FOV
@@ -168,16 +119,9 @@ func _update_background_size() -> void:
 func _calculate_overscan_factors(quad_size: Vector2, camera: Camera) -> Vector2:
 	var default_overscan = Vector2(1.15, 1.15)
 	
-	if not vn_scene:
-		return default_overscan
-	
-	# Try to get the VNCamera3D from the scene
-	var camera_3d = vn_scene.get_node_or_null("ActingLayer/Camera3D")
-	if not camera_3d:
-		return default_overscan
 	
 	# Get the maximum camera offset (default is 30cm)
-	var max_offset = camera_3d.mouse_camera_max_offset if "mouse_camera_max_offset" in camera_3d else 30.0
+	var max_offset = 30.0
 	
 	# Calculate how much extra background is needed based on camera movement
 	# When camera moves 30cm, the background at 1000cm appears to shift

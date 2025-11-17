@@ -13,25 +13,26 @@ var mouse_camera_max_offset: float = 30.0  # Max offset in cm on x and y
 ## Initial camera position for mouse control
 var _initial_position: Vector3 = Vector3.ZERO
 
-
 ## Sets the camera model to observe
 func observe_camera(p_camera_model: Camera) -> void:
 	# Unsubscribe from previous camera if any
 	if camera_model:
-		camera_model.remove_observer(_on_camera_changed)
+		camera_model.camera_changed.disconnect(_on_camera_changed)
 	
 	# Subscribe to new camera
 	camera_model = p_camera_model
 	if camera_model:
-		camera_model.add_observer(_on_camera_changed)
+		camera_model.position = position
+		camera_model.rotation = rotation
 		_initial_position = camera_model.position
+		camera_model.camera_changed.connect(_on_camera_changed)
 		_update_from_model()
 
 
 ## Stops observing the current camera model
 func stop_observing() -> void:
 	if camera_model:
-		camera_model.remove_observer(_on_camera_changed)
+		camera_model.camera_changed.disconnect(_on_camera_changed)
 		camera_model = null
 
 
@@ -42,7 +43,7 @@ func _process(delta: float) -> void:
 
 
 ## Observer callback for camera model changes
-func _on_camera_changed(camera_state: Dictionary) -> void:
+func _on_camera_changed(camera: Camera) -> void:
 	_update_from_model()
 
 

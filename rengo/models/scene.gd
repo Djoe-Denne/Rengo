@@ -7,10 +7,7 @@ extends RefCounted
 ## Signals for scene changes
 signal plan_changed(new_plan_id: String)
 
-## Scene identifier (e.g., "demo_scene")
 var scene_name: String = ""
-
-## Scene type ("theater" or "movie")
 var scene_type: String = "theater"
 
 ## Current active plan ID
@@ -25,16 +22,23 @@ var stage: StageModel = null
 ## List of available character names
 var available_characters: Array = []
 
-func _init(p_scene_name: String = "", p_scene_type: String = "theater") -> void:
-	scene_name = p_scene_name
-	scene_type = p_scene_type
+## static instance of Scene
+static var instance: Scene = null
+
+static func get_instance() -> Scene:
+	if not instance:
+		Scene.new()
+	return instance
+
+func _init() -> void:
+	instance = self
 	stage = StageModel.new()
 
 
 ## Changes the current plan and notifies observers
 func set_plan(plan_id: String) -> void:
 	if not plan_id in plans:
-		push_warning("Plan '%s' not found in scene '%s'" % [plan_id, scene_name])
+		push_warning("Plan '%s' not found in scene" % [plan_id])
 		return
 	
 	if current_plan_id != plan_id:
@@ -63,32 +67,32 @@ func add_plan(plan: Plan) -> void:
 
 
 ## Creates a Scene from a dictionary configuration
-static func from_dict(scene_name: String, config: Dictionary) -> Scene:
-	var scene = Scene.new(scene_name)
+func from_dict(p_scene_name: String, config: Dictionary) -> void:
 	
+	scene_name = p_scene_name
+
 	# Parse scene metadata
 	if "scene" in config:
-		scene.scene_type = config.scene.get("type", "theater")
+		scene_type = config.scene.get("type", "theater")
 	
 	# Parse stage configuration
 	if "stage" in config:
-		scene.stage = StageModel.from_dict(config.stage)
+		stage.from_dict(config.stage)
 	
 	# Parse plans
 	if "plans" in config:
 		for plan_config in config.plans:
 			var plan = Plan.from_dict(plan_config)
-			scene.add_plan(plan)
+			add_plan(plan)
 	
 	# Set initial plan
-	if scene.stage.default_plan_id != "" and scene.stage.default_plan_id in scene.plans:
-		scene.current_plan_id = scene.stage.default_plan_id
-	elif not scene.plans.is_empty():
+	if stage.default_plan_id != "" and stage.default_plan_id in plans:
+		set_plan(stage.default_plan_id)
+	elif not plans.is_empty():
 		# Use first available plan if no default specified
-		scene.current_plan_id = scene.plans.keys()[0]
+		set_plan(plans.keys()[0])
 	
 	# Parse cast
 	if "cast" in config and "available" in config.cast:
-		scene.available_characters = config.cast.available
+		available_characters = config.cast.available
 	
-	return scene

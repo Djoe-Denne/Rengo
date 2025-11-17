@@ -5,15 +5,9 @@
 class_name ResourceNode
 extends SceneObject
 
-## Reference to the actual Godot node in the scene tree
-var scene_node: Node = null
-
 ## Dictionary of registered interactions
 var registered_interactions: Dictionary = {}
 
-
-func _init(p_name: String = "") -> void:
-	name = p_name
 
 
 ## Creates and auto-registers a ShowAction to make this resource visible
@@ -30,14 +24,6 @@ func hide():
 	var HideAction = load("res://rengo/controllers/actions/common/hide_action.gd")
 	var action = HideAction.new(self)
 	return register_action(action)
-
-
-## Called when the resource is added to the scene
-## Should be overridden by subclasses to create their visual representation
-func create_scene_node(_parent: Node) -> Node:
-	push_error("create_scene_node must be implemented by subclass")
-	return null
-
 
 ## Updates the visual position in 3D space
 ## Subclasses should override this to read from their model

@@ -1,0 +1,41 @@
+[gd_scene load_steps=8 format=3 uid="uid://j0rcy7l48su3"]
+
+[ext_resource type="Script" uid="uid://8dsfpxh2vnou" path="res://rengo/views/vn_scene.gd" id="1_as5si"]
+[ext_resource type="Script" uid="uid://dval27m2d3bcl" path="res://rengo/views/acting_layer_view.gd" id="2_2lguw"]
+[ext_resource type="Script" uid="uid://5jtievqw2dld" path="res://rengo/views/dialog_layer_view.gd" id="3_aabbe"]
+[ext_resource type="Script" uid="uid://do7v0svjsc66y" path="res://rengo/views/stage_view.gd" id="3_iy6ap"]
+[ext_resource type="Script" uid="uid://5nhmkrsb61ia" path="res://rengo/views/actor.gd" id="4_faf8j"]
+[ext_resource type="Script" uid="uid://7u752sqljvco" path="res://rengo/scenes/camera/vn_camera_3d.gd" id="5_rnpi6"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_h77dx"]
+size = Vector2(80, 170)
+
+[node name="vn_scene" type="Node3D"]
+script = ExtResource("1_as5si")
+scene_name = "demo_scene"
+
+[node name="ActingLayer" type="Node3D" parent="."]
+script = ExtResource("2_2lguw")
+metadata/_custom_type_script = "uid://dval27m2d3bcl"
+
+[node name="StageView" type="Node3D" parent="ActingLayer"]
+script = ExtResource("3_iy6ap")
+metadata/_custom_type_script = "uid://do7v0svjsc66y"
+
+[node name="Actor" type="Node" parent="ActingLayer/StageView"]
+script = ExtResource("4_faf8j")
+actor_name = "me"
+metadata/_custom_type_script = "uid://5nhmkrsb61ia"
+
+[node name="OutputMesh" type="MeshInstance3D" parent="ActingLayer/StageView/Actor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.7694206, 0, 0)
+mesh = SubResource("QuadMesh_h77dx")
+
+[node name="VNCamera3D" type="Camera3D" parent="ActingLayer"]
+transform = Transform3D(3.5953884, 0, 0, 0, 1.6078888, 0, 0, 0, 1.2234066, 0, 0, 106.7702)
+script = ExtResource("5_rnpi6")
+metadata/_custom_type_script = "uid://7u752sqljvco"
+
+[node name="DialogLayer" type="CanvasLayer" parent="."]
+script = ExtResource("3_aabbe")
+metadata/_custom_type_script = "uid://5jtievqw2dld"

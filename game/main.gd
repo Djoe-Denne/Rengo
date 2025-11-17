@@ -60,7 +60,7 @@ func _configure_title_screen() -> void:
 	# Set callback for starting new game
 	title_view.on_start_game = func():
 		# Transition to demo/game scene
-		get_tree().change_scene_to_file("res://game/demo.tscn")
+		get_tree().change_scene_to_file("res://game/test_scene.tscn")
 
 
 ## Configures the options screen

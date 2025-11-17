@@ -5,7 +5,7 @@ class_name ActorController
 extends Controller
 
 ## The Scene model (pure data)
-var scene: Scene = null
+@onready var scene: Scene = null
 
 ## The Character model (pure data)
 var model: Character = null
@@ -19,8 +19,8 @@ var director: Director = null
 ## Machinist that handles shader effects for this displayable
 var machinist: Machinist = null ## TODO: Implement this
 
-func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Director, p_machinist: Machinist, p_scene: Scene) -> void:
-	scene = p_scene
+func _init(p_name: String, p_model: Character, p_view: Actor, p_director: Director, p_machinist: Machinist) -> void:
+	scene = Scene.get_instance()
 	name = p_name
 	model = p_model
 	view = p_view

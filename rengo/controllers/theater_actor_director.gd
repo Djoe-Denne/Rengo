@@ -26,8 +26,7 @@ func handle_displayable(displayable: Displayable) -> void:
 	# new_states contains the current states from Character model
 	var current_states = displayable_model.get_states().duplicate()
 
-	if scene_model:
-		current_states["plan"] = scene_model.current_plan_id
+	current_states["plan"] = Scene.get_instance().current_plan_id
 
 	# Update all layers based on current states (body + face + clothing)
 	if displayable.get_parent() and displayable.get_parent() is DisplayableLayer:
@@ -142,7 +141,7 @@ func _load_texture(actor, image_path: String) -> Texture2D:
 	
 	if not texture:
 		# Create colored placeholder if image not found
-		var plan_id = scene_model.current_plan_id if scene_model else "unknown"
+		var plan_id = Scene.get_instance().current_plan_id if Scene.get_instance() else "unknown"
 		push_error("Texture not found: %s (character: %s, plan: %s)" % [image_path, actor.actor_name, plan_id])
 		return _create_color_texture(Color(1.0, 0.0, 1.0))  # Magenta placeholder
 	

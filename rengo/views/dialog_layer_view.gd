@@ -2,53 +2,36 @@
 ## Observes DialogModel and updates UI accordingly
 ## Pure view component - displays what the model tells it to
 class_name DialogLayerView
-extends RefCounted
-
-## Reference to the DialogLayer CanvasLayer
-var layer_node: CanvasLayer = null
+extends CanvasLayer
 
 ## Reference to the DialogBox UI control
-var dialog_box: Control = null
+@onready var dialog_box: Control = $DialogBox
 
 ## Reference to the DialogModel being observed
-var dialog_model: DialogModel = null
+@onready var dialog_model: DialogModel = DialogModel.get_instance()
 
-## UI element references
-var _speaker_label: Label = null
-var _text_label: Label = null
-var _continue_indicator: Label = null
+@onready var _speaker_label: Label = $DialogBox/VBox/SpeakerName
+@onready var _text_label: Label = $DialogBox/VBox/DialogText
+@onready var _continue_indicator: Label = $DialogBox/VBox/ContinueIndicator
 
+static var instance: DialogLayerView = null
+static func get_instance() -> DialogLayerView:
+	if not instance:
+		DialogLayerView.new()
+	return instance
 
 func _init() -> void:
-	pass
-
-
-## Sets up the dialog layer
-func setup_layer(p_layer_node: CanvasLayer) -> void:
-	layer_node = p_layer_node
-	
-	# Create dialog box UI
-	dialog_box = create_dialog_box()
-	layer_node.add_child(dialog_box)
-	
-	# Initially hidden
-	dialog_box.visible = false
-
+	instance = self
 
 ## Observes a DialogModel
-func observe(model: DialogModel) -> void:
-	# Unsubscribe from previous model if any
-	if dialog_model:
-		dialog_model.remove_observer(_on_dialog_changed)
-	
-	# Subscribe to new model
-	dialog_model = model
-	if dialog_model:
-		dialog_model.add_observer(_on_dialog_changed)
-		
-		# Initial update
-		_update_display()
+func _ready() -> void:
+	if not dialog_box:
+		dialog_box = create_dialog_box()
+		add_child(dialog_box)
+		dialog_box.visible = false
 
+	dialog_model.add_observer(_on_dialog_changed)
+	_update_display()
 
 ## Observer callback - called when DialogModel changes
 func _on_dialog_changed(dialog_state: Dictionary) -> void:
@@ -57,15 +40,7 @@ func _on_dialog_changed(dialog_state: Dictionary) -> void:
 
 ## Updates the dialog display based on current model state
 func _update_display() -> void:
-	if not dialog_model or not dialog_box:
-		return
-	
-	# Update visibility
 	dialog_box.visible = dialog_model.visible
-	
-	if not dialog_model.visible:
-		return
-	
 	# Update speaker name
 	if _speaker_label:
 		_speaker_label.text = dialog_model.speaker_name
@@ -149,4 +124,3 @@ func cleanup() -> void:
 	if dialog_box and is_instance_valid(dialog_box):
 		dialog_box.queue_free()
 		dialog_box = null
-

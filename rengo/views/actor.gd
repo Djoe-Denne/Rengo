@@ -5,10 +5,29 @@
 class_name Actor extends DisplayableNode
 
 ## The character name this actor represents
-var actor_name: String = ""
+@export var actor_name: String = ""
 
 
-func _init(p_actor_name: String = "") -> void:
-	super(p_actor_name)
-	actor_name = p_actor_name
+func _ready() -> void:
+	super._ready()
+	if not actor_name:
+		push_error("Actor: actor_name is not set")
+		return
+	
+	# Create or retrieve Character model
+	var character = null
+	# Create new Character model
+	character = Character.new(actor_name)
+		
+	# Create Machinist
+	var machinist = Machinist.new()
+
+	# Create ActorDirector
+	var actor_director = TheaterActorDirector.new()
+	# Create ActorController and link it to the view (MVC)
+	var actor_ctrl = ActorController.new(actor_name, character, self, actor_director, machinist)
+	actor_ctrl.plug_signals()
+	actor_director.load_character(character)
+	machinist.load_config("")
+	
 	

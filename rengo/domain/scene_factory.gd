@@ -4,7 +4,8 @@ extends RefCounted
 
 
 ## Creates a VNScene from a scene configuration
-static func create(scene_path: String) -> Node:
+static func populate(vn_scene: VNScene) -> void:
+	var scene_path = vn_scene.scene_name
 	
 	# Load scene configuration
 	var scene_config_path = "res://assets/scenes/" + scene_path + "/scene.yaml"
@@ -12,7 +13,7 @@ static func create(scene_path: String) -> Node:
 	
 	if scene_config.is_empty():
 		push_error("Failed to load scene config: %s" % scene_config_path)
-		return null
+		return
 	
 	# Process camera references - load camera definitions and merge with plan data
 	_process_camera_references(scene_config)
@@ -21,28 +22,7 @@ static func create(scene_path: String) -> Node:
 	_process_background_paths(scene_config, scene_path)
 	
 	# Create Scene model from configuration
-	var scene_model = Scene.from_dict(scene_path, scene_config)
-	
-	# Create StageView
-	var stage_view = StageView.new()
-	
-	# Load and instantiate VNScene
-	var vn_scene_packed = load("res://rengo/scenes/game/vn_scene.tscn")
-	var vn_scene = vn_scene_packed.instantiate()
-	
-	# Set scene model and director
-	vn_scene.set_scene_model(scene_model)
-	vn_scene.set_stage_view(stage_view)
-	
-	
-	# StageView observes scene model for plan changes
-	stage_view.set_scene_model(scene_model, vn_scene)
-	
-	# Setup controller with scene model
-	# (Will be done in VNScene._ready via controller)
-	
-	return vn_scene
-
+	Scene.get_instance().from_dict(scene_path, scene_config)
 
 ## Processes camera references in plans - loads camera definitions and merges with plan-specific data
 static func _process_camera_references(scene_config: Dictionary) -> void:

@@ -9,16 +9,16 @@ var scaling_mode: String = "letterbox"
 ## Default plan ID to use on scene start
 var default_plan_id: String = ""
 
+## static instance of StageModel
+static var instance: StageModel = null
 
-func _init(p_scaling_mode: String = "letterbox", p_default_plan_id: String = "") -> void:
-	scaling_mode = p_scaling_mode
-	default_plan_id = p_default_plan_id
+static func get_instance() -> StageModel:
+	if not instance:
+		instance = StageModel.new()
+	return instance
 
 
 ## Creates a StageModel from a dictionary configuration
-static func from_dict(config: Dictionary) -> StageModel:
-	var stage = StageModel.new()
-	stage.scaling_mode = config.get("scaling_mode", "letterbox")
-	stage.default_plan_id = config.get("default_plan", "")
-	return stage
-
+func from_dict(config: Dictionary) -> void:
+	scaling_mode = config.get("scaling_mode", "letterbox")
+	default_plan_id = config.get("default_plan", "")

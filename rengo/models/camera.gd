@@ -4,6 +4,8 @@
 class_name Camera
 extends RefCounted
 
+signal camera_changed(Camera: Camera)
+
 ## Aspect ratio (e.g., 1.777 for 16:9, 2.35 for cinemascope)
 var ratio: float = 1.777
 
@@ -27,10 +29,6 @@ var position: Vector3 = Vector3.ZERO
 ## Camera rotation in degrees (pitch, yaw, roll)
 var rotation: Vector3 = Vector3.ZERO
 
-## List of observers (Callables) watching this camera
-var _observers: Array = []
-
-
 func _init(p_ratio: float = 1.777) -> void:
 	ratio = p_ratio
 
@@ -49,30 +47,6 @@ static func from_dict(config: Dictionary) -> Camera:
 	camera.aperture = config.get("aperture", 2.8)
 	camera.shutter_speed = config.get("shutter_speed", 50.0)
 	camera.sensor_size = config.get("sensor_size", "fullframe")
-	
-	# Parse position (in centimeters)
-	if "position" in config:
-		var pos = config.position
-		if pos is Array and pos.size() >= 3:
-			camera.position = Vector3(pos[0], pos[1], pos[2])
-		elif pos is Dictionary:
-			camera.position = Vector3(
-				pos.get("x", 0.0),
-				pos.get("y", 0.0),
-				pos.get("z", 0.0)
-			)
-	
-	# Parse rotation (in degrees)
-	if "rotation" in config:
-		var rot = config.rotation
-		if rot is Array and rot.size() >= 3:
-			camera.rotation = Vector3(rot[0], rot[1], rot[2])
-		elif rot is Dictionary:
-			camera.rotation = Vector3(
-				rot.get("pitch", 0.0),
-				rot.get("yaw", 0.0),
-				rot.get("roll", 0.0)
-			)
 	
 	return camera
 
@@ -111,32 +85,9 @@ func get_fov() -> float:
 func get_fov_range() -> Dictionary:
 	return Camera3DHelper.focal_range_to_fov_range(focal_min, focal_max, sensor_size, ratio)
 
-
-## Adds an observer to be notified of camera changes
-func add_observer(observer: Callable) -> void:
-	if not _observers.has(observer):
-		_observers.append(observer)
-
-
-## Removes an observer
-func remove_observer(observer: Callable) -> void:
-	var idx = _observers.find(observer)
-	if idx >= 0:
-		_observers.remove_at(idx)
-
-
 ## Notifies all observers of camera changes
 func _notify_observers() -> void:
-	var camera_state = {
-		"position": position,
-		"rotation": rotation,
-		"focal_default": focal_default,
-		"ratio": ratio
-	}
-	
-	for observer in _observers:
-		if observer.is_valid():
-			observer.call(camera_state)
+	camera_changed.emit(self)
 
 
 ## Sets camera position and notifies observers
