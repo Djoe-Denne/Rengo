@@ -42,6 +42,32 @@ func add_background(bg_id: String, config: Dictionary) -> void:
 	backgrounds[bg_id] = config
 
 
+## Creates a Plan from a VNCamera3D node
+static func from_vn_camera(camera_node) -> Plan:  # VNCamera3D
+	var plan = Plan.new(camera_node.plan_id)
+	
+	# Create camera from node
+	plan.camera = Camera.from_vn_camera(camera_node)
+	
+	# Add background configuration from node's @export properties
+	var bg_config = {}
+	bg_config["id"] = "default"
+	
+	# Check if background image is set
+	if camera_node.background_image:
+		# Store reference to the texture directly
+		bg_config["texture"] = camera_node.background_image
+	elif camera_node.background_image_path != "":
+		bg_config["image"] = camera_node.background_image_path
+	else:
+		# Use background color
+		bg_config["color"] = camera_node.background_color
+	
+	plan.add_background("default", bg_config)
+	
+	return plan
+
+
 ## Creates a Plan from a dictionary configuration
 static func from_dict(config: Dictionary) -> Plan:
 	var plan = Plan.new(config.get("id", ""))

@@ -1,91 +1,55 @@
 ## Factory for creating VNScenes from YAML configuration
+## 
+## DEPRECATED: This factory is being phased out in favor of editor-based scene setup.
+## 
+## Migration Guide:
+## Instead of using YAML files and SceneFactory.populate(), you should now:
+## 1. Add VNCamera3D nodes directly to ActingLayer in the Godot editor
+## 2. Set plan_id and camera properties via @export inspector variables
+## 3. Configure backgrounds via @export variables (background_image or background_color)
+## 4. VNScene will auto-discover cameras and build Scene model at runtime
+## 5. Optionally use preset camera scenes (standard_camera.tscn, cinemascope_camera.tscn)
+## 
+## The populate() method still works for backward compatibility with existing YAML-based scenes.
 class_name SceneFactory
 extends RefCounted
 
 
 ## Creates a VNScene from a scene configuration
+## DEPRECATED: Use editor-based camera setup instead. See class documentation for migration guide.
 static func populate(vn_scene: VNScene) -> void:
-	var scene_path = vn_scene.scene_name
-	
-	# Load scene configuration
-	var scene_config_path = "res://assets/scenes/" + scene_path + "/scene.yaml"
-	var scene_config = _load_yaml_file(scene_config_path)
-	
-	if scene_config.is_empty():
-		push_error("Failed to load scene config: %s" % scene_config_path)
-		return
+
+	# Create Scene model from configuration
+	Scene.get_instance().from_view(vn_scene)
 	
 	# Process camera references - load camera definitions and merge with plan data
-	_process_camera_references(scene_config)
-	
-	# Process background image paths to be absolute
-	_process_background_paths(scene_config, scene_path)
-	
-	# Create Scene model from configuration
-	Scene.get_instance().from_dict(scene_path, scene_config)
+	_discover_plans(vn_scene)
 
-## Processes camera references in plans - loads camera definitions and merges with plan-specific data
-static func _process_camera_references(scene_config: Dictionary) -> void:
-	if not "plans" in scene_config:
+	Scene.get_instance().set_plan(Scene.get_instance().stage.default_plan_id)
+	
+
+## Discovers all VNCamera3D nodes in ActingLayer and creates Plans from them
+static func _discover_plans(vn_scene: VNScene) -> void:
+	
+	var acting_layer = vn_scene.acting_layer
+	# Find all VNCamera3D children in ActingLayer
+	var cameras = []
+	for camera_node in acting_layer.get_children():
+		if camera_node is VNCamera3D:
+			cameras.append(camera_node)
+	
+	if cameras.is_empty():
+		push_error("VNScene: No VNCamera3D nodes found in ActingLayer")
 		return
 	
-	for plan_config in scene_config.plans:
-		if not "camera" in plan_config:
+	# Create Plans from camera nodes
+	for camera_node in cameras:
+		if camera_node.plan_id == "":
+			push_error("VNScene: VNCamera3D node has no plan_id set, skipping")
 			continue
 		
-		var camera_config = plan_config.camera
+		# Create Plan from camera node
+		var plan = Plan.from_vn_camera(camera_node)
+		Scene.get_instance().add_plan(plan)
+		vn_scene.camera_nodes[camera_node.plan_id] = camera_node
 		
-		# Check if camera is a string reference
-		if camera_config is String:
-			var camera_name = camera_config
-			
-			# Load camera definition from common/cameras/
-			var camera_def = ResourceRepository.load_camera(camera_name)
-			if camera_def.is_empty():
-				push_error("Failed to load camera definition: %s" % camera_name)
-				continue
-			
-			# Replace the string with the loaded camera definition
-			plan_config.camera = camera_def.duplicate(true)
-		
-		# Now check for camera_position and camera_rotation at plan level
-		if "camera_position" in plan_config:
-			if not plan_config.camera is Dictionary:
-				plan_config.camera = {}
-			plan_config.camera.position = plan_config.camera_position
-		
-		if "camera_rotation" in plan_config:
-			if not plan_config.camera is Dictionary:
-				plan_config.camera = {}
-			plan_config.camera.rotation = plan_config.camera_rotation
-
-
-## Processes background image paths to be absolute
-static func _process_background_paths(scene_config: Dictionary, scene_path: String) -> void:
-	if "plans" in scene_config:
-		for plan_config in scene_config.plans:
-			if "backgrounds" in plan_config:
-				for bg_config in plan_config.backgrounds:
-					if "image" in bg_config:
-						bg_config.image = "res://assets/scenes/" + scene_path + "/" + bg_config.image
-
-
-## Loads and parses a YAML file
-static func _load_yaml_file(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		push_warning("YAML file not found: %s" % path)
-		return {}
-	
-	# Parse YAML using the addon (YAML is a static class)
-	var result = YAML.load_file(path)
-	
-	if result.has_error():
-		push_error("Failed to parse YAML file: %s - Error: %s" % [path, result.get_error()])
-		return {}
-	
-	var data = result.get_data()
-	if data is Dictionary:
-		return data
-	
-	push_warning("YAML file did not contain a dictionary: %s" % path)
-	return {}

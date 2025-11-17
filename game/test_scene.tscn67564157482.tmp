@@ -21,6 +21,7 @@ metadata/_custom_type_script = "uid://dval27m2d3bcl"
 
 [node name="StageView" type="Node3D" parent="ActingLayer"]
 script = ExtResource("3_iy6ap")
+scaling_mode = null
 default_plan_id = "medium_shot"
 metadata/_custom_type_script = "uid://do7v0svjsc66y"
 
@@ -37,7 +38,7 @@ mesh = SubResource("QuadMesh_h77dx")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 202.36285)
 script = ExtResource("5_rnpi6")
 plan_id = "medium_shot"
-background_image_path = "uid://dupbnswtmfqis"
+background_image_path = "backgrounds/middle_shot/bg.JPG"
 metadata/_custom_type_script = "uid://7u752sqljvco"
 
 [node name="DialogLayer" type="CanvasLayer" parent="."]

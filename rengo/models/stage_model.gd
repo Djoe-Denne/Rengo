@@ -22,3 +22,7 @@ static func get_instance() -> StageModel:
 func from_dict(config: Dictionary) -> void:
 	scaling_mode = config.get("scaling_mode", "letterbox")
 	default_plan_id = config.get("default_plan", "")
+
+func from_view(stage_view: StageView) -> void:
+	scaling_mode = stage_view.scaling_mode
+	default_plan_id = stage_view.default_plan_id

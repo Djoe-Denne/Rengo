@@ -33,6 +33,28 @@ func _init(p_ratio: float = 1.777) -> void:
 	ratio = p_ratio
 
 
+## Creates a Camera from a VNCamera3D node
+static func from_vn_camera(camera_node) -> Camera:  # VNCamera3D
+	var camera = Camera.new(camera_node.ratio)
+	camera.focal_min = camera_node.focal_min
+	camera.focal_max = camera_node.focal_max
+	camera.focal_default = camera_node.focal_default
+	camera.aperture = camera_node.aperture
+	camera.shutter_speed = camera_node.shutter_speed
+	camera.sensor_size = camera_node.sensor_size
+	
+	# Set position and rotation from node's transform
+	camera.position = camera_node.position
+	# Convert radians to degrees (Camera model stores rotation in degrees)
+	camera.rotation = Vector3(
+		rad_to_deg(camera_node.rotation.x),
+		rad_to_deg(camera_node.rotation.y),
+		rad_to_deg(camera_node.rotation.z)
+	)
+	
+	return camera
+
+
 ## Creates a Camera from a dictionary configuration
 static func from_dict(config: Dictionary) -> Camera:
 	var camera = Camera.new(config.get("ratio", 1.777))

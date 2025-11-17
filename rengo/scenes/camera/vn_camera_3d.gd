@@ -3,15 +3,66 @@
 class_name VNCamera3D
 extends Camera3D
 
+## Plan identifier for this camera (e.g., "medium_shot", "close_up")
+@export var plan_id: String = ""
+
+## Camera Properties
+@export_group("Camera Properties")
+@export var ratio: float = 1.777
+@export var focal_min: float = 24.0
+@export var focal_max: float = 200.0
+@export var focal_default: float = 50.0
+@export var aperture: float = 2.8
+@export var shutter_speed: float = 50.0
+@export var sensor_size: String = "fullframe"
+
+## Background Configuration
+@export_group("Background")
+@export var background_image: Texture2D
+@export_file("*.png","*.jpg","*.jpeg") var background_image_path: String = ""
+@export var background_color: Color = Color(0.2, 0.2, 0.3)
+
 ## Reference to the camera model being observed
 var camera_model: Camera = null
 
 ## Mouse camera control settings
-var mouse_camera_enabled: bool = true
-var mouse_camera_max_offset: float = 30.0  # Max offset in cm on x and y
+@export var mouse_camera_enabled: bool = true
+@export var mouse_camera_max_offset: float = 30.0  # Max offset in cm on x and y
 
 ## Initial camera position for mouse control
 var _initial_position: Vector3 = Vector3.ZERO
+
+
+func _ready() -> void:
+	# Create camera model from @export properties if plan_id is set
+	if plan_id != "":
+		camera_model = create_camera_model()
+		_initial_position = camera_model.position
+		camera_model.camera_changed.connect(_on_camera_changed)
+		_update_from_model()
+
+
+## Creates a Camera model from this node's @export properties
+func create_camera_model() -> Camera:
+	var camera = Camera.new(ratio)
+	camera.focal_min = focal_min
+	camera.focal_max = focal_max
+	camera.focal_default = focal_default
+	camera.aperture = aperture
+	camera.shutter_speed = shutter_speed
+	camera.sensor_size = sensor_size
+	
+	# Set position and rotation from node's transform
+	camera.position = position
+	# Convert radians to degrees (Camera model stores rotation in degrees)
+	camera.rotation = Vector3(
+		rad_to_deg(rotation.x),
+		rad_to_deg(rotation.y),
+		rad_to_deg(rotation.z)
+	)
+	
+	return camera
+
 
 ## Sets the camera model to observe
 func observe_camera(p_camera_model: Camera) -> void:

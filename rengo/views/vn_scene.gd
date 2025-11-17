@@ -23,16 +23,17 @@ var characters: Dictionary = {}
 ## Acting layer (where characters, backgrounds appear in 3D)
 @onready var acting_layer: ActingLayerView = $ActingLayer
 
-## VNCamera3D for the 3D acting layer (handles camera model observation and mouse control)
-@onready var camera_3d: VNCamera3D = $ActingLayer/VNCamera3D
-
 ## Dialog layer (where dialog UI appears in 2D)
 @onready var dialog_layer: DialogLayerView = $DialogLayer
 
 ## The stage view (renders backgrounds)
 @onready var stage_view: StageView = $ActingLayer/StageView
 
+## Dictionary mapping plan_id to VNCamera3D nodes { plan_id: VNCamera3D }
+var camera_nodes: Dictionary = {}
+
 @export var scene_name: String = ""
+@export var scene_type: String = "theater"
 
 #func _init() -> void:
 func _ready() -> void:	
@@ -41,17 +42,17 @@ func _ready() -> void:
 	controller = VNSceneController.new(self)
 	controller.dialog_model = dialog_model  # Pass dialog model to controller
 	
-		
 	# Subscribe to scene model changes to handle plan changes
 	if scene_model:
 		scene_model.plan_changed.connect(_on_scene_changed)
 	
-	# Setup camera to observe the camera model
-	var camera = scene_model.get_current_camera() if scene_model else null
-	
-	camera_3d.observe_camera(camera)
-
 	SceneFactory.populate(self)
+
+	# Activate initial camera (first plan or default)
+	if not scene_model.plans.is_empty():
+		var initial_plan_id = scene_model.current_plan_id
+		if initial_plan_id != "" and initial_plan_id in camera_nodes:
+			camera_nodes[initial_plan_id].current = true
 
 
 func _process(delta: float) -> void:
@@ -99,13 +100,6 @@ func stop() -> void:
 func is_finished() -> bool:
 	return controller.is_finished()
 
-
-## Enables or disables mouse camera control
-func set_mouse_camera_enabled(enabled: bool) -> void:
-	if camera_3d:
-		camera_3d.set_mouse_camera_enabled(enabled)
-
-
 ## Sets the scene model (called by SceneFactory)
 func set_scene_model(p_scene_model: Scene) -> void:
 	scene_model = p_scene_model
@@ -117,9 +111,17 @@ func set_stage_view(p_stage_view: StageView) -> void:
 
 ## Observer callback for scene model changes
 func _on_scene_changed(plan_id: String) -> void:
-	# Update camera observation when plan changes
-	if camera_3d:
-		var camera = scene_model.get_current_camera() if scene_model else null
-		if camera:
-			camera_3d.observe_camera(camera)
-	stage_view.on_scene_changed(plan_id)
+	# Switch active camera
+	if plan_id in camera_nodes:
+		# Deactivate all cameras
+		for cam_id in camera_nodes:
+			camera_nodes[cam_id].current = false
+		
+		# Activate the camera for this plan
+		camera_nodes[plan_id].current = true
+	else:
+		push_warning("VNScene: No camera found for plan '%s'" % plan_id)
+	
+	# Update stage view with new background
+	if stage_view:
+		stage_view.on_scene_changed(plan_id)

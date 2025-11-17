@@ -6,6 +6,9 @@ extends Node3D
 ## The actual background mesh in the scene (3D)
 var background_sprite: MeshInstance3D = null
 
+@export var scaling_mode: String = "letterbox"
+@export var default_plan_id: String = ""
+
 ## Reference to the Scene model (for observing)
 @onready var scene_model: Scene = Scene.get_instance()
 
@@ -39,14 +42,12 @@ func _ready() -> void:
 	background_sprite.material_override = material
 	
 	add_child(background_sprite)
-	
 
-## Updates the background texture based on configuration
+## Updates the background texture based on configuration (DEPRECATED - use update_background_from_camera)
 func update_background(bg_config: Dictionary) -> void:
 	if not background_sprite or not background_sprite.material_override:
 		return
 	
-	# Set texture based on config
 	if "image" in bg_config:
 		var image_path = bg_config.image
 		if ResourceLoader.exists(image_path):
@@ -73,16 +74,10 @@ func scale_to_viewport() -> void:
 
 
 ## Observer callback - called when Scene model changes
-func on_scene_changed(plan_id: String) -> void:
-	if not scene_model:
-		return
-	
-	# Plan changed - update background and reposition/resize if needed
-	var plan = scene_model.get_current_plan()
-	if plan:
-		var bg_config = plan.get_default_background()
-		if not bg_config.is_empty():
-			update_background(bg_config)
+## camera_node: VNCamera3D node for the new plan
+func on_scene_changed(plan_id: String) -> void:  # camera_node: VNCamera3D
+	# Update background from plan
+	update_background(scene_model.get_current_plan().get_default_background())
 		
 
 

@@ -67,32 +67,10 @@ func add_plan(plan: Plan) -> void:
 
 
 ## Creates a Scene from a dictionary configuration
-func from_dict(p_scene_name: String, config: Dictionary) -> void:
+func from_view(vn_scene: VNScene) -> void:
 	
-	scene_name = p_scene_name
-
-	# Parse scene metadata
-	if "scene" in config:
-		scene_type = config.scene.get("type", "theater")
+	scene_name = vn_scene.scene_name
+	scene_type = vn_scene.scene_type
 	
-	# Parse stage configuration
-	if "stage" in config:
-		stage.from_dict(config.stage)
-	
-	# Parse plans
-	if "plans" in config:
-		for plan_config in config.plans:
-			var plan = Plan.from_dict(plan_config)
-			add_plan(plan)
-	
-	# Set initial plan
-	if stage.default_plan_id != "" and stage.default_plan_id in plans:
-		set_plan(stage.default_plan_id)
-	elif not plans.is_empty():
-		# Use first available plan if no default specified
-		set_plan(plans.keys()[0])
-	
-	# Parse cast
-	if "cast" in config and "available" in config.cast:
-		available_characters = config.cast.available
+	stage.from_view(vn_scene.stage_view)
 	
