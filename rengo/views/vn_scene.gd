@@ -35,6 +35,16 @@ var camera_nodes: Dictionary = {}
 @export var scene_name: String = ""
 @export var scene_type: String = "theater"
 
+static var instance: VNScene = null
+
+static func get_instance() -> VNScene:
+	if not instance:
+		VNScene.new()
+	return instance
+
+func _init() -> void:
+	instance = self
+
 #func _init() -> void:
 func _ready() -> void:	
 	# Initialize the controller
@@ -81,7 +91,7 @@ func get_resource(res_name: String):  # -> ResourceNode
 ## Returns the action for optional chaining
 func change_plan(plan_id: String):
 	var ChangePlanAction = load("res://rengo/controllers/actions/common/change_plan_action.gd")
-	var action = ChangePlanAction.new(scene_model, plan_id)
+	var action = ChangePlanAction.new(plan_id)
 	controller.action(action)
 	return action
 

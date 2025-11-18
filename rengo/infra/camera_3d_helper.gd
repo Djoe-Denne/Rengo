@@ -68,4 +68,3 @@ static func focal_range_to_fov_range(focal_min: float, focal_max: float, sensor_
 		"min_fov": calculate_fov(focal_max, sensor_size, aspect_ratio),  # max focal = min FOV (zoomed in)
 		"max_fov": calculate_fov(focal_min, sensor_size, aspect_ratio)   # min focal = max FOV (zoomed out)
 	}
-

@@ -110,6 +110,15 @@ func _update_background_size() -> void:
 	background_sprite.position = Vector3(camera_pos.x, camera_pos.y, camera_pos.z - BACKGROUND_DISTANCE)
 
 
+## Gets an actor controller by name from child actors
+func get_actor_controller(actor_name: String):  # -> ActorController
+	for child in get_children():
+		if child.get_script() and child.get_script().get_global_name() == "Actor":
+			if child.actor_name == actor_name:
+				return child.get_controller()
+	return null
+
+
 ## Calculates the overscan factors for width and height based on VNCamera3D's maximum offset
 func _calculate_overscan_factors(quad_size: Vector2, camera: Camera) -> Vector2:
 	var default_overscan = Vector2(1.15, 1.15)

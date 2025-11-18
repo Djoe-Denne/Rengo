@@ -27,7 +27,7 @@ func execute() -> void:
 	
 	# Change the plan on the scene model
 	# This will notify all observers (StageView, ActorDirector)
-	SceneModel.set_plan(plan_id)
+	Scene.get_instance().set_plan(plan_id)
 	
 	# Complete immediately
 	_is_complete = true

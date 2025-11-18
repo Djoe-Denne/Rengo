@@ -3,8 +3,8 @@ character:
   dialog_color: "#6B8EFF"
   inner_dialog_color: "#6B8EFF88"
   size_cm:
-    height: 170
-    width: 80
+    height: 1.7
+    width: 0.8
 
 defaults:
   orientation: "front"

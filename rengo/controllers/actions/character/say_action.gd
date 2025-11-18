@@ -31,24 +31,9 @@ func _init(p_speaker = null) -> void:
 ## Start displaying the dialog
 func execute() -> void:
 	super.execute()
+	var vn_scene = VNScene.get_instance()
 	
-	if not target or not target.vn_scene:
-		push_error("SayAction: no target or VNScene")
-		_is_complete = true
-		return
-	
-	# Get the DialogModel from VNScene
-	if "dialog_model" not in target.vn_scene:
-		push_error("SayAction: VNScene does not have dialog_model")
-		_is_complete = true
-		return
-	
-	dialog_model = target.vn_scene.dialog_model
-	if not dialog_model:
-		push_error("SayAction: dialog_model is null")
-		_is_complete = true
-		return
-	
+	dialog_model = vn_scene.dialog_model
 	# Prepare speaker info
 	var speaker_name = ""
 	var speaker_color = Color.WHITE

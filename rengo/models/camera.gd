@@ -138,4 +138,3 @@ func set_ratio(new_ratio: float) -> void:
 	if ratio != new_ratio:
 		ratio = new_ratio
 		_notify_observers()
-

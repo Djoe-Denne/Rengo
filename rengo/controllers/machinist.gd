@@ -34,11 +34,9 @@ func handle_displayable(displayable: Displayable) -> void:
 	
 	if displayable.get_parent() and displayable.get_parent() is DisplayableLayer:
 		var layer = displayable.get_parent()
-		push_warning("Applying shaders to layer '%s'" % layer.layer_name)
 		var active_shaders = get_active_shaders_on_layers(layer)
 		update_displayable_shaders(displayable, active_shaders)
 	else:
-		push_warning("Applying shaders to node '%s'" % displayable.name)
 		var active_shaders = get_active_shaders_on_node()
 		update_displayable_shaders(displayable, active_shaders)
 

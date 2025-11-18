@@ -111,6 +111,7 @@ func _update_from_model() -> void:
 	
 	# Set FOV from focal length
 	fov = camera_model.get_fov()
+	print("Camera \"%s\" FOV: %s" % [plan_id, fov])
 	
 	# Set near and far clip planes (reasonable defaults for cm scale)
 	near = 1.0  # 1 cm
@@ -118,10 +119,6 @@ func _update_from_model() -> void:
 	
 	# Make it the current camera
 	current = true
-
-func update_from_editor() -> void:
-	var t_fov = Camera3DHelper.calculate_fov(focal_default, sensor_size, ratio)
-
 
 ## Updates camera position based on mouse position
 func _update_camera_from_mouse() -> void:
@@ -175,10 +172,3 @@ func update_initial_position() -> void:
 ## Cleanup when node is removed from tree
 func _exit_tree() -> void:
 	stop_observing()
-
-func _notification(what):
-	print(Engine.is_editor_hint())
-	if what == NOTIFICATION_READY and Engine.is_editor_hint():
-		update_from_editor()
-	elif what == NOTIFICATION_EDITOR_PROPERTY_CHANGED and Engine.is_editor_hint():
-		update_from_editor()
