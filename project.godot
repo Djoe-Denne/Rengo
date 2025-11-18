@@ -31,7 +31,7 @@ window/stretch/mode="viewport"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/editor/plugin.cfg", "res://addons/yaml/plugin.cfg")
+enabled=PackedStringArray("res://addons/character_composer/plugin.cfg", "res://addons/editor/plugin.cfg", "res://addons/yaml/plugin.cfg")
 
 [input]
 

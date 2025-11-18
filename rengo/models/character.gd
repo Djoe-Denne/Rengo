@@ -95,4 +95,4 @@ func apply_defaults(defaults: Dictionary) -> void:
 	for key in defaults:
 		if not key in current_states:
 			current_states[key] = defaults[key]
-	state_changed.emit(current_states)
+	state_changed.emit(self)

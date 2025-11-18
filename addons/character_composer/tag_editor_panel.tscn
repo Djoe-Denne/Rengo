@@ -1,0 +1,35 @@
+[gd_scene load_steps=2 format=3 uid="uid://d1nvf8q4xmn4x"]
+
+[ext_resource type="Script" path="res://addons/character_composer/tag_editor_panel.gd" id="1_tag_ed"]
+
+[node name="TagEditorPanel" type="VBoxContainer"]
+script = ExtResource("1_tag_ed")
+
+[node name="TagsGroup" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="TagsGroup"]
+layout_mode = 2
+text = "Tags:"
+
+[node name="TagsList" type="VBoxContainer" parent="TagsGroup"]
+layout_mode = 2
+
+[node name="AddTagButton" type="Button" parent="TagsGroup"]
+layout_mode = 2
+text = "Add Tag"
+
+[node name="ExcludingTagsGroup" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ExcludingTagsGroup"]
+layout_mode = 2
+text = "Excluding Tags:"
+
+[node name="ExcludingTagsList" type="VBoxContainer" parent="ExcludingTagsGroup"]
+layout_mode = 2
+
+[node name="AddExcludingTagButton" type="Button" parent="ExcludingTagsGroup"]
+layout_mode = 2
+text = "Add Excluding Tag"
+

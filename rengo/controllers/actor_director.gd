@@ -25,13 +25,100 @@ const SCENES_PATH = "res://assets/scenes/"
 func _init() -> void:
 	super()
 
-## Loads a character's from their YAML files
+## Loads a character's from their composition resource or YAML files
 func load_character(character: Character) -> bool:
 	var name = character.name
 	# Check if already loaded
 	if character_metadata:
 		character.load_metadata(character_metadata)
 		return true
+	
+	# Try loading from CharacterCompositionResource first
+	var resource_path = _get_composition_resource_path(name)
+	if ResourceLoader.exists(resource_path):
+		print("Loading character '%s' from composition resource: %s" % [name, resource_path])
+		return _load_from_composition_resource(character, resource_path)
+	else:
+		# Fallback to YAML loading
+		push_error("Loading character '%s' from YAML files" % name)
+		return _load_from_yaml(character)
+
+
+## Gets the expected path for a CharacterCompositionResource
+func _get_composition_resource_path(name: String) -> String:
+	# Try scene-specific first
+	if scene_model and scene_model.scene_name != "":
+		var scene_path = SCENES_PATH + scene_model.scene_name + "/characters/" + name + "/" + name + "_composition.tres"
+		if ResourceLoader.exists(scene_path):
+			return scene_path
+	
+	# Try common path
+	return COMMON_CHARACTERS_PATH + name + "/" + name + "_composition.tres"
+
+
+## Loads a character from a CharacterCompositionResource
+func _load_from_composition_resource(character: Character, resource_path: String) -> bool:
+	var composition_resource = load(resource_path) as CharacterCompositionResource
+	if not composition_resource:
+		push_error("Failed to load CharacterCompositionResource: %s" % resource_path)
+		return false
+	
+	# Set character name from resource if not already set
+	if composition_resource.character_name != "":
+		character.name = composition_resource.character_name
+	
+	# Load character metadata
+	character_metadata = composition_resource.to_character_metadata()
+	character.load_metadata(character_metadata)
+	
+	# Apply default states
+	character.apply_defaults(composition_resource.default_states)
+	
+	# Extract layers
+	for layer in composition_resource.get_base_layers():
+		if layer.layer_type == CompositionLayer.LayerType.BODY:
+			character_layers[layer.id] = layer.to_layer_definition()
+		elif layer.layer_type == CompositionLayer.LayerType.FACE:
+			character_faces[layer.id] = layer.to_layer_definition()
+	
+	# Create costumier with wardrobe from resource
+	if not _load_wardrobe_from_resource(composition_resource):
+		push_warning("Failed to create costumier from resource for: %s" % character.name)
+	
+	# Load acts (still from YAML for now)
+	var base_dirs = get_character_base_dirs(character.name)
+	if not base_dirs.is_empty():
+		if not _load_character_acts(base_dirs, character.name):
+			push_warning("Failed to load character acts for: %s" % character.name)
+	
+	# Create displayable layers
+	_create_displayable_layers()
+	
+	# Set base size on actor view
+	var actor = controller.get_view()
+	if actor:
+		actor.base_size = composition_resource.base_size
+	
+	return true
+
+
+## Loads wardrobe from a CharacterCompositionResource
+func _load_wardrobe_from_resource(composition_resource: CharacterCompositionResource) -> bool:
+	# This should be overridden by subclasses (TheaterActorDirector)
+	# For now, we'll create a basic wardrobe array
+	var wardrobe_array = composition_resource.to_wardrobe_array()
+	
+	# Store wardrobe data for get_panoplie()
+	if costumier:
+		costumier.wardrobe = wardrobe_array
+		return true
+	
+	return false
+
+
+## Loads a character from YAML files (legacy method)
+func _load_from_yaml(character: Character) -> bool:
+	var name = character.name
 	
 	# Get base directories for this character
 	var base_dirs = get_character_base_dirs(name)

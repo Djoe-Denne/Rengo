@@ -36,6 +36,7 @@ func _input(event: InputEvent) -> void:
 		var texture_rect = Rect2(Vector2.ZERO, texture_size)
 		var source = _texture.get_source()
 		if source and source is DisplayableLayer:
+			print("input event: ", event, "source: ", source)
 			set_time_before_taking_input(100)
 			if source.is_visible():
 				if texture_rect.has_point(local_position):

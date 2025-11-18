@@ -202,20 +202,17 @@ func _calculate_layer_size(texture: Texture2D, char_size: Vector2, layer_name: S
 	return texture_size / pixels_per_cm
 
 
-## Loads the wardrobe (panoplie.yaml) for a character
-func load_wardrobe(name: String) -> bool:
-	# Check if already loaded
-	if costumier:
-		return true
-	
-	# Get base directories for this character
-	var base_dirs = get_character_base_dirs(name)
-	
-	if base_dirs.is_empty():
-		push_warning("No base directories found for character: %s" % name)
+## Loads wardrobe from a CharacterCompositionResource (overrides base method)
+func _load_wardrobe_from_resource(composition_resource: CharacterCompositionResource) -> bool:
+	if not composition_resource:
 		return false
 	
-	# Create TheaterCostumier and load wardrobe with merging support
+	# Create TheaterCostumier
 	costumier = TheaterCostumier.new(controller)
-	return costumier.load_wardrobe(base_dirs, true)
+	
+	# Load wardrobe array directly from resource
+	var wardrobe_array = composition_resource.to_wardrobe_array()
+	costumier.wardrobe = wardrobe_array
+	
+	return true
 		

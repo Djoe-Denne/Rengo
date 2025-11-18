@@ -1,0 +1,66 @@
+[gd_resource type="Resource" script_class="CharacterCompositionResource" load_steps=8 format=3 uid="uid://b32wescflxryg"]
+
+[ext_resource type="Script" uid="uid://crqgd3tafcrqs" path="res://rengo/resources/composition_layer.gd" id="1_yf0j5"]
+[ext_resource type="Script" uid="uid://dbwehe58ih10" path="res://rengo/resources/character_composition_resource.gd" id="2_p42yi"]
+
+[sub_resource type="Resource" id="Resource_yf0j5"]
+script = ExtResource("1_yf0j5")
+id = "body"
+layer_name = "body"
+template_path = "images/{plan}/{orientation}/body/{pose}_{body}.png"
+preview_image_path = "res://assets/scenes/common/characters/me/images/medium_shot/front/body/idle.png"
+preview_active = true
+
+[sub_resource type="Resource" id="Resource_p42yi"]
+script = ExtResource("1_yf0j5")
+id = "face"
+layer_name = "face"
+template_path = "images/{plan}/{orientation}/faces/{expression}.png"
+position = Vector2(190, 950)
+z_index = 1
+parent_layer_id = "body"
+layer_type = 1
+preview_image_path = "res://assets/scenes/common/characters/me/images/medium_shot/front/faces/happy.png"
+preview_active = true
+
+[sub_resource type="Resource" id="Resource_a4w2w"]
+script = ExtResource("1_yf0j5")
+id = "casual"
+layer_name = "casual"
+template_path = "images/{plan}/{orientation}/outfits/casual_{pose}.png"
+z_index = 2
+parent_layer_id = "body"
+tags = Array[String](["casual", "top"])
+excluding_tags = Array[String](["top"])
+layer_type = 2
+
+[sub_resource type="Resource" id="Resource_vbk6e"]
+script = ExtResource("1_yf0j5")
+id = "chino"
+layer_name = "chino"
+template_path = "images/{plan}/{orientation}/outfits/chino.png"
+z_index = 1
+parent_layer_id = "body"
+tags = Array[String](["casual", "pants", "bottom"])
+excluding_tags = Array[String](["bottom"])
+layer_type = 2
+
+[sub_resource type="Resource" id="Resource_wnbu3"]
+script = ExtResource("1_yf0j5")
+id = "jeans"
+layer_name = "jeans"
+template_path = "images/{plan}/{orientation}/outfits/jeans.png"
+z_index = 1
+parent_layer_id = "body"
+tags = Array[String](["casual", "pants", "bottom"])
+excluding_tags = Array[String](["bottom"])
+layer_type = 2
+
+[resource]
+script = ExtResource("2_p42yi")
+character_name = "me"
+display_name = "Me"
+dialog_color = Color(0.41960785, 0.5568628, 1, 1)
+inner_dialog_color = Color(0.41960785, 0.5568628, 1, 0.53333336)
+base_size = Vector2(0.8, 1.7)
+layers = Array[ExtResource("1_yf0j5")]([SubResource("Resource_yf0j5"), SubResource("Resource_p42yi"), SubResource("Resource_a4w2w"), SubResource("Resource_vbk6e"), SubResource("Resource_wnbu3")])
