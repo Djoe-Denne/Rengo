@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="Resource_yf0j5"]
 script = ExtResource("1_yf0j5")
 id = "body"
-layer_name = "body"
+layer_id = "body"
 template_path = "images/{plan}/{orientation}/body/{pose}_{body}.png"
 preview_image_path = "res://assets/scenes/common/characters/other/images/medium_shot/front/body/idle.png"
 preview_active = true
@@ -14,7 +14,7 @@ preview_active = true
 [sub_resource type="Resource" id="Resource_p42yi"]
 script = ExtResource("1_yf0j5")
 id = "face"
-layer_name = "face"
+layer_id = "face"
 template_path = "images/{plan}/{orientation}/faces/{expression}.png"
 position = Vector2(25, 100)
 z_index = 1
@@ -26,18 +26,21 @@ preview_active = true
 [sub_resource type="Resource" id="Resource_a4w2w"]
 script = ExtResource("1_yf0j5")
 id = "casual"
-layer_name = "casual"
+layer_id = "cloth_top"
 template_path = "images/{plan}/{orientation}/outfits/casual_{pose}.png"
+position = Vector2(75, 150)
 z_index = 2
 parent_layer_id = "body"
 tags = Array[String](["casual", "top"])
 excluding_tags = Array[String](["top"])
 layer_type = 2
+preview_image_path = "res://assets/scenes/common/characters/other/images/medium_shot/front/outfits/casual.png"
+preview_active = true
 
 [sub_resource type="Resource" id="Resource_vbk6e"]
 script = ExtResource("1_yf0j5")
 id = "chino"
-layer_name = "chino"
+layer_id = "cloth_bottom"
 template_path = "images/{plan}/{orientation}/outfits/chino.png"
 z_index = 1
 parent_layer_id = "body"
@@ -48,13 +51,16 @@ layer_type = 2
 [sub_resource type="Resource" id="Resource_wnbu3"]
 script = ExtResource("1_yf0j5")
 id = "jeans"
-layer_name = "jeans"
+layer_id = "cloth_bottom"
 template_path = "images/{plan}/{orientation}/outfits/jeans.png"
+position = Vector2(75, 150)
 z_index = 1
 parent_layer_id = "body"
 tags = Array[String](["casual", "pants", "bottom"])
 excluding_tags = Array[String](["bottom"])
 layer_type = 2
+preview_image_path = "res://assets/scenes/common/characters/other/images/medium_shot/front/outfits/jeans.png"
+preview_active = true
 
 [resource]
 script = ExtResource("2_p42yi")

@@ -3,6 +3,7 @@
 class_name TheaterCostumier extends Costumier
 
 ## Selects a clothing item and returns updated outfit with exclusions applied
+## Enforces one item per layer_id - removes any existing item with the same layer_id
 func select(panoplie: Array, clothing_id: String) -> Array:
 	# Create a copy to avoid modifying the original
 	var new_panoplie = panoplie.duplicate()
@@ -13,12 +14,29 @@ func select(panoplie: Array, clothing_id: String) -> Array:
 		push_warning("Clothing item not found: %s" % clothing_id)
 		return new_panoplie
 	
+	# Get the layer_id of the new clothing (defaults to id if not specified)
+	var new_layer_id = clothing.get("layer_id", clothing.get("id", ""))
+	
+	# Remove any existing items with the same layer_id
+	var items_to_remove = []
+	for item_id in new_panoplie:
+		var item = _find_clothing(item_id)
+		if item:
+			var item_layer_id = item.get("layer_id", item.get("id", ""))
+			# Remove if same layer_id
+			if item_layer_id == new_layer_id:
+				items_to_remove.append(item_id)
+	
+	# Remove items with same layer_id
+	for item_id in items_to_remove:
+		new_panoplie.erase(item_id)
+	
 	# Get excluding tags
 	var excluding_tags = clothing.get("excluding_tags", [])
 	
 	# If this clothing excludes others, remove conflicting items
 	if excluding_tags.size() > 0:
-		var items_to_remove = []
+		items_to_remove = []
 		for item_id in new_panoplie:
 			var item = _find_clothing(item_id)
 			if item:

@@ -62,8 +62,9 @@ func _rebuild_layer_tree() -> void:
 	# First pass: create all items
 	for layer in current_resource.layers:
 		var item = layer_tree.create_item()
-		item.set_text(0, layer.id + " (" + _get_layer_type_name(layer.layer_type) + ")")
+		var layer_id_display = layer.id + " [" + layer.layer_id + "]"
 		item.set_metadata(0, layer)
+		item.set_text(0, layer_id_display)
 		layer_items[layer.id] = item
 	
 	# Second pass: organize hierarchy
@@ -73,18 +74,6 @@ func _rebuild_layer_tree() -> void:
 			var parent_item = layer_items[layer.parent_layer_id]
 			item.get_parent().remove_child(item)
 			parent_item.add_child(item)
-
-
-func _get_layer_type_name(layer_type: CompositionLayer.LayerType) -> String:
-	match layer_type:
-		CompositionLayer.LayerType.BODY:
-			return "Body"
-		CompositionLayer.LayerType.FACE:
-			return "Face"
-		CompositionLayer.LayerType.CLOTHING:
-			return "Clothing"
-	return "Unknown"
-
 
 func _on_layer_selected() -> void:
 	if not layer_tree:
@@ -113,7 +102,7 @@ func _update_properties_panel() -> void:
 	
 	# Add property editors
 	_add_property_editor("ID", selected_layer.id, "id")
-	_add_property_editor("Layer Name", selected_layer.layer_name, "layer_name")
+	_add_property_editor("Layer ID", selected_layer.layer_id, "layer_id")
 	_add_property_editor("Template Path", selected_layer.template_path, "template_path")
 	_add_property_editor("Position X", str(selected_layer.position.x), "position_x")
 	_add_property_editor("Position Y", str(selected_layer.position.y), "position_y")
@@ -199,8 +188,8 @@ func _on_property_changed(new_value: String, property: String, line_edit: LineEd
 	match property:
 		"id":
 			selected_layer.id = new_value
-		"layer_name":
-			selected_layer.layer_name = new_value
+		"layer_id":
+			selected_layer.layer_id = new_value
 		"template_path":
 			selected_layer.template_path = new_value
 		"position_x":

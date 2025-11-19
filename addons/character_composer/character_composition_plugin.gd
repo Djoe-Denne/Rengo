@@ -50,4 +50,3 @@ func _make_visible(visible: bool) -> void:
 			make_bottom_panel_item_visible(editor_panel)
 		else:
 			hide_bottom_panel()
-

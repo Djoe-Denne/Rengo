@@ -15,6 +15,9 @@ var hovered: bool = false
 ## Layer identifier
 var layer_name: String = ""
 
+## Layer ID for grouping variants (e.g., "cloth_bottom")
+var layer_id: String = ""
+
 var layer_size: Vector2 = Vector2(0, 0)
 
 ## Parent layer (null if root layer)
@@ -38,6 +41,9 @@ func _init(p_layer_name: String = "", p_layer_definition: Dictionary = {}) -> vo
 	layer_name = p_layer_name
 	name = "Layer_" + layer_name
 	layer_definition = p_layer_definition
+	
+	# Extract layer_id from definition (defaults to layer_name if not present)
+	layer_id = p_layer_definition.get("layer_id", p_layer_name)
 
 	displayable = Displayable.new(layer_name)
 	
@@ -106,6 +112,7 @@ func get_output_texture() -> VNTexture:
 	var texture = displayable.get_output_pass().get_output_texture()
 	texture.set_position(position)
 	texture.set_source(self)
+	texture.set_layer_id(layer_id)
 	
 	# Add child textures to create hierarchy
 	for child_layer in child_layers:

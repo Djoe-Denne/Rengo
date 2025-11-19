@@ -132,6 +132,26 @@ func get_child_layers(parent_id: String) -> Array[CompositionLayer]:
 	return child_layers
 
 
+## Gets all unique layer_ids from all layers
+func get_unique_layer_ids() -> Array[String]:
+	var unique_ids: Array[String] = []
+	for layer in layers:
+		var lid = layer.layer_id if layer.layer_id != "" else layer.id
+		if not lid in unique_ids:
+			unique_ids.append(lid)
+	return unique_ids
+
+
+## Gets all layers that share the same layer_id
+func get_layers_by_layer_id(layer_id: String) -> Array[CompositionLayer]:
+	var matching_layers: Array[CompositionLayer] = []
+	for layer in layers:
+		var lid = layer.layer_id if layer.layer_id != "" else layer.id
+		if lid == layer_id:
+			matching_layers.append(layer)
+	return matching_layers
+
+
 ## Validates the layer hierarchy (ensures no circular references, missing parents, etc.)
 func validate_hierarchy() -> Dictionary:
 	var errors = []

@@ -14,8 +14,9 @@ enum LayerType {
 ## Unique identifier for this layer
 @export var id: String = ""
 
-## Display name for the layer (used in editor)
-@export var layer_name: String = ""
+## Layer ID for grouping variants (e.g., "cloth_bottom" for both chinos and jeans)
+## If empty, defaults to id
+@export var layer_id: String = ""
 
 ## Template path with placeholders (e.g., "images/{plan}/{orientation}/body/{pose}_{body}.png")
 ## Placeholders are replaced at runtime based on character state
@@ -50,10 +51,10 @@ enum LayerType {
 func to_layer_definition() -> Dictionary:
 	var layer_def = {
 		"id": id,
-		"layer": layer_name if layer_name else id,
 		"image": template_path,
 		"z": z_index,
-		"anchor": {"x": position.x, "y": position.y}
+		"anchor": {"x": position.x, "y": position.y},
+		"layer_id": layer_id if layer_id != "" else id
 	}
 	
 	# Add parent if specified
@@ -79,6 +80,7 @@ static func from_layer_definition(layer_def: Dictionary) -> CompositionLayer:
 	layer.template_path = layer_def.get("image", "")
 	layer.z_index = layer_def.get("z", 0)
 	layer.parent_layer_id = layer_def.get("parent", "")
+	layer.layer_id = layer_def.get("layer_id", layer.id)  # Default to id if not specified
 	
 	# Parse anchor/position
 	if "anchor" in layer_def:

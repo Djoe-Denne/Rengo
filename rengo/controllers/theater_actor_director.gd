@@ -5,6 +5,12 @@ extends ActorDirector
 
 const TheaterCostumier = preload("res://rengo/controllers/theater_costumier.gd")
 
+## Maps clothing_id to layer_id for finding the correct variant
+var clothing_to_layer_map: Dictionary = {}
+
+## Stores all composition layers grouped by layer_id for variant selection
+var composition_layers_by_layer_id: Dictionary = {}
+
 func _init() -> void:
 	super(TheaterCostumier.new())
 
@@ -59,6 +65,7 @@ func _build_texture_hierarchy(layer: DisplayableLayer) -> VNTexture:
 	texture.set_position(layer.position)
 	texture.set_source(layer)
 	texture.set_padding(layer.displayable.get_input_pass().get_padding())
+	texture.set_layer_id(layer.layer_id)
 	
 	# Recursively add child textures
 	for child_layer in layer.get_child_layers():
@@ -69,12 +76,23 @@ func _build_texture_hierarchy(layer: DisplayableLayer) -> VNTexture:
 	return texture
 
 ## Updates all layers using unified template system (body + face + clothing)
+## Now handles variant selection based on panoplie
 func _update_layers_unified(layer: DisplayableLayer, current_states: Dictionary) -> void:
 	var actor = controller.get_view()
 	if not actor:
 		return
 	
-	var layer_def = layer.layer_definition
+	# Determine which variant to use based on layer_id and panoplie
+	var active_variant = _get_active_variant_for_layer(layer.layer_id, current_states)
+	
+	if not active_variant:
+		# No active variant for this layer - hide it
+		layer.set_layer_visible(false)
+		return
+	
+	# Use the active variant's definition
+	var layer_def = active_variant.to_layer_definition()
+	
 	# Resolve template path
 	var image_template = layer_def.get("image", "")
 	var image_path = ResourceRepository.resolve_template_path(image_template, current_states)
@@ -89,6 +107,42 @@ func _update_layers_unified(layer: DisplayableLayer, current_states: Dictionary)
 		else:
 			# Hide layer if texture not found
 			layer.set_layer_visible(false)
+
+
+## Determines which variant (CompositionLayer) should be active for a given layer_id
+## Based on the current panoplie (worn clothing items)
+func _get_active_variant_for_layer(layer_id: String, current_states: Dictionary) -> CompositionLayer:
+	if not layer_id in composition_layers_by_layer_id:
+		return null
+	
+	var variants = composition_layers_by_layer_id[layer_id]
+	if variants.is_empty():
+		return null
+	
+	# For non-clothing layers (body, face), return the first (and only) variant
+	var first_variant = variants[0]
+	if first_variant.layer_type != CompositionLayer.LayerType.CLOTHING:
+		return first_variant
+	
+	# For clothing layers, check which item in panoplie matches this layer_id
+	var model = controller.get_model()
+	if not model:
+		return null
+	
+	var panoplie = model.panoplie
+	
+	# Find which clothing item in panoplie has this layer_id
+	for clothing_id in panoplie:
+		if clothing_id in clothing_to_layer_map:
+			var mapped_layer_id = clothing_to_layer_map[clothing_id]
+			if mapped_layer_id == layer_id:
+				# Found the active clothing item - find its CompositionLayer
+				for variant in variants:
+					if variant.id == clothing_id:
+						return variant
+	
+	# No matching clothing in panoplie - layer should be hidden
+	return null
 
 
 ## Applies a texture to a DisplayableLayer and updates its size
@@ -106,9 +160,11 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 	
 	# Use PostProcessorBuilder to set up the layer's Displayable
 	# Clear shaders to ensure clean state, then set texture and size
+	var vn_texture = VNTexture.new(texture, Vector2.ZERO)
+	vn_texture.set_layer_id(layer.layer_id)
 	layer.displayable.to_builder() \
 		.clear_base_textures() \
-		.add_base_texture(VNTexture.new(texture, Vector2.ZERO))
+		.add_base_texture(vn_texture)
 	
 	# Set character size on actor for output mesh
 	actor.base_size = char_size
@@ -211,5 +267,70 @@ func _load_wardrobe_from_resource(composition_resource: CharacterCompositionReso
 	var wardrobe_array = composition_resource.to_wardrobe_array()
 	costumier.wardrobe = wardrobe_array
 	
+	# Build clothing_id to layer_id mapping
+	clothing_to_layer_map.clear()
+	composition_layers_by_layer_id.clear()
+	
+	for layer in composition_resource.layers:
+		var lid = layer.layer_id if layer.layer_id != "" else layer.id
+		var clothing_id = layer.id
+		
+		# Map clothing_id to layer_id
+		clothing_to_layer_map[clothing_id] = lid
+		
+		# Group composition layers by layer_id
+		if not lid in composition_layers_by_layer_id:
+			composition_layers_by_layer_id[lid] = []
+		composition_layers_by_layer_id[lid].append(layer)
+	
 	return true
+
+
+## Override to create layers by unique layer_id instead of per-item
+func _create_displayable_layers() -> void:
+	var actor = controller.get_view()
+	if not actor:
+		return
+	
+	# Get the composition resource to access unique layer_ids
+	var character_name = controller.get_model().name if controller.get_model() else ""
+	var resource_path = _get_composition_resource_path(character_name)
+	
+	if not ResourceLoader.exists(resource_path):
+		# Fallback to parent implementation for YAML-based characters
+		super._create_displayable_layers()
+		return
+	
+	var composition_resource = load(resource_path) as CharacterCompositionResource
+	if not composition_resource:
+		super._create_displayable_layers()
+		return
+	
+	# Get unique layer_ids
+	var unique_layer_ids = composition_resource.get_unique_layer_ids()
+	
+	# Create layers sorted by hierarchy
+	var layer_creation_queue = []
+	
+	for layer_id in unique_layer_ids:
+		# Get the first layer with this layer_id as a template
+		var layers = composition_resource.get_layers_by_layer_id(layer_id)
+		if layers.is_empty():
+			continue
+		
+		var template_layer = layers[0]
+		var layer_def = template_layer.to_layer_definition()
+		
+		layer_creation_queue.append(layer_def)
+	
+	# Sort by hierarchy
+	layer_creation_queue = _sort_layers_by_hierarchy(layer_creation_queue)
+	
+	# Create DisplayableLayer for each unique layer_id
+	for layer_def in layer_creation_queue:
+		var layer_id = layer_def.get("layer_id", layer_def.get("id", ""))
+		if layer_id == "":
+			continue
+		
+		actor.add_layer(layer_id, layer_def)
 		
