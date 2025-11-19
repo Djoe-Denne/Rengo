@@ -2,9 +2,6 @@
 ## Manages multi-layer clothing with tags, exclusions, and template substitution
 class_name TheaterCostumier extends Costumier
 
-func _init(p_controller: ActorController) -> void:
-	super(p_controller)
-
 ## Selects a clothing item and returns updated outfit with exclusions applied
 func select(panoplie: Array, clothing_id: String) -> Array:
 	# Create a copy to avoid modifying the original

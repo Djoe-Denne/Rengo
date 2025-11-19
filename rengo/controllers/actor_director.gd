@@ -22,8 +22,9 @@ var costumier: Costumier = null
 const COMMON_CHARACTERS_PATH = "res://assets/scenes/common/characters/"
 const SCENES_PATH = "res://assets/scenes/"
 
-func _init() -> void:
+func _init(p_costumier: Costumier) -> void:
 	super()
+	costumier = p_costumier
 
 ## Loads a character's from their composition resource or YAML files
 func load_character(character: Character) -> bool:

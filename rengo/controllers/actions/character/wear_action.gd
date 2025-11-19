@@ -32,7 +32,7 @@ func _apply_value(value: Variant) -> void:
 	var model = controller.model
 	
 	# Get the Costumier for this character
-	var costumier = director.get_costumier() if director else null
+	var costumier: TheaterCostumier = director.get_costumier() if director else null
 	
 	if costumier:
 		# Use Costumier.select() to handle exclusions properly

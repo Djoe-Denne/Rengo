@@ -6,7 +6,7 @@ extends ActorDirector
 const TheaterCostumier = preload("res://rengo/controllers/theater_costumier.gd")
 
 func _init() -> void:
-	super()
+	super(TheaterCostumier.new())
 
 ## Instructs an actor to change states (pose, expression, outfit, etc.)
 ## Creates or updates multi-layer sprite setup using unified template system
@@ -206,9 +206,6 @@ func _calculate_layer_size(texture: Texture2D, char_size: Vector2, layer_name: S
 func _load_wardrobe_from_resource(composition_resource: CharacterCompositionResource) -> bool:
 	if not composition_resource:
 		return false
-	
-	# Create TheaterCostumier
-	costumier = TheaterCostumier.new(controller)
 	
 	# Load wardrobe array directly from resource
 	var wardrobe_array = composition_resource.to_wardrobe_array()

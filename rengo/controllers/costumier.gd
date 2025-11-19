@@ -2,13 +2,8 @@
 ## Manages character clothing and layering system
 class_name Costumier extends RefCounted
 
-var controller: ActorController = null
-
 ## Wardrobe configuration loaded from panoplie.yaml
 var wardrobe: Array = []
-
-func _init(p_controller: ActorController) -> void:
-	controller = p_controller
 
 
 ## Selects a clothing item and returns updated panoplie
