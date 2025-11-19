@@ -27,7 +27,7 @@ var camera_model: Camera = null
 
 ## Mouse camera control settings
 @export var mouse_camera_enabled: bool = true
-@export var mouse_camera_max_offset: float = 30.0  # Max offset in cm on x and y
+@export var mouse_camera_max_offset: float = 0.3  # Max offset in cm on x and y
 
 ## Initial camera position for mouse control
 var _initial_position: Vector3 = Vector3.ZERO
@@ -111,14 +111,11 @@ func _update_from_model() -> void:
 	
 	# Set FOV from focal length
 	fov = camera_model.get_fov()
-	print("Camera \"%s\" FOV: %s" % [plan_id, fov])
 	
 	# Set near and far clip planes (reasonable defaults for cm scale)
 	near = 1.0  # 1 cm
 	far = 1000000.0  # 100 meters
 	
-	# Make it the current camera
-	current = true
 
 ## Updates camera position based on mouse position
 func _update_camera_from_mouse() -> void:

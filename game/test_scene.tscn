@@ -42,7 +42,6 @@ plan_id = "medium_shot"
 focal_min = 13.0
 focal_default = 35.0
 background_image_path = "uid://dupbnswtmfqis"
-mouse_camera_enabled = false
 metadata/_custom_type_script = "uid://7u752sqljvco"
 
 [node name="VNCamera3D2" type="Camera3D" parent="ActingLayer"]
@@ -53,7 +52,6 @@ plan_id = "close_up"
 focal_min = 13.0
 focal_default = 13.2
 background_image_path = "uid://b4ity2jsgxp5x"
-mouse_camera_enabled = false
 metadata/_custom_type_script = "uid://7u752sqljvco"
 
 [node name="DialogLayer" type="CanvasLayer" parent="."]

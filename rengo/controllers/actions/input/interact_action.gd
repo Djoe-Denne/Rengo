@@ -40,6 +40,7 @@ func execute() -> void:
 		_is_complete = true
 		return
 
+	controller.view.activate_input_handler()
 	# Activate the interaction via InteractionHandler (with layer)
 	if target_layer.is_empty():
 		InteractionHandler.activate(controller, interaction_name, null)
@@ -47,39 +48,4 @@ func execute() -> void:
 		for layer_name in target_layer:
 			InteractionHandler.activate(controller, interaction_name, layer_name)
 	
-	# Enable debug visualization for the target layer
-	_enable_debug_visualization()
-	
 	_is_complete = true
-
-
-## Enables debug visualization for the target layer (if specified)
-func _enable_debug_visualization() -> void:
-	# Only enable debug if a specific layer is targeted
-	if target_layer.is_empty():
-		return
-	
-	# Get the view from the controller
-	var view = controller.view if controller else null
-	if not view:
-		return
-	
-	# Check if view has layers (DisplayableNode)
-	if not view.has_method("get_layer"):
-		return
-	
-	# Enable debug for the target layer
-	if target_layer.is_empty():
-		# Enable debug for all layers
-		if view.has_method("get_visible_layers"):
-			var all_layers = view.layers
-			for layer_name in all_layers:
-				var layer = all_layers[layer_name]
-				if layer and layer.has_method("set_debug_enabled"):
-					layer.set_debug_enabled(true)
-	else:
-		# Enable debug for specific layer
-		for layer_name in target_layer:
-			var layer = view.get_layer(layer_name)
-			if layer and layer.has_method("set_debug_enabled"):
-				layer.set_debug_enabled(true)

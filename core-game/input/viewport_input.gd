@@ -13,7 +13,7 @@ var active = false
 var node_displayable_node = null
 var node_viewport = null
 var node_quad = null
-var node_area = null
+var node_area: Area3D = null
 
 func _init(p_node_displayable_node: DisplayableNode, p_node_viewport: SubViewport, p_node_quad: MeshInstance3D, p_node_area: Area3D):
 	node_displayable_node = p_node_displayable_node

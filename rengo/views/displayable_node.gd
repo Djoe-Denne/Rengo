@@ -32,9 +32,6 @@ var collision_shape: CollisionShape3D = null
 
 var max_padding: float = 0.0
 
-## Dictionary to track sprites in compositing viewport { layer_name: Sprite2D }
-var composite_sprites: Dictionary = {}
-
 
 func _ready() -> void:
 	# Create Displayable for compositing
@@ -49,7 +46,7 @@ func _ready() -> void:
 
 	add_child(displayable)
 
-	activate_input_handler()
+#	activate_input_handler()
 
 func activate_input_handler() -> void:
 	if input_handler:
@@ -168,9 +165,10 @@ func build_output_mesh() -> void:
 	# Create Area3D and CollisionShape3D
 	var area = Area3D.new()
 	area.name = "Area3D_" + name
+	area.disable_mode =CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
+	area.input_ray_pickable = true  # Enable physics picking for mouse events
 	collision_shape = CollisionShape3D.new()
-	collision_shape.debug_color = Color.TRANSPARENT
-	collision_shape.shape = ConvexPolygonShape3D.new()
+	collision_shape.debug_color = Color.RED
 
 	area.add_child(collision_shape)
 

@@ -47,6 +47,7 @@ func _init() -> void:
 
 #func _init() -> void:
 func _ready() -> void:	
+	get_viewport().physics_object_picking = true
 	# Initialize the controller
 	var VNSceneController = load("res://rengo/controllers/vn_scene_controller.gd")
 	controller = VNSceneController.new(self)

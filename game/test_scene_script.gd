@@ -4,7 +4,7 @@ extends Node
 ## This script is attached to the SceneScript node in test_scene.tscn
 
 var vn_scene = null  # VNScene
-var me_actor_ctrl = null  # ActorController
+var me_actor_ctrl: ActorController = null  # ActorController
 var other_actor_ctrl = null  # ActorController
 
 

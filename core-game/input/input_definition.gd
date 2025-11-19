@@ -48,4 +48,3 @@ func is_valid() -> bool:
 	
 	# At least one callback should be set
 	return in_callback.is_valid() or out_callback.is_valid() or on_callback.is_valid()
-
