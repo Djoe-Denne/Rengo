@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="CharacterCompositionResource" load_steps=8 format=3 uid="uid://b32wescflxryg"]
+[gd_resource type="Resource" script_class="CharacterCompositionResource" load_steps=8 format=3 uid="uid://3d4ag3f2qags"]
 
 [ext_resource type="Script" uid="uid://crqgd3tafcrqs" path="res://rengo/resources/composition_layer.gd" id="1_yf0j5"]
 [ext_resource type="Script" uid="uid://dbwehe58ih10" path="res://rengo/resources/character_composition_resource.gd" id="2_p42yi"]

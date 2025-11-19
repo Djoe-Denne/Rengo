@@ -6,7 +6,7 @@
 [ext_resource type="Script" uid="uid://do7v0svjsc66y" path="res://rengo/views/stage_view.gd" id="3_iy6ap"]
 [ext_resource type="Script" uid="uid://5nhmkrsb61ia" path="res://rengo/views/actor.gd" id="4_h77dx"]
 [ext_resource type="Script" uid="uid://7u752sqljvco" path="res://rengo/scenes/camera/vn_camera_3d.gd" id="5_h77dx"]
-[ext_resource type="Script" uid="uid://dgy52rhi436bw" path="res://game/test_scene_script.gd" id="6_script"]
+[ext_resource type="Script" path="res://game/test_scene_script.gd" id="6_script"]
 
 [node name="vn_scene" type="Node3D"]
 script = ExtResource("1_as5si")
@@ -34,6 +34,9 @@ script = ExtResource("4_h77dx")
 actor_name = "other"
 base_size = Vector2(0.7, 1.7)
 metadata/_custom_type_script = "uid://5nhmkrsb61ia"
+
+[node name="OmniLight3D" type="OmniLight3D" parent="ActingLayer/StageView"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.2863302)
 
 [node name="VNCamera3D" type="Camera3D" parent="ActingLayer"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 4.7965145)

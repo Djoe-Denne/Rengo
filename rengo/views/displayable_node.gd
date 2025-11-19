@@ -143,7 +143,7 @@ func recompose(recompose_all: bool = true) -> void:
 	displayable.recompose()
 
 	output_mesh.mesh.size = base_size * padding_multiplier
-	collision_shape.shape = output_mesh.mesh.create_convex_shape()
+	collision_shape.shape.size = Vector3(base_size.x, base_size.y, 0.01)
 	
 func create_output_mesh() -> void:
 	output_mesh = MeshInstance3D.new()
@@ -165,10 +165,10 @@ func build_output_mesh() -> void:
 	# Create Area3D and CollisionShape3D
 	var area = Area3D.new()
 	area.name = "Area3D_" + name
-	area.disable_mode =CollisionObject3D.DISABLE_MODE_KEEP_ACTIVE
-	area.input_ray_pickable = true  # Enable physics picking for mouse events
 	collision_shape = CollisionShape3D.new()
-	collision_shape.debug_color = Color.RED
+	collision_shape.shape = BoxShape3D.new()
+	collision_shape.shape.size = Vector3(base_size.x, base_size.y, 0.01)
+	collision_shape.debug_color = Color.TRANSPARENT
 
 	area.add_child(collision_shape)
 

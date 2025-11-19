@@ -12,7 +12,7 @@ func _init(p_texture: VNTexture, p_position: Vector2 = Vector2.ZERO) -> void:
 		name = "Sprite_" + _texture.get_source().name
 
 func _ready() -> void:
-	set_time_before_taking_input(100)
+	set_time_before_taking_input(50)
 
 func set_time_before_taking_input(p_time: float) -> void:
 	_time_before_taking_input = p_time + Time.get_ticks_msec()
@@ -36,7 +36,6 @@ func _input(event: InputEvent) -> void:
 		var texture_rect = Rect2(Vector2.ZERO, texture_size)
 		var source = _texture.get_source()
 		if source and source is DisplayableLayer:
-			print("input event: ", event, "source: ", source)
 			set_time_before_taking_input(100)
 			if source.is_visible():
 				if texture_rect.has_point(local_position):
