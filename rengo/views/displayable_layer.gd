@@ -76,7 +76,6 @@ func set_texture(tex: Texture2D) -> void:
 	# Store image for collision detection
 	texture_image = tex.get_image()
 	
-
 ## Controls layer visibility
 func set_layer_visible(p_visible: bool) -> void:
 	displayable.set_visible(p_visible)

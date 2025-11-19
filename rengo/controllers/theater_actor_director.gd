@@ -100,9 +100,12 @@ func _update_layers_unified(layer: DisplayableLayer, current_states: Dictionary)
 	# Load and apply texture
 	if image_path != "" and image_path != layer.texture_path:
 		var texture = _load_texture(actor, image_path)
-		if texture:
+		var vn_texture = VNTexture.new(texture, Vector2.ZERO)
+		vn_texture.set_layer_id(layer.layer_id)
+		vn_texture.set_texture_id(active_variant.id)
+		if vn_texture:
 			# Apply texture to DisplayableLayer
-			_apply_texture_to_displayable_layer(layer, texture)
+			_apply_texture_to_displayable_layer(layer, vn_texture)
 			layer.texture_path = image_path
 		else:
 			# Hide layer if texture not found
@@ -146,8 +149,8 @@ func _get_active_variant_for_layer(layer_id: String, current_states: Dictionary)
 
 
 ## Applies a texture to a DisplayableLayer and updates its size
-func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Texture2D) -> void:
-	if not layer or not texture:
+func _apply_texture_to_displayable_layer(layer: DisplayableLayer, vn_texture: VNTexture) -> void:
+	if not layer or not vn_texture:
 		return
 	
 	var actor = controller.get_view()
@@ -155,13 +158,11 @@ func _apply_texture_to_displayable_layer(layer: DisplayableLayer, texture: Textu
 	var char_size = _get_character_size(controller.get_model())
 	
 	# Calculate layer size based on texture and character dimensions
-	var layer_size = _calculate_layer_size(texture, char_size, layer.layer_name, actor)
+	var layer_size = _calculate_layer_size(vn_texture.get_texture(), char_size, layer.layer_name, actor)
 	layer.set_size(layer_size)
 	
 	# Use PostProcessorBuilder to set up the layer's Displayable
 	# Clear shaders to ensure clean state, then set texture and size
-	var vn_texture = VNTexture.new(texture, Vector2.ZERO)
-	vn_texture.set_layer_id(layer.layer_id)
 	layer.displayable.to_builder() \
 		.clear_base_textures() \
 		.add_base_texture(vn_texture)

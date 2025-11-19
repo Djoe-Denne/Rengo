@@ -8,6 +8,7 @@ var _scale: Vector2 = Vector2.ONE
 var _children: Array[VNTexture] = []
 var _padding: Vector2 = Vector2.ZERO
 var _layer_id: String = ""
+var texture_id: String = ""
 
 func _init(p_texture: Texture2D, p_position: Vector2 = Vector2.ZERO) -> void:
 	_texture = p_texture
@@ -58,3 +59,10 @@ func get_layer_id() -> String:
 
 func set_layer_id(p_layer_id: String) -> void:
 	_layer_id = p_layer_id
+
+func get_texture_id() -> String:
+	return texture_id
+
+func set_texture_id(p_texture_id: String) -> void:
+	texture_id = p_texture_id
+	
