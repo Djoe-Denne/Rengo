@@ -48,6 +48,7 @@ func _ready() -> void:
 									.build()
 
 	me_actor_ctrl.interaction(poke_interaction)  # Register interaction
+	other_actor_ctrl.interaction(poke_interaction)  # Register interaction
 
 	# Build the story action queue
 	_play_story()
@@ -70,6 +71,7 @@ func _play_story() -> void:
 	# Scene 1: Me wakes up with bed hair
 	me_actor_ctrl.act({"body": "bedhair"})
 	me_actor_ctrl.interact("poke").on("body").on("face")
+	other_actor_ctrl.interact("poke").on("body").on("face")
 	me_actor_ctrl.express("sad")
 	me_actor_ctrl.say("Ugh, I just woke up...")
 	

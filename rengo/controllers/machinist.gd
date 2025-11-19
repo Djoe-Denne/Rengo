@@ -112,7 +112,7 @@ func update_displayable_shaders(displayable: Displayable, active_shaders: Array[
 	
 	# Don't clear shaders - builder will handle incremental updates
 	builder.clear_shaders()  # Clear the builder's list, not the displayable's passes
-	
+
 	var base_texture = _get_base_texture(displayable)
 
 	# Add all VNShader objects in order
